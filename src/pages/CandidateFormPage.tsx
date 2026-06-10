@@ -47,7 +47,7 @@ import {
   FileText,
   Share2,
   Building2,
-  MessageSquare
+  MessageSquare,
 } from "lucide-react";
 
 const empty = {
@@ -160,7 +160,10 @@ export default function CandidateFormPage() {
             resume: form.resume,
             notes: form.notes,
             tags,
-            skills: form.skills.split(",").map((s) => s.trim()).filter(Boolean),
+            skills: form.skills
+              .split(",")
+              .map((s) => s.trim())
+              .filter(Boolean),
             experience: form.experience,
             relevantExperience: form.relevantExperience,
             currentCompany: form.currentCompany,
@@ -191,7 +194,10 @@ export default function CandidateFormPage() {
           notes: form.notes,
           stage: form.stage,
           tags,
-          skills: form.skills.split(",").map((s) => s.trim()).filter(Boolean),
+          skills: form.skills
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean),
           experience: form.experience,
           relevantExperience: form.relevantExperience,
           currentCompany: form.currentCompany,
@@ -228,15 +234,23 @@ export default function CandidateFormPage() {
 
       <form onSubmit={submit} className="space-y-6">
         {/* Section 1: Basic Information */}
-        <Card className="p-6 shadow-sm border-border/50">
-          <div className="flex items-center gap-2 mb-6 pb-4 border-b border-border/40">
-            <User className="h-5 w-5 text-primary" />
-            <h3 className="text-lg font-semibold">Basic Information</h3>
+        <Card className="p-6 bg-white border-border/50 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] rounded-3xl">
+          <div className="flex items-center gap-3 mb-6 pb-5 border-b border-slate-100">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
+              <User className="h-5 w-5" />
+            </div>
+            <h3 className="text-[17px] font-bold text-slate-900 tracking-tight">
+              Basic Information
+            </h3>
           </div>
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <div className="md:col-span-2">
-              <Label htmlFor="name" className="flex items-center gap-1.5 text-muted-foreground mb-1.5">
-                <User className="h-3.5 w-3.5" /> Candidate Name <span className="text-destructive">*</span>
+              <Label
+                htmlFor="name"
+                className="flex items-center gap-1.5 text-muted-foreground mb-1.5"
+              >
+                <User className="h-3.5 w-3.5" /> Candidate Name{" "}
+                <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="name"
@@ -248,8 +262,12 @@ export default function CandidateFormPage() {
               />
             </div>
             <div>
-              <Label htmlFor="phone" className="flex items-center gap-1.5 text-muted-foreground mb-1.5">
-                <Phone className="h-3.5 w-3.5" /> Mobile Number <span className="text-destructive">*</span>
+              <Label
+                htmlFor="phone"
+                className="flex items-center gap-1.5 text-muted-foreground mb-1.5"
+              >
+                <Phone className="h-3.5 w-3.5" /> Mobile Number{" "}
+                <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="phone"
@@ -261,7 +279,10 @@ export default function CandidateFormPage() {
               />
             </div>
             <div>
-              <Label htmlFor="alternateMobile" className="flex items-center gap-1.5 text-muted-foreground mb-1.5">
+              <Label
+                htmlFor="alternateMobile"
+                className="flex items-center gap-1.5 text-muted-foreground mb-1.5"
+              >
                 <Phone className="h-3.5 w-3.5" /> Alternate Mobile
               </Label>
               <Input
@@ -273,8 +294,12 @@ export default function CandidateFormPage() {
               />
             </div>
             <div className="md:col-span-2">
-              <Label htmlFor="email" className="flex items-center gap-1.5 text-muted-foreground mb-1.5">
-                <Mail className="h-3.5 w-3.5" /> Email Address <span className="text-destructive">*</span>
+              <Label
+                htmlFor="email"
+                className="flex items-center gap-1.5 text-muted-foreground mb-1.5"
+              >
+                <Mail className="h-3.5 w-3.5" /> Email Address{" "}
+                <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="email"
@@ -287,7 +312,10 @@ export default function CandidateFormPage() {
               />
             </div>
             <div>
-              <Label htmlFor="location" className="flex items-center gap-1.5 text-muted-foreground mb-1.5">
+              <Label
+                htmlFor="location"
+                className="flex items-center gap-1.5 text-muted-foreground mb-1.5"
+              >
                 <MapPin className="h-3.5 w-3.5" /> Current Location
               </Label>
               <Input
@@ -298,7 +326,10 @@ export default function CandidateFormPage() {
               />
             </div>
             <div>
-              <Label htmlFor="preferredLocation" className="flex items-center gap-1.5 text-muted-foreground mb-1.5">
+              <Label
+                htmlFor="preferredLocation"
+                className="flex items-center gap-1.5 text-muted-foreground mb-1.5"
+              >
                 <MapPin className="h-3.5 w-3.5" /> Preferred Location
               </Label>
               <Input
@@ -312,15 +343,23 @@ export default function CandidateFormPage() {
         </Card>
 
         {/* Section 2: Professional Details */}
-        <Card className="p-6 shadow-sm border-border/50">
-          <div className="flex items-center gap-2 mb-6 pb-4 border-b border-border/40">
-            <Briefcase className="h-5 w-5 text-primary" />
-            <h3 className="text-lg font-semibold">Professional Details</h3>
+        <Card className="p-6 bg-white border-border/50 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] rounded-3xl">
+          <div className="flex items-center gap-3 mb-6 pb-5 border-b border-slate-100">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600">
+              <Briefcase className="h-5 w-5" />
+            </div>
+            <h3 className="text-[17px] font-bold text-slate-900 tracking-tight">
+              Professional Details
+            </h3>
           </div>
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <div>
-              <Label htmlFor="experience" className="flex items-center gap-1.5 text-muted-foreground mb-1.5">
-                <Clock className="h-3.5 w-3.5" /> Total Experience <span className="text-destructive">*</span>
+              <Label
+                htmlFor="experience"
+                className="flex items-center gap-1.5 text-muted-foreground mb-1.5"
+              >
+                <Clock className="h-3.5 w-3.5" /> Total Experience{" "}
+                <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="experience"
@@ -331,8 +370,12 @@ export default function CandidateFormPage() {
               />
             </div>
             <div>
-              <Label htmlFor="relevantExperience" className="flex items-center gap-1.5 text-muted-foreground mb-1.5">
-                <Clock className="h-3.5 w-3.5" /> Relevant Experience <span className="text-destructive">*</span>
+              <Label
+                htmlFor="relevantExperience"
+                className="flex items-center gap-1.5 text-muted-foreground mb-1.5"
+              >
+                <Clock className="h-3.5 w-3.5" /> Relevant Experience{" "}
+                <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="relevantExperience"
@@ -343,8 +386,12 @@ export default function CandidateFormPage() {
               />
             </div>
             <div>
-              <Label htmlFor="currentCompany" className="flex items-center gap-1.5 text-muted-foreground mb-1.5">
-                <Building2 className="h-3.5 w-3.5" /> Current Company <span className="text-destructive">*</span>
+              <Label
+                htmlFor="currentCompany"
+                className="flex items-center gap-1.5 text-muted-foreground mb-1.5"
+              >
+                <Building2 className="h-3.5 w-3.5" /> Current Company{" "}
+                <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="currentCompany"
@@ -355,8 +402,12 @@ export default function CandidateFormPage() {
               />
             </div>
             <div>
-              <Label htmlFor="currentDesignation" className="flex items-center gap-1.5 text-muted-foreground mb-1.5">
-                <Briefcase className="h-3.5 w-3.5" /> Current Designation <span className="text-destructive">*</span>
+              <Label
+                htmlFor="currentDesignation"
+                className="flex items-center gap-1.5 text-muted-foreground mb-1.5"
+              >
+                <Briefcase className="h-3.5 w-3.5" /> Current Designation{" "}
+                <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="currentDesignation"
@@ -367,8 +418,12 @@ export default function CandidateFormPage() {
               />
             </div>
             <div>
-              <Label htmlFor="currentCtc" className="flex items-center gap-1.5 text-muted-foreground mb-1.5">
-                <IndianRupee className="h-3.5 w-3.5" /> Current CTC <span className="text-destructive">*</span>
+              <Label
+                htmlFor="currentCtc"
+                className="flex items-center gap-1.5 text-muted-foreground mb-1.5"
+              >
+                <IndianRupee className="h-3.5 w-3.5" /> Current CTC{" "}
+                <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="currentCtc"
@@ -379,7 +434,10 @@ export default function CandidateFormPage() {
               />
             </div>
             <div>
-              <Label htmlFor="expectedCtc" className="flex items-center gap-1.5 text-muted-foreground mb-1.5">
+              <Label
+                htmlFor="expectedCtc"
+                className="flex items-center gap-1.5 text-muted-foreground mb-1.5"
+              >
                 <IndianRupee className="h-3.5 w-3.5" /> Expected CTC
               </Label>
               <Input
@@ -390,8 +448,12 @@ export default function CandidateFormPage() {
               />
             </div>
             <div>
-              <Label htmlFor="noticePeriod" className="flex items-center gap-1.5 text-muted-foreground mb-1.5">
-                <Clock className="h-3.5 w-3.5" /> Notice Period <span className="text-destructive">*</span>
+              <Label
+                htmlFor="noticePeriod"
+                className="flex items-center gap-1.5 text-muted-foreground mb-1.5"
+              >
+                <Clock className="h-3.5 w-3.5" /> Notice Period{" "}
+                <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="noticePeriod"
@@ -402,7 +464,10 @@ export default function CandidateFormPage() {
               />
             </div>
             <div>
-              <Label htmlFor="skills" className="flex items-center gap-1.5 text-muted-foreground mb-1.5">
+              <Label
+                htmlFor="skills"
+                className="flex items-center gap-1.5 text-muted-foreground mb-1.5"
+              >
                 <Wrench className="h-3.5 w-3.5" /> Skills
               </Label>
               <Input
@@ -413,7 +478,10 @@ export default function CandidateFormPage() {
               />
             </div>
             <div className="md:col-span-2">
-              <Label htmlFor="linkedInProfile" className="flex items-center gap-1.5 text-muted-foreground mb-1.5">
+              <Label
+                htmlFor="linkedInProfile"
+                className="flex items-center gap-1.5 text-muted-foreground mb-1.5"
+              >
                 <Linkedin className="h-3.5 w-3.5" /> LinkedIn Profile
               </Label>
               <Input
@@ -427,15 +495,20 @@ export default function CandidateFormPage() {
         </Card>
 
         {/* Section 3: Application Details */}
-        <Card className="p-6 shadow-sm border-border/50">
-          <div className="flex items-center gap-2 mb-6 pb-4 border-b border-border/40">
-            <FileText className="h-5 w-5 text-primary" />
-            <h3 className="text-lg font-semibold">Application Details</h3>
+        <Card className="p-6 bg-white border-border/50 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] rounded-3xl">
+          <div className="flex items-center gap-3 mb-6 pb-5 border-b border-slate-100">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
+              <FileText className="h-5 w-5" />
+            </div>
+            <h3 className="text-[17px] font-bold text-slate-900 tracking-tight">
+              Application Details
+            </h3>
           </div>
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <div>
               <Label className="flex items-center gap-1.5 text-muted-foreground mb-1.5">
-                <Share2 className="h-3.5 w-3.5" /> Source <span className="text-destructive">*</span>
+                <Share2 className="h-3.5 w-3.5" /> Source{" "}
+                <span className="text-destructive">*</span>
               </Label>
               <Select value={form.source} onValueChange={(v) => set("source", v as Source)}>
                 <SelectTrigger>
@@ -451,8 +524,12 @@ export default function CandidateFormPage() {
               </Select>
             </div>
             <div>
-              <Label htmlFor="role" className="flex items-center gap-1.5 text-muted-foreground mb-1.5">
-                <Briefcase className="h-3.5 w-3.5" /> Position Applied For <span className="text-destructive">*</span>
+              <Label
+                htmlFor="role"
+                className="flex items-center gap-1.5 text-muted-foreground mb-1.5"
+              >
+                <Briefcase className="h-3.5 w-3.5" /> Position Applied For{" "}
+                <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="role"
@@ -463,8 +540,12 @@ export default function CandidateFormPage() {
               />
             </div>
             <div>
-              <Label htmlFor="recruiter" className="flex items-center gap-1.5 text-muted-foreground mb-1.5">
-                <User className="h-3.5 w-3.5" /> Recruiter <span className="text-destructive">*</span>
+              <Label
+                htmlFor="recruiter"
+                className="flex items-center gap-1.5 text-muted-foreground mb-1.5"
+              >
+                <User className="h-3.5 w-3.5" /> Recruiter{" "}
+                <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="recruiter"
@@ -495,7 +576,10 @@ export default function CandidateFormPage() {
               </Select>
             </div>
             <div className="md:col-span-2">
-              <Label htmlFor="notes" className="flex items-center gap-1.5 text-muted-foreground mb-1.5">
+              <Label
+                htmlFor="notes"
+                className="flex items-center gap-1.5 text-muted-foreground mb-1.5"
+              >
                 <MessageSquare className="h-3.5 w-3.5" /> Remarks
               </Label>
               <Textarea
@@ -510,11 +594,16 @@ export default function CandidateFormPage() {
           </div>
         </Card>
 
-        <div className="flex justify-end gap-3 pt-4 sticky bottom-6 bg-white/80 p-4 rounded-xl border border-border/50 backdrop-blur-sm shadow-sm">
-          <Button type="button" variant="ghost" asChild>
+        <div className="flex justify-end gap-3 pt-4 sticky bottom-6 bg-white/90 p-4 rounded-3xl border border-slate-100 backdrop-blur-md shadow-[0_8px_30px_rgba(0,0,0,0.12)]">
+          <Button type="button" variant="ghost" className="font-bold rounded-xl" asChild>
             <Link to={candidate ? `/candidates/${candidate.id}` : "/candidates"}>Cancel</Link>
           </Button>
-          <Button type="submit">{candidate ? "Save changes" : "Add candidate"}</Button>
+          <Button
+            type="submit"
+            className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/20 font-bold rounded-xl"
+          >
+            {candidate ? "Save changes" : "Add candidate"}
+          </Button>
         </div>
       </form>
 

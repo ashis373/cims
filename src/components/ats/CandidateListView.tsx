@@ -40,16 +40,36 @@ export function CandidateListView({ candidates }: Props) {
       <div className="overflow-x-auto scrollbar-thin">
         <div className="min-w-[1200px]">
           <div className={cn(GRID, "border-b border-border/40 bg-slate-50/80 px-5 py-3")}>
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Candidate</div>
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Position</div>
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Status</div>
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Experience</div>
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Current Company</div>
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Notice Period</div>
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Source</div>
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Recruiter</div>
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Applied</div>
-            <div className="text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Actions</div>
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Candidate
+            </div>
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Position
+            </div>
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Status
+            </div>
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Experience
+            </div>
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Current Company
+            </div>
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Notice Period
+            </div>
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Source
+            </div>
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Recruiter
+            </div>
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Applied
+            </div>
+            <div className="text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Actions
+            </div>
           </div>
 
           {candidates.map((c) => (
@@ -78,15 +98,33 @@ export function CandidateListView({ candidates }: Props) {
                 </div>
               </Link>
 
-              <div className="truncate text-xs font-medium" title={c.role}>{c.role}</div>
+              <div className="truncate text-xs font-medium" title={c.role}>
+                {c.role}
+              </div>
 
               <Badge label={c.stage} className={STAGE_COLORS[c.stage]} />
 
-              <div className="truncate text-xs text-muted-foreground" title={c.experience || "—"}>{c.experience || "—"}</div>
-              <div className="truncate text-xs text-muted-foreground" title={c.currentCompany || "—"}>{c.currentCompany || "—"}</div>
-              <div className="truncate text-xs text-muted-foreground" title={c.noticePeriod || "—"}>{c.noticePeriod || "—"}</div>
-              <div className="truncate text-xs text-muted-foreground" title={c.source}>{c.source}</div>
-              <div className="truncate text-xs text-muted-foreground" title={c.recruiter || "Unassigned"}>{c.recruiter || "Unassigned"}</div>
+              <div className="truncate text-xs text-muted-foreground" title={c.experience || "—"}>
+                {c.experience || "—"}
+              </div>
+              <div
+                className="truncate text-xs text-muted-foreground"
+                title={c.currentCompany || "—"}
+              >
+                {c.currentCompany || "—"}
+              </div>
+              <div className="truncate text-xs text-muted-foreground" title={c.noticePeriod || "—"}>
+                {c.noticePeriod || "—"}
+              </div>
+              <div className="truncate text-xs text-muted-foreground" title={c.source}>
+                {c.source}
+              </div>
+              <div
+                className="truncate text-xs text-muted-foreground"
+                title={c.recruiter || "Unassigned"}
+              >
+                {c.recruiter || "Unassigned"}
+              </div>
 
               <div className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground">
                 <Calendar className="h-3 w-3 shrink-0 opacity-70" />

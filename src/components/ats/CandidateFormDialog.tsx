@@ -140,7 +140,10 @@ export function CandidateFormDialog({ open, onOpenChange, candidate }: Props) {
             resume: form.resume,
             notes: form.notes,
             tags,
-            skills: form.skills.split(",").map((s) => s.trim()).filter(Boolean),
+            skills: form.skills
+              .split(",")
+              .map((s) => s.trim())
+              .filter(Boolean),
             experience: form.experience,
             currentCompany: form.currentCompany,
             location: form.location,
@@ -163,7 +166,10 @@ export function CandidateFormDialog({ open, onOpenChange, candidate }: Props) {
           notes: form.notes,
           stage: form.stage,
           tags,
-          skills: form.skills.split(",").map((s) => s.trim()).filter(Boolean),
+          skills: form.skills
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean),
           experience: form.experience,
           currentCompany: form.currentCompany,
           location: form.location,
@@ -391,7 +397,7 @@ export function CandidateFormDialog({ open, onOpenChange, candidate }: Props) {
             <AlertDialogDescription>
               <span className="font-medium text-foreground">{dup?.name}</span> already exists (
               {dup?.email}). They previously applied for{" "}
-              <span className="font-medium text-foreground">{dup?.role}</span>. 
+              <span className="font-medium text-foreground">{dup?.role}</span>.
               {dup?.isBlacklisted && (
                 <div className="mt-2 text-destructive font-semibold">
                   ⚠️ WARNING: This candidate is blacklisted. ({dup?.blacklistReason})

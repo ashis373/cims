@@ -27,7 +27,9 @@ export function KanbanBoard({ candidates }: { candidates: Candidate[] }) {
             key={stage}
             className={cn(
               "flex w-[280px] shrink-0 flex-col rounded-xl border border-transparent transition-all duration-300",
-              overStage === stage ? cn(stageColorClass, "border-opacity-30 ring-2 ring-opacity-20") : "bg-transparent"
+              overStage === stage
+                ? cn(stageColorClass, "border-opacity-30 ring-2 ring-opacity-20")
+                : "bg-transparent",
             )}
             onDragOver={(e) => {
               e.preventDefault();
@@ -47,11 +49,12 @@ export function KanbanBoard({ candidates }: { candidates: Candidate[] }) {
             }}
           >
             <div className="flex items-center justify-between px-3 py-3 mb-2">
-              <span className={cn("text-[13px] font-bold tracking-tight", textClass)}>
-                {stage}
-              </span>
+              <span className={cn("text-[13px] font-bold tracking-tight", textClass)}>{stage}</span>
               <Badge
-                className={cn("text-[10px] font-bold px-2 py-0 hover:bg-opacity-80 rounded-full bg-white", textClass)}
+                className={cn(
+                  "text-[10px] font-bold px-2 py-0 hover:bg-opacity-80 rounded-full bg-white",
+                  textClass,
+                )}
               >
                 {items.length}
               </Badge>
@@ -78,8 +81,17 @@ export function KanbanBoard({ candidates }: { candidates: Candidate[] }) {
                     >
                       <Link to={`/candidates/${c.id}`} className="block">
                         <div className="flex items-start justify-between mb-3">
-                          <div className={cn("flex h-9 w-9 items-center justify-center rounded-full text-[11px] font-bold uppercase", stageColorClass)}>
-                            {c.name.split(" ").map((n) => n[0]).join("").substring(0, 2)}
+                          <div
+                            className={cn(
+                              "flex h-9 w-9 items-center justify-center rounded-full text-[11px] font-bold uppercase",
+                              stageColorClass,
+                            )}
+                          >
+                            {c.name
+                              .split(" ")
+                              .map((n) => n[0])
+                              .join("")
+                              .substring(0, 2)}
                           </div>
                           <button className="text-slate-400 hover:text-slate-600 p-1 opacity-0 group-hover:opacity-100 transition-opacity">
                             <MoreVertical className="h-4 w-4" />
@@ -88,9 +100,7 @@ export function KanbanBoard({ candidates }: { candidates: Candidate[] }) {
                         <div className="text-[13px] font-bold leading-tight text-slate-900 mb-1">
                           {c.name}
                         </div>
-                        <div className="text-[11px] text-slate-500 font-medium">
-                          {c.role}
-                        </div>
+                        <div className="text-[11px] text-slate-500 font-medium">{c.role}</div>
 
                         {c.tags.length > 0 && (
                           <div className="mt-4 flex flex-wrap gap-2">
@@ -120,10 +130,18 @@ export function KanbanBoard({ candidates }: { candidates: Candidate[] }) {
                 </div>
               )}
             </div>
-            
+
             {items.length > 0 && (
               <div className="mt-3">
-                <button className={cn("w-full py-2 text-[10px] font-bold rounded-xl transition-colors border bg-white hover:bg-slate-50", textClass, stageColorClass.replace(/bg-[a-z]+-\d+\/\d+/, "").match(/border-[a-z]+-\d+\/\d+/)?.[0] || "border-slate-200")}>
+                <button
+                  className={cn(
+                    "w-full py-2 text-[10px] font-bold rounded-xl transition-colors border bg-white hover:bg-slate-50",
+                    textClass,
+                    stageColorClass
+                      .replace(/bg-[a-z]+-\d+\/\d+/, "")
+                      .match(/border-[a-z]+-\d+\/\d+/)?.[0] || "border-slate-200",
+                  )}
+                >
                   + {Math.max(0, items.length)} more
                 </button>
               </div>

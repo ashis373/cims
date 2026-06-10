@@ -114,7 +114,7 @@ function CalendarPage() {
       <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
         <Card className="p-6 bg-white border-border/50 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] rounded-3xl relative overflow-hidden">
           <div className="absolute top-0 left-0 w-64 h-64 bg-blue-500/5 rounded-full blur-3xl -mt-20 -ml-20 pointer-events-none" />
-          
+
           <div className="mb-8 flex items-center justify-between relative z-10">
             <h2 className="text-xl font-black text-slate-900 tracking-tight">{monthLabel}</h2>
             <div className="flex gap-2">
@@ -150,7 +150,8 @@ function CalendarPage() {
 
           <div className="grid grid-cols-7 gap-2 relative z-10">
             {cells.map((day, idx) => {
-              if (day === null) return <div key={`empty-${idx}`} className="rounded-2xl bg-slate-50/50" />;
+              if (day === null)
+                return <div key={`empty-${idx}`} className="rounded-2xl bg-slate-50/50" />;
               const dayEvents = events.filter((e) => e.date.getDate() === day);
               const isToday =
                 day === today.getDate() &&
@@ -176,7 +177,9 @@ function CalendarPage() {
                       "text-[13px] font-black mb-1.5",
                       isToday
                         ? "flex h-7 w-7 items-center justify-center rounded-full bg-blue-600 text-white shadow-sm shadow-blue-600/30"
-                        : isSelected ? "text-blue-700" : "text-slate-700",
+                        : isSelected
+                          ? "text-blue-700"
+                          : "text-slate-700",
                     )}
                   >
                     {day}
@@ -187,7 +190,16 @@ function CalendarPage() {
                         key={e.id}
                         className="truncate rounded-md bg-white border border-slate-100 px-1.5 py-0.5 text-[9px] font-bold text-slate-700 shadow-sm flex items-center gap-1"
                       >
-                        <div className={cn("w-1 h-1 rounded-full shrink-0", e.type === "Online" ? "bg-blue-500" : e.type === "Phone" ? "bg-purple-500" : "bg-emerald-500")} />
+                        <div
+                          className={cn(
+                            "w-1 h-1 rounded-full shrink-0",
+                            e.type === "Online"
+                              ? "bg-blue-500"
+                              : e.type === "Phone"
+                                ? "bg-purple-500"
+                                : "bg-emerald-500",
+                          )}
+                        />
                         {e.candidateName.split(" ")[0]}
                       </div>
                     ))}
@@ -240,8 +252,12 @@ function CalendarPage() {
                         .slice(0, 2)}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="truncate text-[13px] font-bold text-slate-900">{e.candidateName}</div>
-                      <div className="truncate text-[11px] font-medium text-slate-500 mt-0.5">{e.role}</div>
+                      <div className="truncate text-[13px] font-bold text-slate-900">
+                        {e.candidateName}
+                      </div>
+                      <div className="truncate text-[11px] font-medium text-slate-500 mt-0.5">
+                        {e.role}
+                      </div>
                       <div className="mt-3 flex flex-wrap items-center gap-2">
                         <span className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500">
                           <Clock className="h-3.5 w-3.5" />

@@ -22,9 +22,8 @@ import {
 
 const STORAGE_KEY = "ats.candidates.v2";
 const isDev = import.meta.env.DEV;
-const API_URL = isDev
-  ? "http://localhost/full-cims/api/candidates.php"
-  : "/cims/api/candidates.php";
+const API_URL = "https://demo.hexalearn.com/cims/api/candidates.php";
+
 
 function uid() {
   return Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
@@ -123,8 +122,8 @@ export function AtsProvider({ children }: { children: ReactNode }) {
       body: JSON.stringify(c),
     });
     if (!res.ok) {
-        const err = await res.json().catch(()=>({}));
-        throw new Error(err.error || "Failed to update database");
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || "Failed to update database");
     }
   };
 
@@ -174,7 +173,7 @@ export function AtsProvider({ children }: { children: ReactNode }) {
             body: JSON.stringify(cand),
           });
           if (!res.ok) {
-            const err = await res.json().catch(()=>({}));
+            const err = await res.json().catch(() => ({}));
             throw new Error(err.error || "Failed to add candidate");
           }
           mutate((prev) => [cand, ...prev]);
@@ -185,7 +184,7 @@ export function AtsProvider({ children }: { children: ReactNode }) {
         }
       },
       update: async (id, patch, activityMsg) => {
-        const target = candidates.find(c => c.id === id);
+        const target = candidates.find((c) => c.id === id);
         if (!target) return;
         const next: Candidate = { ...target, ...patch, updatedAt: now() };
         if (activityMsg) {
@@ -217,7 +216,7 @@ export function AtsProvider({ children }: { children: ReactNode }) {
         }
       },
       setStage: async (id, stage, reason) => {
-        const target = candidates.find(c => c.id === id);
+        const target = candidates.find((c) => c.id === id);
         if (!target) return;
         let msg = `Status changed: ${target.stage} → ${stage}`;
         if (reason) msg += ` (Reason: ${reason})`;
@@ -227,13 +226,15 @@ export function AtsProvider({ children }: { children: ReactNode }) {
           kind: "status",
           message: msg,
         };
-        const next = { 
-          ...target, 
-          stage, 
-          updatedAt: now(), 
+        const next = {
+          ...target,
+          stage,
+          updatedAt: now(),
           activity: [...target.activity, entry],
           ...(reason && stage === "Rejected" ? { rejectionReason: reason } : {}),
-          ...(reason && (stage === "Offer Declined" || stage === "No Show") ? { stageReason: reason } : {})
+          ...(reason && (stage === "Offer Declined" || stage === "No Show")
+            ? { stageReason: reason }
+            : {}),
         };
         try {
           await syncPut(next);
@@ -244,7 +245,7 @@ export function AtsProvider({ children }: { children: ReactNode }) {
         }
       },
       addNote: async (id, note) => {
-        const target = candidates.find(c => c.id === id);
+        const target = candidates.find((c) => c.id === id);
         if (!target) return;
         const next = {
           ...target,
@@ -260,7 +261,7 @@ export function AtsProvider({ children }: { children: ReactNode }) {
         }
       },
       addInterview: async (id, iv) => {
-        const target = candidates.find(c => c.id === id);
+        const target = candidates.find((c) => c.id === id);
         if (!target) return;
         const full: Interview = { ...iv, id: uid() };
         const next = {
@@ -299,7 +300,7 @@ export function AtsProvider({ children }: { children: ReactNode }) {
         );
       },
       reapply: async (id, role, source) => {
-        const target = candidates.find(c => c.id === id);
+        const target = candidates.find((c) => c.id === id);
         if (!target) return;
         const t = now();
         const next = {
