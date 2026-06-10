@@ -78,7 +78,9 @@ export function exportBossReport(candidates: Candidate[], filename = "hiring-rep
   XLSX.utils.book_append_sheet(wb, summary, "Summary");
 
   const detail = XLSX.utils.json_to_sheet(candidates.map(flatten));
-  detail["!cols"] = Object.keys(flatten(candidates[0] || ({} as Candidate))).map(() => ({ wch: 22 }));
+  detail["!cols"] = Object.keys(flatten(candidates[0] || ({} as Candidate))).map(() => ({
+    wch: 22,
+  }));
   XLSX.utils.book_append_sheet(wb, detail, "Candidates");
 
   XLSX.writeFile(wb, filename);

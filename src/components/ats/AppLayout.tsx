@@ -40,8 +40,12 @@ export function AppLayout({ children }: { children: ReactNode }) {
             <Briefcase className="h-5 w-5" />
           </div>
           <div>
-            <div className="text-base font-bold leading-none tracking-tight text-white">Hireflow</div>
-            <div className="mt-1 text-[10px] font-semibold uppercase tracking-widest text-sidebar-foreground/60">Buddy ATS</div>
+            <div className="text-base font-bold leading-none tracking-tight text-white">
+              Hireflow
+            </div>
+            <div className="mt-1 text-[10px] font-semibold uppercase tracking-widest text-sidebar-foreground/60">
+              Buddy ATS
+            </div>
           </div>
         </div>
 
@@ -56,10 +60,15 @@ export function AppLayout({ children }: { children: ReactNode }) {
                   "flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm transition-all duration-200",
                   active
                     ? "bg-primary font-semibold text-primary-foreground shadow-md shadow-black/15"
-                    : "text-sidebar-foreground/75 hover:bg-sidebar-accent hover:text-white"
+                    : "text-sidebar-foreground/75 hover:bg-sidebar-accent hover:text-white",
                 )}
               >
-                <n.icon className={cn("h-4 w-4 shrink-0", active ? "text-primary-foreground" : "text-sidebar-foreground/50")} />
+                <n.icon
+                  className={cn(
+                    "h-4 w-4 shrink-0",
+                    active ? "text-primary-foreground" : "text-sidebar-foreground/50",
+                  )}
+                />
                 <span>{n.label}</span>
               </Link>
             );
@@ -69,7 +78,9 @@ export function AppLayout({ children }: { children: ReactNode }) {
         <div className="shrink-0 border-t border-sidebar-border px-6 py-6">
           <div className="flex items-center gap-2 rounded-xl border border-sidebar-border bg-sidebar-accent/60 px-3 py-2.5">
             <div className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-sidebar-foreground/70">Local Instance</span>
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-sidebar-foreground/70">
+              Local Instance
+            </span>
           </div>
           <div className="mt-3 px-1 text-[10px] font-medium leading-relaxed text-sidebar-foreground/45">
             Data remains encrypted in your local browser storage.
@@ -96,7 +107,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
                   title={n.label}
                   className={cn(
                     "flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-2 text-xs font-medium transition-all",
-                    active ? "bg-white text-primary shadow-sm" : "text-muted-foreground"
+                    active ? "bg-white text-primary shadow-sm" : "text-muted-foreground",
                   )}
                 >
                   <n.icon className="h-4 w-4 shrink-0" />
@@ -125,7 +136,11 @@ export function AppLayout({ children }: { children: ReactNode }) {
               aria-label="Toggle theme"
               className="rounded-xl transition-all hover:bg-primary/5"
             >
-              {theme === "dark" ? <Sun className="h-4 w-4 text-amber-400" /> : <Moon className="h-4 w-4 text-primary" />}
+              {theme === "dark" ? (
+                <Sun className="h-4 w-4 text-amber-400" />
+              ) : (
+                <Moon className="h-4 w-4 text-primary" />
+              )}
             </Button>
           </div>
         </header>

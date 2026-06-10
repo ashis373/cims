@@ -122,11 +122,13 @@
     backdrop-filter: blur(12px) saturate(180%);
     border: 1px solid color-mix(in srgb, var(--color-border), transparent 50%);
   }
-  
+
   .glass-card {
     background: var(--color-card);
     border: 1px solid color-mix(in srgb, var(--color-border), transparent 20%);
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.06), 0 1px 2px -1px rgba(0, 0, 0, 0.06);
+    box-shadow:
+      0 1px 3px 0 rgba(0, 0, 0, 0.06),
+      0 1px 2px -1px rgba(0, 0, 0, 0.06);
   }
 
   .dark .glass-card {
@@ -135,11 +137,14 @@
 }
 
 @layer base {
-  * { border-color: var(--color-border); }
-  body { 
-    background-color: var(--color-background); 
-    color: var(--color-foreground); 
-    font-feature-settings: "cv11","ss01", "cv02", "cv05";
+  * {
+    border-color: var(--color-border);
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-feature-settings: "cv11", "ss01", "cv02", "cv05";
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -148,13 +153,22 @@
 @utility scrollbar-thin {
   scrollbar-width: thin;
   scrollbar-color: var(--color-border) transparent;
-  &::-webkit-scrollbar { width: 6px; height: 6px; }
-  &::-webkit-scrollbar-track { background: transparent; }
-  &::-webkit-scrollbar-thumb { 
-    background: var(--color-border); 
+
+  &::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: var(--color-border);
     border-radius: 10px;
     transition: background 0.2s;
   }
+
   &::-webkit-scrollbar-thumb:hover {
     background: var(--color-muted-foreground);
   }

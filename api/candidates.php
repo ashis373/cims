@@ -22,6 +22,7 @@ if ($method === 'GET') {
             $row['interviews'] = json_decode($row['interviews'] ?? '[]');
             $row['activity'] = json_decode($row['activity'] ?? '[]');
             $row['applications'] = json_decode($row['applications'] ?? '[]');
+            $row['skills'] = json_decode($row['skills'] ?? '[]');
             
             // Format dates back to ISO
             if ($row['appliedAt']) $row['appliedAt'] = str_replace(' ', 'T', $row['appliedAt']) . 'Z';
@@ -48,7 +49,7 @@ if ($method === 'GET') {
             // Clear existing
             $conn->exec("TRUNCATE TABLE candidates");
             
-            $stmt = $conn->prepare("INSERT INTO candidates (id, name, email, phone, source, role, department, resume, notes, appliedAt, updatedAt, stage, tags, interviews, activity, applications, joiningDate, designation, employeeId) VALUES (:id, :name, :email, :phone, :source, :role, :department, :resume, :notes, :appliedAt, :updatedAt, :stage, :tags, :interviews, :activity, :applications, :joiningDate, :designation, :employeeId)");
+            $stmt = $conn->prepare("INSERT INTO candidates (id, name, email, phone, source, role, department, resume, notes, appliedAt, updatedAt, stage, tags, interviews, activity, applications, joiningDate, designation, employeeId, skills, experience, relevantExperience, currentCompany, currentDesignation, currentCtc, expectedCtc, location, preferredLocation, alternateMobile, linkedInProfile, noticePeriod, recruiter) VALUES (:id, :name, :email, :phone, :source, :role, :department, :resume, :notes, :appliedAt, :updatedAt, :stage, :tags, :interviews, :activity, :applications, :joiningDate, :designation, :employeeId, :skills, :experience, :relevantExperience, :currentCompany, :currentDesignation, :currentCtc, :expectedCtc, :location, :preferredLocation, :alternateMobile, :linkedInProfile, :noticePeriod, :recruiter)");
             
             foreach ($data['candidates'] as $c) {
                 $stmt->execute([
@@ -71,6 +72,19 @@ if ($method === 'GET') {
                     ':joiningDate' => isset($c['joiningDate']) && $c['joiningDate'] ? date('Y-m-d H:i:s', strtotime($c['joiningDate'])) : null,
                     ':designation' => $c['designation'] ?? null,
                     ':employeeId' => $c['employeeId'] ?? null,
+                    ':skills' => json_encode($c['skills'] ?? []),
+                    ':experience' => $c['experience'] ?? '',
+                    ':relevantExperience' => $c['relevantExperience'] ?? '',
+                    ':currentCompany' => $c['currentCompany'] ?? '',
+                    ':currentDesignation' => $c['currentDesignation'] ?? '',
+                    ':currentCtc' => $c['currentCtc'] ?? '',
+                    ':expectedCtc' => $c['expectedCtc'] ?? '',
+                    ':location' => $c['location'] ?? '',
+                    ':preferredLocation' => $c['preferredLocation'] ?? '',
+                    ':alternateMobile' => $c['alternateMobile'] ?? '',
+                    ':linkedInProfile' => $c['linkedInProfile'] ?? '',
+                    ':noticePeriod' => $c['noticePeriod'] ?? '',
+                    ':recruiter' => $c['recruiter'] ?? '',
                 ]);
             }
             $conn->commit();
@@ -79,7 +93,7 @@ if ($method === 'GET') {
         }
 
         // Single insert
-        $stmt = $conn->prepare("INSERT INTO candidates (id, name, email, phone, source, role, department, resume, notes, appliedAt, updatedAt, stage, tags, interviews, activity, applications, joiningDate, designation, employeeId) VALUES (:id, :name, :email, :phone, :source, :role, :department, :resume, :notes, :appliedAt, :updatedAt, :stage, :tags, :interviews, :activity, :applications, :joiningDate, :designation, :employeeId)");
+        $stmt = $conn->prepare("INSERT INTO candidates (id, name, email, phone, source, role, department, resume, notes, appliedAt, updatedAt, stage, tags, interviews, activity, applications, joiningDate, designation, employeeId, skills, experience, relevantExperience, currentCompany, currentDesignation, currentCtc, expectedCtc, location, preferredLocation, alternateMobile, linkedInProfile, noticePeriod, recruiter) VALUES (:id, :name, :email, :phone, :source, :role, :department, :resume, :notes, :appliedAt, :updatedAt, :stage, :tags, :interviews, :activity, :applications, :joiningDate, :designation, :employeeId, :skills, :experience, :relevantExperience, :currentCompany, :currentDesignation, :currentCtc, :expectedCtc, :location, :preferredLocation, :alternateMobile, :linkedInProfile, :noticePeriod, :recruiter)");
         
         $stmt->execute([
             ':id' => $data['id'],
@@ -101,6 +115,19 @@ if ($method === 'GET') {
             ':joiningDate' => isset($data['joiningDate']) && $data['joiningDate'] ? date('Y-m-d H:i:s', strtotime($data['joiningDate'])) : null,
             ':designation' => $data['designation'] ?? null,
             ':employeeId' => $data['employeeId'] ?? null,
+            ':skills' => json_encode($data['skills'] ?? []),
+            ':experience' => $data['experience'] ?? '',
+            ':relevantExperience' => $data['relevantExperience'] ?? '',
+            ':currentCompany' => $data['currentCompany'] ?? '',
+            ':currentDesignation' => $data['currentDesignation'] ?? '',
+            ':currentCtc' => $data['currentCtc'] ?? '',
+            ':expectedCtc' => $data['expectedCtc'] ?? '',
+            ':location' => $data['location'] ?? '',
+            ':preferredLocation' => $data['preferredLocation'] ?? '',
+            ':alternateMobile' => $data['alternateMobile'] ?? '',
+            ':linkedInProfile' => $data['linkedInProfile'] ?? '',
+            ':noticePeriod' => $data['noticePeriod'] ?? '',
+            ':recruiter' => $data['recruiter'] ?? '',
         ]);
         
         echo json_encode(["success" => true, "message" => "Candidate added"]);
@@ -133,8 +160,8 @@ if ($method === 'GET') {
         }
         
         // Merge the incoming data. For JSON fields, we accept the incoming array.
-        $fields = ['name', 'email', 'phone', 'source', 'role', 'department', 'resume', 'notes', 'appliedAt', 'updatedAt', 'stage', 'designation', 'employeeId'];
-        $jsonFields = ['tags', 'interviews', 'activity', 'applications'];
+        $fields = ['name', 'email', 'phone', 'source', 'role', 'department', 'resume', 'notes', 'appliedAt', 'updatedAt', 'stage', 'designation', 'employeeId', 'experience', 'relevantExperience', 'currentCompany', 'currentDesignation', 'currentCtc', 'expectedCtc', 'location', 'preferredLocation', 'alternateMobile', 'linkedInProfile', 'noticePeriod', 'recruiter'];
+        $jsonFields = ['tags', 'interviews', 'activity', 'applications', 'skills'];
         
         $merged = [];
         foreach ($fields as $f) {
@@ -149,7 +176,7 @@ if ($method === 'GET') {
         }
         $merged['joiningDate'] = isset($data['joiningDate']) && $data['joiningDate'] ? date('Y-m-d H:i:s', strtotime($data['joiningDate'])) : $existing['joiningDate'];
         
-        $stmt = $conn->prepare("UPDATE candidates SET name=:name, email=:email, phone=:phone, source=:source, role=:role, department=:department, resume=:resume, notes=:notes, appliedAt=:appliedAt, updatedAt=:updatedAt, stage=:stage, tags=:tags, interviews=:interviews, activity=:activity, applications=:applications, joiningDate=:joiningDate, designation=:designation, employeeId=:employeeId WHERE id=:id");
+        $stmt = $conn->prepare("UPDATE candidates SET name=:name, email=:email, phone=:phone, source=:source, role=:role, department=:department, resume=:resume, notes=:notes, appliedAt=:appliedAt, updatedAt=:updatedAt, stage=:stage, tags=:tags, interviews=:interviews, activity=:activity, applications=:applications, joiningDate=:joiningDate, designation=:designation, employeeId=:employeeId, skills=:skills, experience=:experience, relevantExperience=:relevantExperience, currentCompany=:currentCompany, currentDesignation=:currentDesignation, currentCtc=:currentCtc, expectedCtc=:expectedCtc, location=:location, preferredLocation=:preferredLocation, alternateMobile=:alternateMobile, linkedInProfile=:linkedInProfile, noticePeriod=:noticePeriod, recruiter=:recruiter WHERE id=:id");
         
         $stmt->execute([
             ':id' => $id,
@@ -170,7 +197,20 @@ if ($method === 'GET') {
             ':applications' => $merged['applications'],
             ':joiningDate' => $merged['joiningDate'],
             ':designation' => $merged['designation'],
-            ':employeeId' => $merged['employeeId']
+            ':employeeId' => $merged['employeeId'],
+            ':skills' => $merged['skills'],
+            ':experience' => $merged['experience'],
+            ':relevantExperience' => $merged['relevantExperience'],
+            ':currentCompany' => $merged['currentCompany'],
+            ':currentDesignation' => $merged['currentDesignation'],
+            ':currentCtc' => $merged['currentCtc'],
+            ':expectedCtc' => $merged['expectedCtc'],
+            ':location' => $merged['location'],
+            ':preferredLocation' => $merged['preferredLocation'],
+            ':alternateMobile' => $merged['alternateMobile'],
+            ':linkedInProfile' => $merged['linkedInProfile'],
+            ':noticePeriod' => $merged['noticePeriod'],
+            ':recruiter' => $merged['recruiter']
         ]);
         
         echo json_encode(["success" => true]);

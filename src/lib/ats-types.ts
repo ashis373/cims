@@ -6,10 +6,11 @@ export const PIPELINE_STAGES = [
   "Interview Completed",
   "Offer Released",
   "Offer Accepted",
-  "Offer Rejected",
+  "Offer Declined",
   "Offer Expired",
   "Joined",
   "Rejected",
+  "No Show",
   "On Hold",
 ] as const;
 
@@ -36,7 +37,14 @@ export function inferDepartment(role: string): Department {
   if (r.includes("data") || r.includes("ml") || r.includes("scientist")) return "Data & Analytics";
   if (r.includes("marketing")) return "Marketing";
   if (r.includes("security")) return "Security";
-  if (r.includes("devops") || r.includes("cloud") || r.includes("engineer") || r.includes("developer") || r.includes("qa")) return "Engineering";
+  if (
+    r.includes("devops") ||
+    r.includes("cloud") ||
+    r.includes("engineer") ||
+    r.includes("developer") ||
+    r.includes("qa")
+  )
+    return "Engineering";
   if (r.includes("manager")) return "Operations";
   return "Engineering";
 }
@@ -89,19 +97,41 @@ export interface Candidate {
   joiningDate?: string;
   designation?: string;
   employeeId?: string;
+  isBlacklisted?: boolean;
+  blacklistReason?: string;
+  blacklistApproved?: boolean;
+  rejectionReason?: string;
+  stageReason?: string; // For offer declined, no show, etc.
+  skills?: string[];
+  experience?: string;
+  currentCompany?: string;
+  currentDesignation?: string;
+  currentCtc?: string;
+  expectedCtc?: string;
+  location?: string;
+  preferredLocation?: string;
+  alternateMobile?: string;
+  relevantExperience?: string;
+  linkedInProfile?: string;
+  noticePeriod?: string;
+  recruiter?: string;
 }
 
 export const STAGE_COLORS: Record<Stage, string> = {
   "New Applicant": "bg-sky-500/12 text-sky-700 dark:text-sky-300 border-sky-500/25",
-  "Shortlisted": "bg-violet-500/12 text-violet-700 dark:text-violet-300 border-violet-500/25",
-  "HR Call Scheduled": "bg-fuchsia-500/12 text-fuchsia-700 dark:text-fuchsia-300 border-fuchsia-500/25",
+  Shortlisted: "bg-violet-500/12 text-violet-700 dark:text-violet-300 border-violet-500/25",
+  "HR Call Scheduled":
+    "bg-fuchsia-500/12 text-fuchsia-700 dark:text-fuchsia-300 border-fuchsia-500/25",
   "Interview Scheduled": "bg-blue-500/12 text-blue-700 dark:text-blue-300 border-blue-500/25",
-  "Interview Completed": "bg-indigo-500/12 text-indigo-700 dark:text-indigo-300 border-indigo-500/25",
+  "Interview Completed":
+    "bg-indigo-500/12 text-indigo-700 dark:text-indigo-300 border-indigo-500/25",
   "Offer Released": "bg-amber-500/12 text-amber-700 dark:text-amber-300 border-amber-500/25",
-  "Offer Accepted": "bg-emerald-500/12 text-emerald-700 dark:text-emerald-300 border-emerald-500/25",
-  "Offer Rejected": "bg-rose-500/12 text-rose-700 dark:text-rose-300 border-rose-500/25",
+  "Offer Accepted":
+    "bg-emerald-500/12 text-emerald-700 dark:text-emerald-300 border-emerald-500/25",
+  "Offer Declined": "bg-rose-500/12 text-rose-700 dark:text-rose-300 border-rose-500/25",
   "Offer Expired": "bg-stone-500/12 text-stone-700 dark:text-stone-300 border-stone-500/25",
-  "Joined": "bg-green-500/12 text-green-700 dark:text-green-300 border-green-500/25",
-  "Rejected": "bg-red-500/12 text-red-700 dark:text-red-300 border-red-500/25",
+  Joined: "bg-green-500/12 text-green-700 dark:text-green-300 border-green-500/25",
+  Rejected: "bg-red-500/12 text-red-700 dark:text-red-300 border-red-500/25",
+  "No Show": "bg-orange-500/12 text-orange-700 dark:text-orange-300 border-orange-500/25",
   "On Hold": "bg-zinc-500/12 text-zinc-600 dark:text-zinc-300 border-zinc-500/25",
 };

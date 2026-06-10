@@ -6,10 +6,6 @@ import tailwindcss from "@tailwindcss/vite";
 export default defineConfig(({ mode }) => {
   return {
     base: "/cims/",
-    plugins: [
-      react(),
-      tsconfigPaths(),
-      tailwindcss(),
-    ],
+    plugins: [react(), tsconfigPaths(), tailwindcss()],
   };
 });
