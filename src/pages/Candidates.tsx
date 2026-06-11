@@ -1,5 +1,5 @@
-import { useState, useMemo } from "react";
-import { Link } from "react-router-dom";
+import { useState, useMemo, useEffect } from "react";
+import { Link, useLocation } from "react-router-dom";
 import { useAts, PIPELINE_STAGES } from "@/lib/ats-store";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -75,16 +75,27 @@ const QUICK_FILTERS = [
   "No Show",
   "Offer Declined",
   "On Hold",
+  "Blacklisted",
 ];
 
 export default function CandidatesPage() {
   const { candidates, remove } = useAts();
+  const location = useLocation();
   const [q, setQ] = useState("");
   const [stageFilter, setStageFilter] = useState("All Status");
   const [positionFilter, setPositionFilter] = useState("All Positions");
   const [sourceFilter, setSourceFilter] = useState("All Sources");
   const [recruiterFilter, setRecruiterFilter] = useState("All Recruiters");
-  const [quickFilter, setQuickFilter] = useState("All");
+  
+  const initialFilter = new URLSearchParams(location.search).get("filter") || "All";
+  const [quickFilter, setQuickFilter] = useState(initialFilter);
+
+  useEffect(() => {
+    const filter = new URLSearchParams(location.search).get("filter");
+    if (filter) {
+      setQuickFilter(filter);
+    }
+  }, [location.search]);
 
   const [page, setPage] = useState(1);
   const perPage = 7;
@@ -194,7 +205,9 @@ export default function CandidatesPage() {
           (c.email || "").toLowerCase().includes(query);
       }
 
-      const matchQuick = quickFilter === "All" || c.stage === quickFilter;
+      const matchQuick =
+        quickFilter === "All" ||
+        (quickFilter === "Blacklisted" ? c.isBlacklisted : c.stage === quickFilter);
       const matchStage = !stageFilter || stageFilter === "All Status" || c.stage === stageFilter;
       const matchPosition =
         !positionFilter || positionFilter === "All Positions" || c.role === positionFilter;

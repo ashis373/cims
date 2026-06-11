@@ -15,7 +15,7 @@ export function KanbanBoard({ candidates }: { candidates: Candidate[] }) {
   const [overStage, setOverStage] = useState<Stage | null>(null);
 
   return (
-    <div className="flex gap-4 overflow-x-auto pb-8 pt-2 scrollbar-thin">
+    <div className="flex gap-4 overflow-x-auto pb-2 pt-8 scrollbar-thin -scale-y-100">
       {PIPELINE_STAGES.map((stage) => {
         const items = candidates.filter((c) => c.stage === stage);
         const stageColorClass = STAGE_COLORS[stage] || "bg-slate-500/12 text-slate-700";
@@ -26,7 +26,7 @@ export function KanbanBoard({ candidates }: { candidates: Candidate[] }) {
           <div
             key={stage}
             className={cn(
-              "flex w-[280px] shrink-0 flex-col rounded-xl border border-transparent transition-all duration-300",
+              "-scale-y-100 flex w-[280px] shrink-0 flex-col rounded-xl border border-transparent transition-all duration-300",
               overStage === stage
                 ? cn(stageColorClass, "border-opacity-30 ring-2 ring-opacity-20")
                 : "bg-transparent",
