@@ -318,10 +318,13 @@ function Dashboard() {
             <div className="flex-1 overflow-y-auto md:overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-slate-200">
               <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-3 md:min-w-max h-full">
                 {pipelineData.map((d, i) => (
-                  <div key={d.stage} className="flex flex-col md:flex-row items-center w-full md:w-auto h-auto md:h-full">
+                  <div
+                    key={d.stage}
+                    className="flex flex-col md:flex-row items-center w-full md:w-auto h-auto md:h-full"
+                  >
                     <div className="flex flex-row md:flex-col justify-between items-center md:items-start w-full md:w-32 h-auto md:h-full md:min-h-[140px] bg-slate-50/80 border border-slate-100 rounded-2xl p-3 md:p-4 hover:shadow-sm transition-shadow relative overflow-hidden group">
                       <div className={cn("absolute top-0 left-0 w-1 h-full", d.bgClass)} />
-                      
+
                       <div className="flex items-center md:items-start md:flex-col flex-1 gap-2 md:gap-0 pl-1 md:pl-0 truncate">
                         <div
                           className="text-[11px] md:text-[10px] font-bold text-slate-500 uppercase tracking-wide truncate max-w-[120px] md:max-w-full"
@@ -329,9 +332,11 @@ function Dashboard() {
                         >
                           {d.stage.replace(" Scheduled", "").replace(" Released", "")}
                         </div>
-                        <div className="text-xl md:text-3xl font-black text-slate-900 md:mt-1">{d.n}</div>
+                        <div className="text-xl md:text-3xl font-black text-slate-900 md:mt-1">
+                          {d.n}
+                        </div>
                       </div>
-                      
+
                       <div className="mt-0 md:mt-4 ml-4 md:ml-0 flex flex-col justify-center w-20 md:w-full shrink-0">
                         <div className="flex justify-between text-[10px] font-bold text-slate-500 mb-1">
                           <span>Rate</span>
