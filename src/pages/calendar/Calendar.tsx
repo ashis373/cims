@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { useMemo, useState } from "react";
-import { useAts } from "@/lib/ats-store";
-import { STAGE_COLORS, type Candidate, type Stage } from "@/lib/ats-types";
+import { useAts } from "@/services/ats-store";
+import { STAGE_COLORS, type Candidate, type Stage } from "@/types/ats-types";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, CalendarDays, Clock, Video, Phone, MapPin } from "lucide-react";

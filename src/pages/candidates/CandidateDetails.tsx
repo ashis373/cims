@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { useAts, PIPELINE_STAGES } from "@/lib/ats-store";
-import { STAGE_COLORS } from "@/lib/ats-types";
+import { useAts, PIPELINE_STAGES } from "@/services/ats-store";
+import { STAGE_COLORS, type Stage } from "@/types/ats-types";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -107,7 +107,7 @@ export default function CandidateProfile() {
     .toUpperCase();
 
   const handleStageSelect = (v: string) => {
-    setStage(candidate.id, v as any);
+    setStage(candidate.id, v as Stage);
     toast.success(`Status updated to ${v}`);
   };
 

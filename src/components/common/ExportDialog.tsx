@@ -8,8 +8,8 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { FileSpreadsheet, FileText, FileBarChart2 } from "lucide-react";
-import { exportXlsx, exportCsv, exportBossReport } from "@/lib/ats-export";
-import type { Candidate } from "@/lib/ats-types";
+import { exportXlsx, exportCsv, exportBossReport } from "@/utils/ats-export";
+import type { Candidate } from "@/types/ats-types";
 import { toast } from "sonner";
 
 interface Props {

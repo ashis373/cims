@@ -1,5 +1,5 @@
 import * as XLSX from "xlsx";
-import type { Candidate } from "./ats-types";
+import type { Candidate } from "@/types/ats-types";
 
 function flatten(c: Candidate) {
   const nextIv = [...c.interviews].sort((a, b) => +new Date(b.date) - +new Date(a.date))[0];

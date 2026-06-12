@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { useAts, PIPELINE_STAGES } from "@/lib/ats-store";
+import { useAts, PIPELINE_STAGES } from "@/services/ats-store";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,7 +27,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } from "recharts";
-import { STAGE_COLORS } from "@/lib/ats-types";
+import { STAGE_COLORS } from "@/types/ats-types";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,7 +36,17 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 // Helper components for the new layout
-function TopStat({ title, value, pct, icon: Icon, tone, pctTone, borderTone }: any) {
+interface TopStatProps {
+  title: string;
+  value: number | string;
+  pct: number;
+  icon: React.ElementType;
+  tone: string;
+  pctTone: string;
+  borderTone: string;
+}
+
+function TopStat({ title, value, pct, icon: Icon, tone, pctTone, borderTone }: TopStatProps) {
   return (
     <Card
       className={cn(
@@ -86,7 +96,7 @@ export default function CandidatesPage() {
   const [positionFilter, setPositionFilter] = useState("All Positions");
   const [sourceFilter, setSourceFilter] = useState("All Sources");
   const [recruiterFilter, setRecruiterFilter] = useState("All Recruiters");
-  
+
   const initialFilter = new URLSearchParams(location.search).get("filter") || "All";
   const [quickFilter, setQuickFilter] = useState(initialFilter);
 

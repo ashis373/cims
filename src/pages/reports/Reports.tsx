@@ -1,13 +1,13 @@
 import { Link } from "react-router-dom";
 import { useMemo, useState } from "react";
-import { useAts } from "@/lib/ats-store";
+import { useAts } from "@/services/ats-store";
 import {
   DEPARTMENTS,
   PIPELINE_STAGES,
   SOURCES,
   type Department,
   type Stage,
-} from "@/lib/ats-types";
+} from "@/types/ats-types";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,7 +25,7 @@ import {
   ChevronRight,
   ArrowUpRight,
 } from "lucide-react";
-import { ExportDialog } from "@/components/ats/ExportDialog";
+import { ExportDialog } from "@/components/common/ExportDialog";
 import { cn } from "@/lib/utils";
 import {
   BarChart,
@@ -42,7 +42,16 @@ import {
   Area,
 } from "recharts";
 
-function StatCard({ title, value, subtitle, icon: Icon, tone, borderTone }: any) {
+interface StatCardProps {
+  title: string;
+  value: number | string;
+  subtitle: string;
+  icon: React.ElementType;
+  tone: string;
+  borderTone: string;
+}
+
+function StatCard({ title, value, subtitle, icon: Icon, tone, borderTone }: StatCardProps) {
   return (
     <Card
       className={cn(
@@ -177,7 +186,15 @@ function ReportsPage() {
 
   const COLORS = ["#3b82f6", "#8b5cf6", "#ec4899", "#f59e0b", "#10b981", "#14b8a6", "#f43f5e"];
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  const CustomTooltip = ({
+    active,
+    payload,
+    label,
+  }: {
+    active?: boolean;
+    payload?: { name: string; value: number }[];
+    label?: string;
+  }) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-slate-900 text-white text-[11px] font-bold py-1.5 px-3 rounded-lg shadow-xl">

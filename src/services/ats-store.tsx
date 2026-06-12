@@ -18,12 +18,11 @@ import {
   type Stage,
   type Source,
   type ActivityEntry,
-} from "./ats-types";
+} from "@/types/ats-types";
 
 const STORAGE_KEY = "ats.candidates.v2";
 const isDev = import.meta.env.DEV;
 const API_URL = "https://demo.hexalearn.com/cims/api/candidates.php";
-
 
 function uid() {
   return Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
@@ -63,7 +62,7 @@ function seed(): Candidate[] {
 interface Ctx {
   candidates: Candidate[];
   setAll: (c: Candidate[]) => void;
-  add: (input: any) => Promise<Candidate>;
+  add: (input: Partial<Candidate>) => Promise<Candidate>;
   update: (id: string, patch: Partial<Candidate>, activityMsg?: string) => Promise<void>;
   remove: (ids: string[]) => Promise<void>;
   setStage: (id: string, stage: Stage, reason?: string) => Promise<void>;
@@ -178,7 +177,8 @@ export function AtsProvider({ children }: { children: ReactNode }) {
           }
           mutate((prev) => [cand, ...prev]);
           return cand;
-        } catch (error: any) {
+        } catch (e) {
+          const error = e as Error;
           toast.error(error.message || "Database error");
           throw error;
         }
@@ -196,7 +196,8 @@ export function AtsProvider({ children }: { children: ReactNode }) {
         try {
           await syncPut(next);
           mutate((prev) => prev.map((c) => (c.id === id ? next : c)));
-        } catch (error: any) {
+        } catch (e) {
+          const error = e as Error;
           toast.error(error.message || "Database error");
           throw error;
         }
@@ -210,7 +211,8 @@ export function AtsProvider({ children }: { children: ReactNode }) {
           });
           if (!res.ok) throw new Error("Failed to delete from database");
           mutate((prev) => prev.filter((c) => !ids.includes(c.id)));
-        } catch (error: any) {
+        } catch (e) {
+          const error = e as Error;
           toast.error(error.message || "Database error");
           throw error;
         }
@@ -239,7 +241,8 @@ export function AtsProvider({ children }: { children: ReactNode }) {
         try {
           await syncPut(next);
           mutate((prev) => prev.map((c) => (c.id === id ? next : c)));
-        } catch (error: any) {
+        } catch (e) {
+          const error = e as Error;
           toast.error(error.message || "Database error");
           throw error;
         }
@@ -255,7 +258,8 @@ export function AtsProvider({ children }: { children: ReactNode }) {
         try {
           await syncPut(next);
           mutate((prev) => prev.map((c) => (c.id === id ? next : c)));
-        } catch (error: any) {
+        } catch (e) {
+          const error = e as Error;
           toast.error(error.message || "Database error");
           throw error;
         }
@@ -287,7 +291,8 @@ export function AtsProvider({ children }: { children: ReactNode }) {
         try {
           await syncPut(next);
           mutate((prev) => prev.map((c) => (c.id === id ? next : c)));
-        } catch (error: any) {
+        } catch (e) {
+          const error = e as Error;
           toast.error(error.message || "Database error");
           throw error;
         }
@@ -324,7 +329,8 @@ export function AtsProvider({ children }: { children: ReactNode }) {
         try {
           await syncPut(next);
           mutate((prev) => prev.map((c) => (c.id === id ? next : c)));
-        } catch (error: any) {
+        } catch (e) {
+          const error = e as Error;
           toast.error(error.message || "Database error");
           throw error;
         }
@@ -362,4 +368,4 @@ export function useAts() {
 }
 
 export { PIPELINE_STAGES };
-export { DEPARTMENTS } from "./ats-types";
+export { DEPARTMENTS } from "@/types/ats-types";

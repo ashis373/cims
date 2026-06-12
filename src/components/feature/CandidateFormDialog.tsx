@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useAts } from "@/lib/ats-store";
+import { useAts } from "@/services/ats-store";
 import {
   PIPELINE_STAGES,
   SOURCES,
@@ -8,7 +8,7 @@ import {
   type Department,
   type Source,
   type Stage,
-} from "@/lib/ats-types";
+} from "@/types/ats-types";
 import {
   Dialog,
   DialogContent,

@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
-import { useAts } from "@/lib/ats-store";
-import { PIPELINE_STAGES, STAGE_COLORS, type Candidate, type Stage } from "@/lib/ats-types";
+import { useAts } from "@/services/ats-store";
+import { PIPELINE_STAGES, STAGE_COLORS, type Candidate, type Stage } from "@/types/ats-types";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import {

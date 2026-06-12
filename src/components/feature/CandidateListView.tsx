@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
-import { useAts } from "@/lib/ats-store";
-import { DEPARTMENT_COLORS, STAGE_COLORS, type Candidate } from "@/lib/ats-types";
+import { useAts } from "@/services/ats-store";
+import { DEPARTMENT_COLORS, STAGE_COLORS, type Candidate } from "@/types/ats-types";
 import { Button } from "@/components/ui/button";
 import { Calendar, Mail, MoreHorizontal, Phone } from "lucide-react";
 import {

@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { useAts } from "@/lib/ats-store";
-import { KanbanBoard } from "@/components/ats/KanbanBoard";
+import { useAts } from "@/services/ats-store";
+import { KanbanBoard } from "@/components/feature/KanbanBoard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -32,7 +32,16 @@ import {
   CartesianGrid,
 } from "recharts";
 
-function Stat({ label, value, icon: Icon, tone, percent, borderTone }: any) {
+interface StatProps {
+  label: string;
+  value: number | string;
+  icon: React.ElementType;
+  tone: string;
+  percent: number;
+  borderTone: string;
+}
+
+function Stat({ label, value, icon: Icon, tone, percent, borderTone }: StatProps) {
   return (
     <Card
       className={cn(
@@ -203,7 +212,10 @@ function Pipeline() {
         };
       });
 
-    let allActivity: any[] = [];
+    const allActivity: (import("@/types/ats-types").ActivityEntry & {
+      candidateName: string;
+      time: number;
+    })[] = [];
     candidates.forEach((c) => {
       if (c.activity) {
         c.activity.forEach((a) => {

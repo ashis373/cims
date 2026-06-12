@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { useMemo, useState } from "react";
-import { useAts } from "@/lib/ats-store";
-import { PIPELINE_STAGES, STAGE_COLORS, type Stage } from "@/lib/ats-types";
+import { useAts } from "@/services/ats-store";
+import { PIPELINE_STAGES, STAGE_COLORS, type Stage } from "@/types/ats-types";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,7 +21,7 @@ import {
   Send,
   ArrowUp,
 } from "lucide-react";
-import { ExportDialog } from "@/components/ats/ExportDialog";
+import { ExportDialog } from "@/components/common/ExportDialog";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 
@@ -35,7 +35,7 @@ const container = {
   },
 };
 
-const item: any = {
+const item: import("framer-motion").Variants = {
   hidden: { opacity: 0, y: 20 },
   show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] } },
 };
@@ -126,30 +126,22 @@ function Dashboard() {
     "On Hold": "bg-zinc-500",
   };
 
-  const activeStages = PIPELINE_STAGES.map((stage) => {
-    return {
-      stage,
-      n: candidates.filter((c) => c.stage === stage).length,
-    };
-  }).filter((d) => d.n > 0);
+  const trackingStages = [
+    "New Applicant",
+    "Shortlisted",
+    "HR Call Scheduled",
+    "Interview Scheduled",
+    "Offer Released",
+    "Joined",
+    "Rejected",
+    "No Show",
+    "On Hold",
+  ] as Stage[];
 
-  const max = Math.max(1, ...activeStages.map((d) => d.n));
-
-  const funnelData = activeStages.map((data, i) => {
-    const { stage, n } = data;
-
-    let nextN = n;
-    if (i < activeStages.length - 1) {
-      nextN = activeStages[i + 1].n;
-    }
-
-    const topW = Math.max(2, (n / max) * 100);
-    const botW = Math.max(2, (nextN / max) * 100);
-    const clipPath = `polygon(${(100 - topW) / 2}% 0, ${(100 + topW) / 2}% 0, ${(100 + botW) / 2}% 100%, ${(100 - botW) / 2}% 100%)`;
-
-    const bgClass = FUNNEL_COLORS[stage] || "bg-gray-500";
-
-    return { stage, n, clipPath, bgClass };
+  const pipelineData = trackingStages.map((stage) => {
+    const n = candidates.filter((c) => c.stage === stage).length;
+    const pct = candidates.length > 0 ? Math.round((n / candidates.length) * 100) : 0;
+    return { stage, n, pct, bgClass: FUNNEL_COLORS[stage] || "bg-slate-500" };
   });
 
   const quickViews = [
@@ -233,7 +225,7 @@ function Dashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
         <Stat
           label="Total Candidates"
           value={counts.total}
@@ -307,13 +299,13 @@ function Dashboard() {
         />
       </div>
 
-      <div className="grid gap-4 md:grid-cols-12 h-full">
-        <motion.div variants={item} className="col-span-7 h-full">
+      <div className="grid gap-4 lg:grid-cols-12 h-full">
+        <motion.div variants={item} className="col-span-12 lg:col-span-7 h-full">
           <Card className="p-6 bg-white border-border/50 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] rounded-3xl h-full flex flex-col">
-            <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center justify-between mb-6">
               <div>
-                <h3 className="text-[15px] font-bold text-slate-900">Stage Distribution</h3>
-                <p className="text-xs text-slate-500 mt-0.5">Candidate conversion funnel</p>
+                <h3 className="text-[15px] font-bold text-slate-900">Pipeline Overview</h3>
+                <p className="text-xs text-slate-500 mt-0.5">Candidate distribution by stage</p>
               </div>
               <Link
                 to="/pipeline"
@@ -322,27 +314,54 @@ function Dashboard() {
                 Kanban View →
               </Link>
             </div>
-            <div className="flex gap-8 flex-1">
-              <div className="flex-1 flex flex-col justify-center">
-                {funnelData.map((d) => (
-                  <div
-                    key={d.stage}
-                    className={cn("h-7 w-full transition-all hover:opacity-80", d.bgClass)}
-                    style={{ clipPath: d.clipPath, marginBottom: "2px" }}
-                  />
-                ))}
-              </div>
-              <div className="w-1/2 flex flex-col justify-center space-y-0.5">
-                {funnelData.map((d) => (
-                  <div
-                    key={d.stage}
-                    className="flex items-center justify-between text-[11px] font-medium py-[3px]"
-                  >
-                    <div className="flex items-center gap-2.5 text-slate-600">
-                      <span className={cn("h-2 w-2 rounded-full", d.bgClass)} />
-                      {d.stage}
+
+            <div className="flex-1 overflow-y-auto md:overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-slate-200">
+              <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-3 md:min-w-max h-full">
+                {pipelineData.map((d, i) => (
+                  <div key={d.stage} className="flex flex-col md:flex-row items-center w-full md:w-auto h-auto md:h-full">
+                    <div className="flex flex-row md:flex-col justify-between items-center md:items-start w-full md:w-32 h-auto md:h-full md:min-h-[140px] bg-slate-50/80 border border-slate-100 rounded-2xl p-3 md:p-4 hover:shadow-sm transition-shadow relative overflow-hidden group">
+                      <div className={cn("absolute top-0 left-0 w-1 h-full", d.bgClass)} />
+                      
+                      <div className="flex items-center md:items-start md:flex-col flex-1 gap-2 md:gap-0 pl-1 md:pl-0 truncate">
+                        <div
+                          className="text-[11px] md:text-[10px] font-bold text-slate-500 uppercase tracking-wide truncate max-w-[120px] md:max-w-full"
+                          title={d.stage}
+                        >
+                          {d.stage.replace(" Scheduled", "").replace(" Released", "")}
+                        </div>
+                        <div className="text-xl md:text-3xl font-black text-slate-900 md:mt-1">{d.n}</div>
+                      </div>
+                      
+                      <div className="mt-0 md:mt-4 ml-4 md:ml-0 flex flex-col justify-center w-20 md:w-full shrink-0">
+                        <div className="flex justify-between text-[10px] font-bold text-slate-500 mb-1">
+                          <span>Rate</span>
+                          <span>{d.pct}%</span>
+                        </div>
+                        <div className="h-1.5 w-full bg-slate-200 rounded-full overflow-hidden">
+                          <div
+                            className={cn("h-full rounded-full", d.bgClass)}
+                            style={{ width: `${d.pct}%` }}
+                          />
+                        </div>
+                      </div>
                     </div>
-                    <span className="tabular-nums text-slate-800">{d.n}</span>
+                    {i < pipelineData.length - 1 && (
+                      <div className="text-slate-300 my-1 md:my-0 md:mx-1 rotate-90 md:rotate-0 hidden md:block">
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 5l7 7-7 7"
+                          />
+                        </svg>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -350,7 +369,7 @@ function Dashboard() {
           </Card>
         </motion.div>
 
-        <motion.div variants={item} className="col-span-5 h-full">
+        <motion.div variants={item} className="col-span-12 lg:col-span-5 h-full">
           <Card className="p-6 bg-white border-border/50 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] rounded-3xl h-full flex flex-col">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-[15px] font-bold text-slate-900">Recent Candidates</h3>
