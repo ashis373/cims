@@ -93,6 +93,11 @@ export interface Candidate {
   tags: string[];
   interviews: Interview[];
   activity: ActivityEntry[];
+  notesList?: any[];
+  documentsList?: any[];
+  alerts?: any[];
+  interviewsList?: any[];
+  applicationsList?: any[];
   applications: { appliedAt: string; role: string; source: Source }[];
   joiningDate?: string;
   designation?: string;

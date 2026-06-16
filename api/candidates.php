@@ -19,7 +19,7 @@ function parseDate($dateStr) {
 
 if ($method === 'GET') {
     try {
-        // Join the applications table to retrieve stage and role
+        // Fetch candidates with primary application details
         $stmt = $conn->query("
             SELECT c.*, a.stage, a.role_applied as role, a.department, a.source, a.recruiter, a.appliedAt 
             FROM candidates c 
@@ -28,42 +28,90 @@ if ($method === 'GET') {
         ");
         $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
+        if (empty($results)) {
+            echo json_encode([]);
+            exit;
+        }
+
+        // Collect all IDs for batch querying
+        $candidateIds = array_column($results, 'id');
+        $inQuery = implode(',', array_fill(0, count($candidateIds), '?'));
+        
+        // 1. Batch fetch history
+        $stmtHist = $conn->prepare("SELECT * FROM candidate_history WHERE candidate_id IN ($inQuery) ORDER BY createdAt DESC");
+        $stmtHist->execute($candidateIds);
+        $allHistory = $stmtHist->fetchAll(PDO::FETCH_ASSOC);
+        $histByCand = [];
+        foreach ($allHistory as $h) {
+            $histByCand[$h['candidate_id']][] = [
+                'id' => $h['id'],
+                'at' => str_replace(' ', 'T', $h['createdAt']) . 'Z',
+                'kind' => 'system',
+                'message' => $h['action'] . ($h['details'] ? ': ' . $h['details'] : '')
+            ];
+        }
+
+        // 2. Batch fetch notes
+        $stmtNotes = $conn->prepare("SELECT * FROM candidate_notes WHERE candidate_id IN ($inQuery) ORDER BY createdAt DESC");
+        $stmtNotes->execute($candidateIds);
+        $allNotes = $stmtNotes->fetchAll(PDO::FETCH_ASSOC);
+        $notesByCand = [];
+        foreach ($allNotes as $n) { $notesByCand[$n['candidate_id']][] = $n; }
+
+        // 3. Batch fetch documents
+        $stmtDocs = $conn->prepare("SELECT * FROM candidate_documents WHERE candidate_id IN ($inQuery) ORDER BY uploadedAt DESC");
+        $stmtDocs->execute($candidateIds);
+        $allDocs = $stmtDocs->fetchAll(PDO::FETCH_ASSOC);
+        $docsByCand = [];
+        foreach ($allDocs as $d) { $docsByCand[$d['candidate_id']][] = $d; }
+
+        // 4. Batch fetch alerts (rejections)
+        $stmtRej = $conn->prepare("SELECT * FROM candidate_rejections WHERE candidate_id IN ($inQuery) ORDER BY recordedAt DESC");
+        $stmtRej->execute($candidateIds);
+        $allRej = $stmtRej->fetchAll(PDO::FETCH_ASSOC);
+        $rejByCand = [];
+        foreach ($allRej as $r) { $rejByCand[$r['candidate_id']][] = $r; }
+
+        // 5. Batch fetch applications
+        $stmtApps = $conn->prepare("SELECT * FROM applications WHERE candidate_id IN ($inQuery) ORDER BY appliedAt DESC");
+        $stmtApps->execute($candidateIds);
+        $allApps = $stmtApps->fetchAll(PDO::FETCH_ASSOC);
+        $appsByCand = [];
+        foreach ($allApps as $a) { $appsByCand[$a['candidate_id']][] = $a; }
+
+        // 6. Batch fetch interviews (via applications)
+        $stmtInt = $conn->prepare("SELECT i.*, a.candidate_id FROM candidate_interviews i JOIN applications a ON i.application_id = a.id WHERE a.candidate_id IN ($inQuery) ORDER BY i.interviewDate DESC");
+        $stmtInt->execute($candidateIds);
+        $allInt = $stmtInt->fetchAll(PDO::FETCH_ASSOC);
+        $intByCand = [];
+        foreach ($allInt as $i) { $intByCand[$i['candidate_id']][] = $i; }
+
+        // Hydrate results
         foreach ($results as &$row) {
+            $cid = $row['id'];
             $row['tags'] = json_decode($row['tags'] ?? '[]');
+            $row['skills'] = json_decode($row['skills'] ?? '[]');
             $row['interviews'] = json_decode($row['interviews'] ?? '[]');
             
-            // Fetch history for activity timeline
-            $stmtHist = $conn->prepare("SELECT * FROM candidate_history WHERE candidate_id = ? ORDER BY createdAt DESC");
-            $stmtHist->execute([$row['id']]);
-            $history = $stmtHist->fetchAll(PDO::FETCH_ASSOC);
-            $activity = [];
-            foreach ($history as $h) {
-                $activity[] = [
-                    'id' => $h['id'],
-                    'at' => str_replace(' ', 'T', $h['createdAt']) . 'Z',
-                    'kind' => 'system', // or parse from action
-                    'message' => $h['action'] . ($h['details'] ? ': ' . $h['details'] : '')
-                ];
-            }
-            // If no history, add a default
-            if (empty($activity) && isset($row['appliedAt'])) {
-                $activity[] = [
+            $row['activity'] = $histByCand[$cid] ?? [];
+            if (empty($row['activity']) && isset($row['appliedAt'])) {
+                $row['activity'][] = [
                     'id' => 'initial',
                     'at' => str_replace(' ', 'T', $row['appliedAt']) . 'Z',
                     'kind' => 'created',
                     'message' => 'Application received'
                 ];
             }
-            $row['activity'] = $activity;
             
-            $row['applications'] = json_decode($row['applications'] ?? '[]');
-            $row['skills'] = json_decode($row['skills'] ?? '[]');
+            $row['notesList'] = $notesByCand[$cid] ?? [];
+            $row['documentsList'] = $docsByCand[$cid] ?? [];
+            $row['alerts'] = $rejByCand[$cid] ?? [];
+            $row['applicationsList'] = $appsByCand[$cid] ?? [];
+            $row['interviewsList'] = $intByCand[$cid] ?? [];
             
-            // Format dates back to ISO
             if ($row['appliedAt']) $row['appliedAt'] = str_replace(' ', 'T', $row['appliedAt']) . 'Z';
             if ($row['updatedAt']) $row['updatedAt'] = str_replace(' ', 'T', $row['updatedAt']) . 'Z';
             if ($row['createdAt']) $row['createdAt'] = str_replace(' ', 'T', $row['createdAt']) . 'Z';
-            // Output bools properly
             $row['isBlacklisted'] = (bool)$row['isBlacklisted'];
             $row['isActive'] = (bool)$row['isActive'];
         }
@@ -87,6 +135,15 @@ if ($method === 'GET') {
         $c = $data;
         $id = $c['id'];
         
+        // Duplicate Check
+        $stmtCheck = $conn->prepare("SELECT id FROM candidates WHERE email = ? OR (phone != '' AND phone = ?)");
+        $stmtCheck->execute([$c['email'], $c['phone'] ?? '']);
+        if ($stmtCheck->fetchColumn()) {
+            http_response_code(409);
+            echo json_encode(["error" => "A candidate with this email or phone already exists."]);
+            exit;
+        }
+
         // 1. Insert into candidates table
         $stmtCand = $conn->prepare("INSERT INTO candidates (
             id, name, email, phone, alternateMobile, location, preferredLocation, 
@@ -229,6 +286,23 @@ if ($method === 'GET') {
             $appSql = "UPDATE applications SET " . implode(", ", $appUpdateStrs) . " WHERE candidate_id = ?";
             $stmt = $conn->prepare($appSql);
             $stmt->execute($appParams);
+        }
+        
+        // Handle Rejections / Alerts logging
+        if (isset($data['stage']) && in_array($data['stage'], ['Rejected', 'No Show', 'Offer Declined', 'Offer Expired'])) {
+            $reason = $data['rejectionReason'] ?? $data['stageReason'] ?? 'Status updated to ' . $data['stage'];
+            $stmtRej = $conn->prepare("INSERT INTO candidate_rejections (candidate_id, type, reason) VALUES (?, ?, ?)");
+            $stmtRej->execute([$id, $data['stage'], $reason]);
+        }
+        if (isset($data['isBlacklisted']) && $data['isBlacklisted']) {
+            $reason = $data['blacklistReason'] ?? 'Blacklisted';
+            // Only insert if not already recently blacklisted to prevent duplicates on multiple updates
+            $stmtCheck = $conn->prepare("SELECT COUNT(*) FROM candidate_rejections WHERE candidate_id = ? AND type = 'Blacklisted'");
+            $stmtCheck->execute([$id]);
+            if ($stmtCheck->fetchColumn() == 0) {
+                $stmtRej = $conn->prepare("INSERT INTO candidate_rejections (candidate_id, type, reason) VALUES (?, ?, ?)");
+                $stmtRej->execute([$id, 'Blacklisted', $reason]);
+            }
         }
         
         // 3. Log history

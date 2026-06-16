@@ -74,37 +74,37 @@ interface Ctx {
   reapply: (existingId: string, role: string, source: Source) => Promise<void>;
   undo: () => void;
   canUndo: boolean;
+  isLoading: boolean;
+  error: string | null;
 }
 
 const AtsContext = createContext<Ctx | null>(null);
 
 export function AtsProvider({ children }: { children: ReactNode }) {
   const [candidates, setCandidates] = useState<Candidate[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const history = useRef<Candidate[][]>([]);
   const [canUndo, setCanUndo] = useState(false);
 
   useEffect(() => {
     fetch(API_URL)
-      .then((r) => r.json())
+      .then(async (r) => {
+        if (!r.ok) throw new Error(await r.text());
+        return r.json();
+      })
       .then((data) => {
-        if (Array.isArray(data) && data.length > 0) {
+        if (Array.isArray(data)) {
           setCandidates(data);
         } else {
-          // fallback
-          const s = seed();
-          setCandidates(s);
-          fetch(API_URL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ bulk: true, candidates: s }),
-          }).catch(console.error);
+          setCandidates([]);
         }
       })
       .catch((err) => {
         console.error("DB Fetch failed:", err);
-        const local = localStorage.getItem(STORAGE_KEY);
-        if (local) setCandidates(JSON.parse(local));
-      });
+        setError("Failed to load candidates");
+      })
+      .finally(() => setIsLoading(false));
   }, []);
 
   const mutate = (updater: (prev: Candidate[]) => Candidate[]) => {
@@ -356,8 +356,10 @@ export function AtsProvider({ children }: { children: ReactNode }) {
         toast.success("Undone");
       },
       canUndo,
+      isLoading,
+      error,
     }),
-    [candidates, canUndo],
+    [candidates, canUndo, isLoading, error],
   );
 
   return <AtsContext.Provider value={api}>{children}</AtsContext.Provider>;

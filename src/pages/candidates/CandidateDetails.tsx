@@ -186,29 +186,31 @@ export default function CandidateProfile() {
         <span className="text-slate-900 font-bold">{candidate.name}</span>
       </div>
 
-      {/* Blacklist Alert */}
-      {candidate.isBlacklisted && (
-        <div className="flex items-center justify-between rounded-xl bg-red-50/80 p-4 border border-red-100 shadow-sm">
+      {/* Alerts */}
+      {candidate.alerts?.map((alert: any, i: number) => (
+        <div key={i} className="flex items-center justify-between rounded-xl bg-red-50/80 p-4 border border-red-100 shadow-sm mb-4">
           <div className="flex items-start gap-3 text-red-600">
             <div className="mt-0.5">
-              <Clock className="h-4 w-4" />
+              <AlertCircle className="h-4 w-4" />
             </div>
             <div>
-              <div className="font-bold text-[13px]">Blacklisted Candidate</div>
+              <div className="font-bold text-[13px]">{alert.type} Candidate</div>
               <div className="text-[11px] font-semibold text-red-500 mt-0.5">
-                Reason: {candidate.blacklistReason || "many time apply ok"}
+                Reason: {alert.reason} <span className="text-red-400 font-medium ml-2">({formatDate(alert.recordedAt)})</span>
               </div>
             </div>
           </div>
-          <Button
-            variant="outline"
-            className="bg-white text-red-600 border-red-200 hover:bg-red-50 text-[11px] font-bold h-8"
-            onClick={unblacklist}
-          >
-            Unblock
-          </Button>
+          {alert.type === 'Blacklisted' && (
+            <Button
+              variant="outline"
+              className="bg-white text-red-600 border-red-200 hover:bg-red-50 text-[11px] font-bold h-8"
+              onClick={unblacklist}
+            >
+              Unblock
+            </Button>
+          )}
         </div>
-      )}
+      ))}
 
       {/* Header Card */}
       <Card className="p-6 bg-white border-border/50 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] rounded-2xl">
@@ -443,38 +445,36 @@ export default function CandidateProfile() {
                 <Button
                   variant="ghost"
                   className="h-6 px-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 text-[11px] font-bold"
+                  onClick={async () => {
+                    const text = window.prompt("Enter note text:");
+                    if (!text) return;
+                    try {
+                      const res = await fetch("http://localhost/full-cims/api/notes.php", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ candidate_id: candidate.id, text, createdBy: "Admin" })
+                      });
+                      if (res.ok) window.location.reload();
+                    } catch (e) {
+                      toast.error("Failed to add note");
+                    }
+                  }}
                 >
                   <Plus className="h-3.5 w-3.5 mr-1" /> Add Note
                 </Button>
               </div>
               <div className="space-y-4 flex-1">
-                {[
-                  {
-                    name: "Rachna",
-                    date: "09 Jun 2026, 09:20 AM",
-                    text: "Candidate declined the offer due to better opportunity and higher package.",
-                  },
-                  {
-                    name: "Bob",
-                    date: "08 Jun 2026, 05:00 PM",
-                    text: "Offered 25 LPA. Candidate showed interest and asked for 24 hours.",
-                  },
-                  {
-                    name: "Soumya",
-                    date: "05 Jun 2026, 03:45 PM",
-                    text: "HR Interview completed. Feedback shared with manager.",
-                  },
-                ].map((note, i) => (
+                {candidate.notesList?.map((note: any, i: number) => (
                   <div key={i} className="flex gap-3">
                     <img
-                      src={`https://api.dicebear.com/7.x/notionists/svg?seed=${note.name}`}
+                      src={`https://api.dicebear.com/7.x/notionists/svg?seed=${note.createdBy}`}
                       alt=""
                       className="h-7 w-7 rounded-full bg-slate-100 shrink-0"
                     />
                     <div>
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-[11px] font-bold text-slate-900">{note.name}</span>
-                        <span className="text-[9px] font-bold text-slate-400">{note.date}</span>
+                        <span className="text-[11px] font-bold text-slate-900">{note.createdBy}</span>
+                        <span className="text-[9px] font-bold text-slate-400">{formatDateTime(note.createdAt)}</span>
                       </div>
                       <div className="text-[10px] font-semibold text-slate-600 mt-1 leading-relaxed">
                         {note.text}
@@ -482,6 +482,11 @@ export default function CandidateProfile() {
                     </div>
                   </div>
                 ))}
+                {(!candidate.notesList || candidate.notesList.length === 0) && (
+                  <div className="text-center text-slate-400 text-[11px] font-bold py-6">
+                    No notes added yet.
+                  </div>
+                )}
               </div>
               <div className="mt-5 pt-3 border-t border-slate-100 text-center">
                 <Button variant="link" className="text-blue-600 text-[11px] font-bold">
@@ -505,46 +510,39 @@ export default function CandidateProfile() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50 font-semibold text-slate-700">
-                    <tr>
-                      <td className="py-3 px-2">Technical Interview</td>
-                      <td className="py-3 px-2">
-                        <div className="flex -space-x-2">
-                          <img
-                            src={`https://api.dicebear.com/7.x/notionists/svg?seed=Arup`}
-                            className="h-6 w-6 rounded-full border-2 border-white bg-slate-100"
-                          />
-                          <img
-                            src={`https://api.dicebear.com/7.x/notionists/svg?seed=Bob`}
-                            className="h-6 w-6 rounded-full border-2 border-white bg-slate-100"
-                          />
-                        </div>
-                      </td>
-                      <td className="py-3 px-2 text-slate-500">02 Jun 2026, 11:00 AM</td>
-                      <td className="py-3 px-2">Good technical knowledge.</td>
-                      <td className="py-3 px-2 text-right">
-                        <Badge className="bg-emerald-100 text-emerald-600 text-[9px] uppercase hover:bg-emerald-100 border-transparent">
-                          Completed
-                        </Badge>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td className="py-3 px-2">HR Interview</td>
-                      <td className="py-3 px-2">
-                        <div className="flex -space-x-2">
-                          <img
-                            src={`https://api.dicebear.com/7.x/notionists/svg?seed=Soumya`}
-                            className="h-6 w-6 rounded-full border-2 border-white bg-slate-100"
-                          />
-                        </div>
-                      </td>
-                      <td className="py-3 px-2 text-slate-500">05 Jun 2026, 02:00 PM</td>
-                      <td className="py-3 px-2">Good communication.</td>
-                      <td className="py-3 px-2 text-right">
-                        <Badge className="bg-emerald-100 text-emerald-600 text-[9px] uppercase hover:bg-emerald-100 border-transparent">
-                          Completed
-                        </Badge>
-                      </td>
-                    </tr>
+                    {candidate.interviewsList?.map((interview: any, i: number) => (
+                      <tr key={i}>
+                        <td className="py-3 px-2">{interview.type}</td>
+                        <td className="py-3 px-2">
+                          <div className="flex -space-x-2">
+                            <img
+                              src={`https://api.dicebear.com/7.x/notionists/svg?seed=${interview.id}`}
+                              className="h-6 w-6 rounded-full border-2 border-white bg-slate-100"
+                              title="Interviewer"
+                            />
+                          </div>
+                        </td>
+                        <td className="py-3 px-2 text-slate-500">{formatDateTime(interview.interviewDate)}</td>
+                        <td className="py-3 px-2">{interview.feedback || "-"}</td>
+                        <td className="py-3 px-2 text-right">
+                          <Badge className={cn(
+                            "text-[9px] uppercase border-transparent",
+                            interview.status === 'Completed' ? "bg-emerald-100 text-emerald-600 hover:bg-emerald-100" :
+                            interview.status === 'Scheduled' ? "bg-blue-100 text-blue-600 hover:bg-blue-100" :
+                            "bg-slate-100 text-slate-600 hover:bg-slate-100"
+                          )}>
+                            {interview.status}
+                          </Badge>
+                        </td>
+                      </tr>
+                    ))}
+                    {(!candidate.interviewsList || candidate.interviewsList.length === 0) && (
+                      <tr>
+                        <td colSpan={5} className="py-6 text-center text-[11px] font-bold text-slate-400">
+                          No interviews scheduled yet.
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -555,13 +553,73 @@ export default function CandidateProfile() {
               </div>
             </Card>
 
+            {/* Applications History */}
+            <Card id="applications" className={cn("col-span-1 p-5 bg-white border shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] rounded-2xl flex flex-col transition-all duration-300", activeTab === "Applications" ? "border-orange-500 ring-1 ring-orange-500 shadow-orange-100" : "border-border/50")}>
+              <h3 className="text-[13px] font-bold text-slate-900 mb-4">Application History</h3>
+              <div className="overflow-x-auto flex-1">
+                <table className="w-full text-left text-[11px]">
+                  <thead className="border-b border-slate-100 text-slate-400 font-bold">
+                    <tr>
+                      <th className="py-2.5 px-2">Role Applied</th>
+                      <th className="py-2.5 px-2">Source</th>
+                      <th className="py-2.5 px-2">Date</th>
+                      <th className="py-2.5 px-2 text-right">Stage</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50 font-semibold text-slate-700">
+                    {candidate.applicationsList?.map((app: any, i: number) => (
+                      <tr key={i}>
+                        <td className="py-3 px-2 font-bold text-slate-900">{app.role_applied || "-"}</td>
+                        <td className="py-3 px-2 text-slate-500">{app.source || "-"}</td>
+                        <td className="py-3 px-2 text-slate-500">{formatDate(app.appliedAt)}</td>
+                        <td className="py-3 px-2 text-right">
+                          <Badge className="bg-orange-50 text-orange-600 text-[9px] uppercase border-transparent hover:bg-orange-100">
+                            {app.stage}
+                          </Badge>
+                        </td>
+                      </tr>
+                    ))}
+                    {(!candidate.applicationsList || candidate.applicationsList.length === 0) && (
+                      <tr>
+                        <td colSpan={4} className="py-6 text-center text-[11px] font-bold text-slate-400">
+                          No applications found.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+
             {/* Documents */}
             <Card id="documents" className={cn("col-span-1 p-5 bg-white border shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] rounded-2xl flex flex-col transition-all duration-300", activeTab === "Documents" ? "border-rose-500 ring-1 ring-rose-500 shadow-rose-100" : "border-border/50")}>
               <div className="flex items-center justify-between mb-5">
                 <h3 className="text-[13px] font-bold text-slate-900">Documents</h3>
+                <input 
+                  type="file" 
+                  id="doc-upload" 
+                  className="hidden" 
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const formData = new FormData();
+                    formData.append("file", file);
+                    formData.append("candidate_id", candidate.id);
+                    try {
+                      const res = await fetch("http://localhost/full-cims/api/documents.php", {
+                        method: "POST",
+                        body: formData
+                      });
+                      if (res.ok) window.location.reload();
+                    } catch (err) {
+                      toast.error("Upload failed");
+                    }
+                  }}
+                />
                 <Button
                   variant="ghost"
                   className="h-6 px-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 text-[11px] font-bold"
+                  onClick={() => document.getElementById("doc-upload")?.click()}
                 >
                   <Plus className="h-3.5 w-3.5 mr-1" /> Add Document
                 </Button>
@@ -573,7 +631,13 @@ export default function CandidateProfile() {
                     rawName: candidate.resume,
                     date: new Date(candidate.updatedAt).toLocaleDateString("en-GB", { day: '2-digit', month: 'short', year: 'numeric' }),
                     color: "text-blue-500 bg-blue-50",
-                  } : null
+                  } : null,
+                  ...(candidate.documentsList?.map((d: any) => ({
+                    name: d.name,
+                    rawName: d.filePath,
+                    date: new Date(d.uploadedAt).toLocaleDateString("en-GB", { day: '2-digit', month: 'short', year: 'numeric' }),
+                    color: "text-emerald-500 bg-emerald-50",
+                  })) || [])
                 ].filter(Boolean).map((doc: any, i) => (
                   <div key={i} className="flex items-center justify-between group">
                     <div className="flex items-center gap-3">
@@ -605,7 +669,7 @@ export default function CandidateProfile() {
                     </div>
                   </div>
                 ))}
-                {!candidate.resume && (
+                {(!candidate.resume && (!candidate.documentsList || candidate.documentsList.length === 0)) && (
                   <div className="text-center text-slate-400 text-[11px] font-bold py-6">
                     No documents found.
                   </div>
