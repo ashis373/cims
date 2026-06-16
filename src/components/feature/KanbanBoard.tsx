@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useMemo } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { useAts } from "@/services/ats-store";
 import { PIPELINE_STAGES, STAGE_COLORS, type Candidate, type Stage } from "@/types/ats-types";
 import { Badge } from "@/components/ui/badge";
@@ -13,10 +13,18 @@ export function KanbanBoard({ candidates }: { candidates: Candidate[] }) {
   const { setStage } = useAts();
   const [dragId, setDragId] = useState<string | null>(null);
   const [overStage, setOverStage] = useState<Stage | null>(null);
+  const [searchParams] = useSearchParams();
+
+  const activeStatus = searchParams.get("status")?.toLowerCase();
+
+  const visibleStages = useMemo(() => {
+    if (!activeStatus) return PIPELINE_STAGES;
+    return PIPELINE_STAGES.filter((s) => s.toLowerCase().includes(activeStatus));
+  }, [activeStatus]);
 
   return (
-    <div className="flex gap-4 overflow-x-auto pb-2 pt-8 scrollbar-thin -scale-y-100">
-      {PIPELINE_STAGES.map((stage) => {
+    <div className="flex gap-4 overflow-x-auto pb-2 pt-8 scrollbar-thin -scale-y-100 min-h-[400px]">
+      {visibleStages.map((stage) => {
         const items = candidates.filter((c) => c.stage === stage);
         const stageColorClass = STAGE_COLORS[stage] || "bg-slate-500/12 text-slate-700";
         const textMatch = stageColorClass.match(/(text-[a-z]+-\d+)/);

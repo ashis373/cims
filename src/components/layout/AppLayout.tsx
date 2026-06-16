@@ -44,25 +44,13 @@ const nav = [
     to: "/pipeline",
     label: "Recruitment Pipeline",
     icon: KanbanSquare,
-    children: [
-      { to: "/pipeline?status=new", label: "New" },
-      { to: "/pipeline?status=contacted", label: "Contacted" },
-      { to: "/pipeline?status=interview", label: "Interview" },
-      { to: "/pipeline?status=selected", label: "Selected" },
-      { to: "/pipeline?status=offer", label: "Offer" },
-      { to: "/pipeline?status=joined", label: "Joined" },
-      { to: "/pipeline?status=rejected", label: "Rejected" },
-    ],
   },
   {
     to: "/offers",
     label: "Offers",
     icon: FileText,
     children: [
-      { to: "/offers/released", label: "Offer Released" },
-      { to: "/offers/accepted", label: "Accepted" },
-      { to: "/offers/declined", label: "Declined" },
-      { to: "/offers/no-join", label: "No Join" },
+      { to: "/offers/management", label: "Offer Management" },
     ],
   },
   {
@@ -72,7 +60,6 @@ const nav = [
     children: [
       { to: "/rejections/rejected", label: "Rejected Candidates" },
       { to: "/rejections/blacklisted", label: "Blacklisted Candidates" },
-      { to: "/rejections/reasons", label: "Reasons" },
     ],
   },
   {
@@ -80,20 +67,25 @@ const nav = [
     label: "Reports",
     icon: BarChart3,
     children: [
-      { to: "/reports/candidate", label: "Candidate Report" },
-      { to: "/reports/hiring", label: "Hiring Report" },
-      { to: "/reports/rejection", label: "Rejection Report" },
+      { to: "/reports/dashboard", label: "Recruitment Dashboard" },
+      { to: "/reports/performance", label: "Performance Reports" },
     ],
   },
-  { to: "/notifications", label: "Notifications", icon: Bell },
+  {
+    to: "/notifications",
+    label: "Notifications",
+    icon: Bell,
+    children: [
+      { to: "/notifications/alerts", label: "Alerts Center" },
+    ],
+  },
   {
     to: "/settings",
     label: "Settings",
     icon: Settings,
     children: [
-      { to: "/settings/users", label: "Users" },
-      { to: "/settings/roles", label: "Roles" },
-      { to: "/settings/masters", label: "Masters" },
+      { to: "/settings/profile", label: "User Profile" },
+      { to: "/settings/system", label: "System Settings" },
     ],
   },
 ];
@@ -212,11 +204,9 @@ export function AppLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-screen w-full bg-white text-foreground antialiased selection:bg-primary/10 selection:text-primary">
       <aside className="hidden md:flex w-[280px] shrink-0 flex-col bg-[#0b0f19] text-white border-r border-slate-800/60 shadow-[4px_0_24px_-10px_rgba(0,0,0,0.5)]">
-        <div className="flex items-center gap-4 px-6 py-8">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 text-white shadow-[0_0_20px_rgba(99,102,241,0.4)] ring-1 ring-white/20">
-            <Briefcase className="h-6 w-6" />
-          </div>
-          <div>
+        <div className="flex items-center gap-4 px-6 py-8 w-full">
+          <img src="/logos.png" alt="Logo" className="h-20 w-auto object-contain shrink-0" />
+          <div className="text-left">
             <div className="text-[20px] font-black leading-none tracking-tight text-white">
               Hireflow
             </div>
@@ -255,9 +245,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
       <div className="flex min-w-0 flex-1 flex-col bg-white">
         <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-border/60 bg-white/95 px-4 backdrop-blur-sm md:px-8">
           <div className="flex items-center gap-2 md:hidden">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-              <Briefcase className="h-4 w-4" />
-            </div>
+            <img src="/logos.png" alt="Logo" className="h-7 w-auto object-contain" />
             <span className="text-base font-bold tracking-tight">Hireflow</span>
           </div>
 

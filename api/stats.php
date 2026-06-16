@@ -13,12 +13,25 @@ try {
     $stats = [];
     // Total
     $stats['total'] = $conn->query("SELECT COUNT(*) FROM candidates")->fetchColumn();
+    // Active (Not inactive stages, not blacklisted)
+    $stats['active'] = $conn->query("
+        SELECT COUNT(*) FROM applications a 
+        JOIN candidates c ON a.candidate_id = c.id 
+        WHERE a.stage NOT IN ('Rejected', 'Offer Declined', 'No Show', 'Offer Expired') 
+        AND c.isBlacklisted = 0
+    ")->fetchColumn();
     // New Applicants
     $stats['newApplicants'] = $conn->query("SELECT COUNT(*) FROM applications WHERE stage = 'New Applicant'")->fetchColumn();
+    // Scheduled
+    $stats['scheduled'] = $conn->query("SELECT COUNT(*) FROM applications WHERE stage = 'Interview Scheduled'")->fetchColumn();
+    // Selected
+    $stats['selected'] = $conn->query("SELECT COUNT(*) FROM applications WHERE stage IN ('Shortlisted', 'Interview Completed')")->fetchColumn();
     // Offers Released
     $stats['offersReleased'] = $conn->query("SELECT COUNT(*) FROM applications WHERE stage = 'Offer Released'")->fetchColumn();
     // Offers Accepted
     $stats['offersAccepted'] = $conn->query("SELECT COUNT(*) FROM applications WHERE stage = 'Offer Accepted'")->fetchColumn();
+    // Offers Declined
+    $stats['offersDeclined'] = $conn->query("SELECT COUNT(*) FROM applications WHERE stage = 'Offer Declined'")->fetchColumn();
     // Joined
     $stats['joined'] = $conn->query("SELECT COUNT(*) FROM applications WHERE stage = 'Joined'")->fetchColumn();
     // Rejected

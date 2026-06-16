@@ -1,0 +1,221 @@
+import { useState, useEffect, useMemo } from "react";
+import { Link } from "react-router-dom";
+import { Card } from "@/components/ui/card";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { XOctagon, Calendar, ChevronRight } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
+
+export default function Rejected() {
+  const [data, setData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [reasonFilter, setReasonFilter] = useState("All");
+
+  useEffect(() => {
+    fetch("http://localhost/full-cims/api/rejected.php")
+      .then((res) => res.json())
+      .then((json) => {
+        setData(json.rejected || []);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Failed to fetch rejections:", err);
+        setLoading(false);
+      });
+  }, []);
+
+  const uniqueReasons = useMemo(() => {
+    const reasons = new Set<string>();
+    data.forEach((item) => {
+      if (item.reason) reasons.add(item.reason);
+    });
+    return Array.from(reasons);
+  }, [data]);
+
+  const filteredList = useMemo(() => {
+    return data.filter((item) => {
+      return reasonFilter === "All" || item.reason === reasonFilter;
+    });
+  }, [data, reasonFilter]);
+
+  const formatDate = (d: string) => {
+    if (!d) return "-";
+    return new Date(d).toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  };
+
+  return (
+    <div className="flex flex-col gap-8 max-w-6xl mx-auto w-full pb-10">
+      {/* Header Section */}
+      <div className="relative overflow-hidden rounded-3xl bg-white border border-slate-200/60 shadow-sm p-8 sm:p-10">
+        <div className="absolute top-0 right-0 -mt-16 -mr-16 w-64 h-64 bg-gradient-to-br from-slate-100 to-slate-50 rounded-full blur-3xl opacity-50 pointer-events-none" />
+        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+          <div className="flex items-center gap-5">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl shadow-sm border bg-red-50 border-red-100 text-red-600">
+              <XOctagon className="h-6 w-6" />
+            </div>
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
+                Rejected Candidates
+              </h1>
+              <p className="text-slate-500 text-[13px] sm:text-[14px] font-medium mt-1.5 max-w-lg leading-relaxed">
+                Review candidates who were previously rejected during the recruitment pipeline.
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-col items-end">
+            <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">Total Records</div>
+            <div className="text-3xl font-black text-slate-900">{data.length}</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Filters Section */}
+      <div className="flex flex-col sm:flex-row items-center justify-end gap-3 w-full">
+        <div className="relative w-full sm:w-[220px] shrink-0">
+          <Select value={reasonFilter} onValueChange={setReasonFilter}>
+            <SelectTrigger className="h-11 w-full bg-white border border-slate-200 shadow-sm rounded-xl text-[13px] font-semibold text-slate-700 pl-4 pr-4 transition-all hover:bg-slate-50 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 overflow-hidden">
+              <span className="truncate pr-2">
+                <SelectValue placeholder="All Reasons" />
+              </span>
+            </SelectTrigger>
+            <SelectContent className="rounded-xl border-slate-200 shadow-lg bg-white">
+              <SelectItem value="All" className="text-[13px] font-medium cursor-pointer rounded-lg hover:bg-slate-50 focus:bg-slate-50">
+                All Reasons
+              </SelectItem>
+              {uniqueReasons.map((r) => (
+                <SelectItem key={r} value={r} className="text-[13px] font-medium cursor-pointer rounded-lg hover:bg-slate-50 focus:bg-slate-50">
+                  {r}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* Data Table */}
+      <RejectionTable
+        list={filteredList}
+        loading={loading}
+        formatDate={formatDate}
+      />
+    </div>
+  );
+}
+
+function RejectionTable({
+  list,
+  loading,
+  formatDate,
+}: {
+  list: any[];
+  loading: boolean;
+  formatDate: (d: string) => string;
+}) {
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        {[1, 2, 3, 4].map((i) => (
+          <Card key={i} className="p-6 border-slate-100 shadow-sm rounded-2xl flex items-center gap-6">
+            <Skeleton className="h-12 w-12 rounded-full shrink-0" />
+            <div className="space-y-2 flex-1">
+              <Skeleton className="h-4 w-[200px]" />
+              <Skeleton className="h-3 w-[150px]" />
+            </div>
+            <Skeleton className="h-8 w-[100px] rounded-lg shrink-0" />
+            <Skeleton className="h-8 w-8 rounded-full shrink-0" />
+          </Card>
+        ))}
+      </div>
+    );
+  }
+
+  if (list.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center p-16 text-center bg-white border border-slate-200/60 border-dashed rounded-3xl">
+        <div className="h-20 w-20 rounded-3xl flex items-center justify-center mb-6 shadow-sm border bg-red-50/50 border-red-100">
+          <XOctagon className="h-8 w-8 text-red-400" />
+        </div>
+        <h3 className="text-lg font-black text-slate-900 mb-2">No Candidates Found</h3>
+        <p className="text-[14px] text-slate-500 max-w-sm">
+          There are currently no candidates matching your filters in this section.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid gap-3">
+      {list.map((c) => (
+        <Card 
+          key={c.rejection_id} 
+          className="group relative overflow-hidden p-0 border-slate-200/60 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.02)] hover:shadow-md hover:border-slate-300 transition-all duration-300 rounded-2xl bg-white"
+        >
+          <div className="flex flex-col md:flex-row items-start md:items-center p-5 gap-5">
+            {/* Avatar & Info */}
+            <div className="flex items-center justify-between w-full md:w-auto md:min-w-[240px] lg:min-w-[280px]">
+              <div className="flex items-center gap-4">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-[14px] font-black uppercase shadow-sm border bg-red-50 text-red-600 border-red-100">
+                  {c.name?.charAt(0) || "?"}
+                </div>
+                <div className="min-w-0">
+                  <div className="font-bold text-[15px] text-slate-900 truncate mb-1 group-hover:text-blue-600 transition-colors">
+                    {c.name}
+                  </div>
+                  <div className="text-[12px] font-medium text-slate-500 truncate">{c.email}</div>
+                </div>
+              </div>
+              <Link
+                to={`/candidates/${c.id}`}
+                className="md:hidden flex shrink-0 items-center justify-center h-10 w-10 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 active:bg-slate-100 transition-all shadow-sm"
+              >
+                <ChevronRight className="h-5 w-5" />
+              </Link>
+            </div>
+
+            {/* Data Grid for Mobile / Flex for Desktop */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:flex flex-1 gap-4 w-full md:w-auto">
+              {/* Position */}
+              <div className="flex-1 md:min-w-[120px] lg:min-w-[150px]">
+                <div className="text-[10px] md:text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">Position</div>
+                <div className="text-[12px] md:text-[13px] font-semibold text-slate-700 truncate">{c.position || "N/A"}</div>
+              </div>
+
+              {/* Date */}
+              <div className="flex-1 md:min-w-[100px] lg:min-w-[120px] order-last sm:order-none">
+                <div className="text-[10px] md:text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">Recorded On</div>
+                <div className="flex items-center gap-1.5 text-[12px] md:text-[13px] font-semibold text-slate-700">
+                  <Calendar className="h-3 md:h-3.5 w-3 md:w-3.5 text-slate-400" />
+                  {formatDate(c.recordedAt)}
+                </div>
+              </div>
+
+              {/* Reason */}
+              <div className="col-span-2 sm:col-span-1 md:flex-[1.5] md:min-w-[160px] lg:min-w-[200px]">
+                <div className="text-[10px] md:text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">Reason</div>
+                <div className="inline-flex max-w-full">
+                  <div className="text-[11px] md:text-[12px] font-bold truncate px-2 md:px-3 py-1 md:py-1.5 rounded-lg border bg-red-50 text-red-700 border-red-100" title={c.reason}>
+                    {c.reason || "Unspecified"}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Desktop */}
+            <div className="hidden md:flex items-center justify-end shrink-0 pl-2">
+              <Link
+                to={`/candidates/${c.id}`}
+                className="flex items-center justify-center h-10 w-10 rounded-xl bg-slate-50 border border-slate-200 text-slate-400 hover:text-white hover:border-blue-600 hover:bg-blue-600 transition-all shadow-sm opacity-0 group-hover:opacity-100"
+              >
+                <ChevronRight className="h-5 w-5" />
+              </Link>
+            </div>
+          </div>
+        </Card>
+      ))}
+    </div>
+  );
+}

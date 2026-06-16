@@ -88,23 +88,49 @@ export function AtsProvider({ children }: { children: ReactNode }) {
   const [canUndo, setCanUndo] = useState(false);
 
   useEffect(() => {
-    fetch(API_URL)
-      .then(async (r) => {
-        if (!r.ok) throw new Error(await r.text());
-        return r.json();
-      })
-      .then((data) => {
-        if (Array.isArray(data)) {
-          setCandidates(data);
-        } else {
-          setCandidates([]);
-        }
-      })
-      .catch((err) => {
-        console.error("DB Fetch failed:", err);
-        setError("Failed to load candidates");
-      })
-      .finally(() => setIsLoading(false));
+    let isMounted = true;
+    
+    const fetchData = () => {
+      fetch(API_URL)
+        .then(async (r) => {
+          if (!r.ok) throw new Error(await r.text());
+          return r.json();
+        })
+        .then((data) => {
+          if (!isMounted) return;
+          if (Array.isArray(data)) {
+            // Only update if data changed structurally to prevent unnecessary re-renders during drag
+            setCandidates((prev) => {
+              if (JSON.stringify(prev) !== JSON.stringify(data)) {
+                return data;
+              }
+              return prev;
+            });
+          } else {
+            setCandidates([]);
+          }
+        })
+        .catch((err) => {
+          console.error("DB Fetch failed:", err);
+          if (isMounted && candidates.length === 0) {
+            setError("Failed to load candidates");
+          }
+        })
+        .finally(() => {
+          if (isMounted) setIsLoading(false);
+        });
+    };
+
+    // Initial fetch
+    fetchData();
+
+    // Real-time polling every 10 seconds
+    const interval = setInterval(fetchData, 10000);
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
   }, []);
 
   const mutate = (updater: (prev: Candidate[]) => Candidate[]) => {

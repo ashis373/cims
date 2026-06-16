@@ -17,16 +17,10 @@ import CandidateTimeline from "@/pages/candidates/CandidateTimeline";
 import InterviewsUpcoming from "@/pages/interviews/InterviewsUpcoming";
 import InterviewsFeedback from "@/pages/interviews/InterviewsFeedback";
 import InterviewsHistory from "@/pages/interviews/InterviewsHistory";
-import OffersReleased from "@/pages/offers/OffersReleased";
-import OffersAccepted from "@/pages/offers/OffersAccepted";
-import OffersDeclined from "@/pages/offers/OffersDeclined";
-import OffersNoJoin from "@/pages/offers/OffersNoJoin";
-import RejectionsRejected from "@/pages/rejection/RejectionsRejected";
-import RejectionsBlacklisted from "@/pages/rejection/RejectionsBlacklisted";
-import RejectionsReasons from "@/pages/rejection/RejectionsReasons";
-import ReportsCandidate from "@/pages/reports/ReportsCandidate";
-import ReportsHiring from "@/pages/reports/ReportsHiring";
-import ReportsRejection from "@/pages/reports/ReportsRejection";
+import Offers from "@/pages/offers/Offers";
+import Rejected from "@/pages/rejection/Rejected";
+import Blacklisted from "@/pages/rejection/Blacklisted";
+import ReportsPerformance from "@/pages/reports/ReportsPerformance";
 import Notifications from "@/pages/notifications/Notifications";
 import SettingsUsers from "@/pages/settings/SettingsUsers";
 import SettingsRoles from "@/pages/settings/SettingsRoles";
@@ -84,20 +78,15 @@ function App() {
                 <Route path="/interviews/history" element={<InterviewsHistory />} />
 
                 {/* Offers */}
-                <Route path="/offers/released" element={<OffersReleased />} />
-                <Route path="/offers/accepted" element={<OffersAccepted />} />
-                <Route path="/offers/declined" element={<OffersDeclined />} />
-                <Route path="/offers/no-join" element={<OffersNoJoin />} />
+                <Route path="/offers/:tab?" element={<Offers />} />
 
                 {/* Rejections & Blacklist */}
-                <Route path="/rejections/rejected" element={<RejectionsRejected />} />
-                <Route path="/rejections/blacklisted" element={<RejectionsBlacklisted />} />
-                <Route path="/rejections/reasons" element={<RejectionsReasons />} />
+                <Route path="/rejections/rejected" element={<Rejected />} />
+                <Route path="/rejections/blacklisted" element={<Blacklisted />} />
 
                 {/* Reports */}
-                <Route path="/reports/candidate" element={<ReportsCandidate />} />
-                <Route path="/reports/hiring" element={<ReportsHiring />} />
-                <Route path="/reports/rejection" element={<ReportsRejection />} />
+                <Route path="/reports/dashboard" element={<Dashboard />} />
+                <Route path="/reports/performance" element={<ReportsPerformance />} />
 
                 {/* Others */}
                 <Route path="/notifications" element={<Notifications />} />

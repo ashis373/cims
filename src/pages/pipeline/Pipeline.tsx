@@ -70,17 +70,7 @@ function Stat({ label, value, icon: Icon, tone, percent, borderTone }: StatProps
   );
 }
 
-const mockVelocityData = [
-  { date: "May 1", value: 10 },
-  { date: "May 5", value: 30 },
-  { date: "May 8", value: 25 },
-  { date: "May 12", value: 45 },
-  { date: "May 15", value: 40 },
-  { date: "May 20", value: 60 },
-  { date: "May 22", value: 58 },
-  { date: "May 25", value: 75 },
-  { date: "May 29", value: 85 },
-];
+
 
 function Pipeline() {
   const { candidates, undo, canUndo } = useAts();
@@ -286,7 +276,32 @@ function Pipeline() {
     const rejects = candidates.filter((c) =>
       ["Rejected", "Offer Declined", "No Show"].includes(c.stage),
     ).length;
-    const dropOff = Math.round((rejects / total) * 100);
+    const dropOff = total > 0 ? Math.round((rejects / total) * 100) : 0;
+
+    // Generate real velocity data based on applications over the last 14 days
+    const velocityMap: Record<string, number> = {};
+    const today = new Date();
+    for (let i = 13; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toLocaleDateString("en-GB", { month: "short", day: "numeric" });
+      velocityMap[dateStr] = 0;
+    }
+
+    candidates.forEach((c) => {
+      if (c.appliedAt) {
+        const d = new Date(c.appliedAt).toLocaleDateString("en-GB", { month: "short", day: "numeric" });
+        if (velocityMap[d] !== undefined) {
+          velocityMap[d]++;
+        }
+      }
+    });
+
+    let cumulative = 0;
+    const velocityData = Object.keys(velocityMap).map((date) => {
+      cumulative += velocityMap[date];
+      return { date, value: cumulative };
+    });
 
     return {
       overview,
@@ -299,6 +314,7 @@ function Pipeline() {
           ? sortedSources
           : [{ label: "No Data", value: 1, pct: "0%", hex: "#e2e8f0", color: "bg-slate-200" }],
       recentActivity,
+      velocityData,
       stats: {
         avgHireTime: avgHireTime + " Days",
         intToOffer: intToOffer + "%",
@@ -469,7 +485,7 @@ function Pipeline() {
           <div className="h-[140px] w-full mb-6">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart
-                data={mockVelocityData}
+                data={analytics.velocityData}
                 margin={{ top: 5, right: 0, left: -20, bottom: 0 }}
               >
                 <defs>

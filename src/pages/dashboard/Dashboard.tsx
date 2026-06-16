@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useAts } from "@/services/ats-store";
 import { PIPELINE_STAGES, STAGE_COLORS, type Stage } from "@/types/ats-types";
 import { Card } from "@/components/ui/card";
@@ -86,25 +86,16 @@ function Stat({
 function Dashboard() {
   const { candidates } = useAts();
   const [exportOpen, setExportOpen] = useState(false);
+  const [counts, setCounts] = useState<any>({
+    total: 0, active: 0, scheduled: 0, selected: 0, offersReleased: 0, offersAccepted: 0, joined: 0, rejected: 0, blacklisted: 0, noShow: 0, funnel: {}
+  });
 
-  const counts = useMemo(() => {
-    const c = (s: Stage) => candidates.filter((x) => x.stage === s).length;
-    const isInactive = (st: Stage) =>
-      ["Rejected", "Offer Declined", "No Show", "Offer Expired"].includes(st);
-
-    return {
-      total: candidates.length,
-      active: candidates.filter((x) => !isInactive(x.stage) && !x.isBlacklisted).length,
-      scheduled: c("Interview Scheduled"),
-      selected: c("Shortlisted") + c("Interview Completed"), // Proxy for selected
-      offersReleased: c("Offer Released"),
-      offersAccepted: c("Offer Accepted"),
-      joined: c("Joined"),
-      rejected: c("Rejected"),
-      blacklisted: candidates.filter((x) => x.isBlacklisted).length,
-      noShow: c("No Show"),
-    };
-  }, [candidates]);
+  useEffect(() => {
+    fetch("http://localhost/full-cims/api/stats.php")
+      .then(res => res.json())
+      .then(data => setCounts(data))
+      .catch(console.error);
+  }, []);
 
   const recent = [...candidates]
     .sort((a, b) => +new Date(b.updatedAt) - +new Date(a.updatedAt))
@@ -139,8 +130,8 @@ function Dashboard() {
   ] as Stage[];
 
   const pipelineData = trackingStages.map((stage) => {
-    const n = candidates.filter((c) => c.stage === stage).length;
-    const pct = candidates.length > 0 ? Math.round((n / candidates.length) * 100) : 0;
+    const n = counts.funnel?.[stage] || 0;
+    const pct = counts.total > 0 ? Math.round((n / counts.total) * 100) : 0;
     return { stage, n, pct, bgClass: FUNNEL_COLORS[stage] || "bg-slate-500" };
   });
 
@@ -398,14 +389,14 @@ function Dashboard() {
                         STAGE_COLORS[c.stage],
                       )}
                     >
-                      {c.name
+                      {(c.name || "?")
                         .split(" ")
                         .map((n) => n[0])
                         .join("")
                         .substring(0, 2)}
                     </div>
                     <div>
-                      <div className="text-[13px] font-bold text-slate-900">{c.name}</div>
+                      <div className="text-[13px] font-bold text-slate-900">{c.name || "Unknown Candidate"}</div>
                       <div className="text-[11px] text-slate-500 mt-0.5">{c.role}</div>
                     </div>
                   </div>
@@ -436,7 +427,7 @@ function Dashboard() {
               return (
                 <Link
                   key={q.label}
-                  to={`/candidates?filter=${encodeURIComponent(q.filter)}`}
+                  to={`/pipeline?status=${encodeURIComponent(q.filter.toLowerCase())}`}
                   className={cn(
                     "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-[11px] font-bold hover:opacity-80 transition-opacity",
                     q.color,
