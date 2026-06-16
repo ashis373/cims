@@ -472,9 +472,9 @@ export default function CandidatesPage() {
                   <button className="p-1.5 bg-blue-600 text-white rounded shadow-sm">
                     <Filter className="h-3.5 w-3.5" />
                   </button>
-                  <button className="p-1.5 text-slate-500 hover:text-slate-700 rounded">
+                  {/* <button className="p-1.5 text-slate-500 hover:text-slate-700 rounded">
                     <Filter className="h-3.5 w-3.5" />
-                  </button>
+                  </button> */}
                 </div>
               </div>
             </div>
@@ -553,14 +553,7 @@ export default function CandidatesPage() {
                       </td>
                       <td className="px-4 py-3">
                         {c.recruiter ? (
-                          <div className="flex items-center gap-2">
-                            <img
-                              src={`https://api.dicebear.com/7.x/notionists/svg?seed=${c.recruiter}`}
-                              alt=""
-                              className="h-5 w-5 rounded-full bg-slate-100"
-                            />
-                            <span className="font-medium text-slate-700">{c.recruiter}</span>
-                          </div>
+                          <span className="font-medium text-slate-700">{c.recruiter}</span>
                         ) : (
                           "—"
                         )}

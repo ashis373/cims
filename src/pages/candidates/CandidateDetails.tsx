@@ -60,19 +60,19 @@ function DetailItem({
   isRecruiter?: boolean;
 }) {
   return (
-    <div>
+    <div className="min-w-0">
       <div className="text-[10px] font-bold text-slate-500 mb-1">{label}</div>
       {isRecruiter && value !== "-" ? (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 min-w-0">
           <img
             src={`https://api.dicebear.com/7.x/notionists/svg?seed=${value}`}
             alt=""
-            className="h-5 w-5 rounded-full bg-slate-100"
+            className="h-5 w-5 rounded-full bg-slate-100 shrink-0"
           />
-          <span className="text-[12px] font-bold text-slate-900">{value}</span>
+          <span className="text-[12px] font-bold text-slate-900 truncate">{value}</span>
         </div>
       ) : (
-        <div className="text-[12px] font-bold text-slate-900">{value}</div>
+        <div className="text-[12px] font-bold text-slate-900 break-all">{value}</div>
       )}
     </div>
   );
@@ -87,6 +87,7 @@ export default function CandidateProfile() {
   const [del, setDel] = useState(false);
   const [blacklistDialogOpen, setBlacklistDialogOpen] = useState(false);
   const [blacklistReason, setBlacklistReason] = useState("");
+  const [activeTab, setActiveTab] = useState("Overview");
 
   if (!candidate) {
     return (
@@ -105,6 +106,15 @@ export default function CandidateProfile() {
     .join("")
     .slice(0, 2)
     .toUpperCase();
+
+  const scrollToSection = (tab: string) => {
+    setActiveTab(tab);
+    const element = document.getElementById(tab.toLowerCase().replace(" ", "-"));
+    if (element) {
+      const y = element.getBoundingClientRect().top + window.scrollY - 100;
+      window.scrollTo({ top: y, behavior: "smooth" });
+    }
+  };
 
   const handleStageSelect = (v: string) => {
     setStage(candidate.id, v as Stage);
@@ -260,26 +270,27 @@ export default function CandidateProfile() {
         </div>
 
         {/* Navigation Tabs */}
-        <div className="flex flex-wrap items-center gap-8 mt-8 border-b border-slate-100 px-2">
+        <div className="flex flex-wrap items-center gap-8 mt-8 border-b border-slate-100 px-2 overflow-x-auto">
           {[
-            "Overview",
-            "Timeline",
-            "Interviews",
-            "Applications",
-            "Documents",
-            "Notes",
-            "Activity Log",
+            { name: "Overview", color: "text-blue-600", border: "bg-blue-600" },
+            { name: "Timeline", color: "text-emerald-600", border: "bg-emerald-600" },
+            { name: "Interviews", color: "text-purple-600", border: "bg-purple-600" },
+            { name: "Applications", color: "text-orange-600", border: "bg-orange-600" },
+            { name: "Documents", color: "text-rose-600", border: "bg-rose-600" },
+            { name: "Notes", color: "text-amber-600", border: "bg-amber-600" },
+            { name: "Activity Log", color: "text-teal-600", border: "bg-teal-600" },
           ].map((tab) => (
             <button
-              key={tab}
+              key={tab.name}
+              onClick={() => scrollToSection(tab.name)}
               className={cn(
-                "pb-3 text-[12px] font-bold transition-colors relative",
-                tab === "Overview" ? "text-blue-600" : "text-slate-500 hover:text-slate-900",
+                "pb-3 text-[12px] font-bold transition-colors relative whitespace-nowrap",
+                tab.name === activeTab ? tab.color : "text-slate-500 hover:text-slate-900",
               )}
             >
-              {tab}
-              {tab === "Overview" && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-t-full" />
+              {tab.name}
+              {tab.name === activeTab && (
+                <div className={cn("absolute bottom-0 left-0 right-0 h-0.5 rounded-t-full", tab.border)} />
               )}
             </button>
           ))}
@@ -322,7 +333,7 @@ export default function CandidateProfile() {
         <div className="xl:col-span-3">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Candidate Details */}
-            <Card className="col-span-1 p-5 bg-white border-border/50 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] rounded-2xl relative flex flex-col">
+            <Card id="overview" className={cn("col-span-1 p-5 bg-white border shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] rounded-2xl relative flex flex-col transition-all duration-300", activeTab === "Overview" || activeTab === "Applications" ? "border-blue-500 ring-1 ring-blue-500 shadow-blue-100" : "border-border/50")}>
               <div className="absolute top-5 right-5">
                 <Button
                   variant="ghost"
@@ -356,7 +367,7 @@ export default function CandidateProfile() {
             </Card>
 
             {/* Candidate Timeline */}
-            <Card className="col-span-1 p-5 bg-white border-border/50 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] rounded-2xl flex flex-col">
+            <Card id="timeline" className={cn("col-span-1 p-5 bg-white border shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] rounded-2xl flex flex-col transition-all duration-300", activeTab === "Timeline" || activeTab === "Activity Log" ? "border-emerald-500 ring-1 ring-emerald-500 shadow-emerald-100" : "border-border/50")}>
               <h3 className="text-[13px] font-bold text-slate-900 mb-5">Candidate Timeline</h3>
               <div className="space-y-4 flex-1 relative before:absolute before:inset-0 before:ml-4 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-slate-100 before:to-transparent hidden md:block">
                 {[
@@ -449,7 +460,7 @@ export default function CandidateProfile() {
             </Card>
 
             {/* Latest Notes */}
-            <Card className="col-span-1 p-5 bg-white border-border/50 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] rounded-2xl flex flex-col">
+            <Card id="notes" className={cn("col-span-1 p-5 bg-white border shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] rounded-2xl flex flex-col transition-all duration-300", activeTab === "Notes" ? "border-amber-500 ring-1 ring-amber-500 shadow-amber-100" : "border-border/50")}>
               <div className="flex items-center justify-between mb-5">
                 <h3 className="text-[13px] font-bold text-slate-900">Latest Notes</h3>
                 <Button
@@ -503,7 +514,7 @@ export default function CandidateProfile() {
             </Card>
 
             {/* Interview History */}
-            <Card className="col-span-1 lg:col-span-2 p-5 bg-white border-border/50 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] rounded-2xl flex flex-col">
+            <Card id="interviews" className={cn("col-span-1 lg:col-span-2 p-5 bg-white border shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] rounded-2xl flex flex-col transition-all duration-300", activeTab === "Interviews" ? "border-purple-500 ring-1 ring-purple-500 shadow-purple-100" : "border-border/50")}>
               <h3 className="text-[13px] font-bold text-slate-900 mb-4">Interview History</h3>
               <div className="overflow-x-auto flex-1">
                 <table className="w-full text-left text-[11px]">
@@ -568,7 +579,7 @@ export default function CandidateProfile() {
             </Card>
 
             {/* Documents */}
-            <Card className="col-span-1 p-5 bg-white border-border/50 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] rounded-2xl flex flex-col">
+            <Card id="documents" className={cn("col-span-1 p-5 bg-white border shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] rounded-2xl flex flex-col transition-all duration-300", activeTab === "Documents" ? "border-rose-500 ring-1 ring-rose-500 shadow-rose-100" : "border-border/50")}>
               <div className="flex items-center justify-between mb-5">
                 <h3 className="text-[13px] font-bold text-slate-900">Documents</h3>
                 <Button
@@ -616,7 +627,7 @@ export default function CandidateProfile() {
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex items-center gap-1 transition-opacity">
                       <Button
                         variant="ghost"
                         size="icon"

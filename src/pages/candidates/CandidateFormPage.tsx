@@ -49,6 +49,7 @@ import {
   Building2,
   MessageSquare,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const empty = {
   name: "",
@@ -77,6 +78,11 @@ const empty = {
   recruiter: "",
 };
 
+const ErrorMsg = ({ msg }: { msg?: string }) => {
+  if (!msg) return null;
+  return <div className="text-[11px] text-destructive mt-1.5 font-bold">{msg}</div>;
+};
+
 export default function CandidateFormPage() {
   const { id } = useParams();
   const { candidates, add, update, findDuplicate, reapply } = useAts();
@@ -85,6 +91,7 @@ export default function CandidateFormPage() {
 
   const [form, setForm] = useState(empty);
   const [dup, setDup] = useState<Candidate | null>(null);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (candidate) {
@@ -100,17 +107,17 @@ export default function CandidateFormPage() {
         notes: candidate.notes || "",
         tags: candidate.tags.join(", "),
         skills: candidate.skills?.join(", ") || "",
-        experience: candidate.experience || "",
-        relevantExperience: candidate.relevantExperience || "",
+        experience: candidate.experience ? String(candidate.experience).replace(/[^\d.]/g, '') : "",
+        relevantExperience: candidate.relevantExperience ? String(candidate.relevantExperience).replace(/[^\d.]/g, '') : "",
         currentCompany: candidate.currentCompany || "",
         currentDesignation: candidate.currentDesignation || "",
-        currentCtc: candidate.currentCtc || "",
-        expectedCtc: candidate.expectedCtc || "",
+        currentCtc: candidate.currentCtc ? String(candidate.currentCtc).replace(/[^\d.]/g, '') : "",
+        expectedCtc: candidate.expectedCtc ? String(candidate.expectedCtc).replace(/[^\d.]/g, '') : "",
         location: candidate.location || "",
         preferredLocation: candidate.preferredLocation || "",
         alternateMobile: candidate.alternateMobile || "",
         linkedInProfile: candidate.linkedInProfile || "",
-        noticePeriod: candidate.noticePeriod || "",
+        noticePeriod: candidate.noticePeriod ? String(candidate.noticePeriod).replace(/[^\d]/g, '') : "",
         recruiter: candidate.recruiter || "",
         appliedAt: candidate.appliedAt.slice(0, 10),
       });
@@ -119,13 +126,76 @@ export default function CandidateFormPage() {
     }
   }, [candidate]);
 
-  const set = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) =>
+  const set = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) => {
     setForm((f) => ({ ...f, [k]: v }));
+    // Clear error for this field when user starts typing
+    if (errors[k]) {
+      setErrors((err) => ({ ...err, [k]: "" }));
+    }
+  };
+
+  const validate = () => {
+    const newErrors: Record<string, string> = {};
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const nameRegex = /^[a-zA-Z\s\-']+$/;
+    
+    if (!form.name.trim()) newErrors.name = "Name is required.";
+    else if (!nameRegex.test(form.name)) newErrors.name = "Name can only contain letters, spaces, and hyphens.";
+    else if (form.name.trim().length > 120) newErrors.name = "Name too long.";
+
+    if (!form.email.trim()) newErrors.email = "Email is required.";
+    else if (!emailRegex.test(form.email)) newErrors.email = "Please enter a valid email address.";
+
+    const phoneRegex = /^\d{10}$/;
+    if (!form.phone.trim()) newErrors.phone = "Mobile number is required.";
+    else if (!phoneRegex.test(form.phone)) newErrors.phone = "Mobile number must be exactly 10 digits.";
+
+    if (form.alternateMobile && !phoneRegex.test(form.alternateMobile)) {
+      newErrors.alternateMobile = "Alternate mobile must be exactly 10 digits.";
+    }
+
+    if (form.location && form.location.length > 50) newErrors.location = "Location cannot exceed 50 characters.";
+    if (form.preferredLocation && form.preferredLocation.length > 50) newErrors.preferredLocation = "Preferred location cannot exceed 50 characters.";
+
+    if (!form.experience.trim()) newErrors.experience = "Total experience is required.";
+    else if (isNaN(Number(form.experience)) || Number(form.experience) < 0 || Number(form.experience) > 50) {
+      newErrors.experience = "Enter a valid total experience (0-50).";
+    }
+
+    if (!form.relevantExperience.trim()) newErrors.relevantExperience = "Relevant experience is required.";
+    else if (isNaN(Number(form.relevantExperience)) || Number(form.relevantExperience) < 0 || Number(form.relevantExperience) > 50) {
+      newErrors.relevantExperience = "Enter a valid relevant experience (0-50).";
+    } else if (Number(form.relevantExperience) > Number(form.experience)) {
+      newErrors.relevantExperience = "Relevant experience cannot exceed total experience.";
+    }
+
+    if (!form.currentCompany.trim()) newErrors.currentCompany = "Current company is required.";
+    if (!form.currentDesignation.trim()) newErrors.currentDesignation = "Current designation is required.";
+
+    if (!form.currentCtc.trim()) newErrors.currentCtc = "Current CTC is required.";
+    else if (isNaN(Number(form.currentCtc)) || Number(form.currentCtc) < 0) newErrors.currentCtc = "Enter a valid positive number for CTC.";
+
+    if (form.expectedCtc && (isNaN(Number(form.expectedCtc)) || Number(form.expectedCtc) < 0)) {
+      newErrors.expectedCtc = "Enter a valid positive number for expected CTC.";
+    }
+
+    if (!form.noticePeriod.trim()) newErrors.noticePeriod = "Notice period is required.";
+    else if (isNaN(Number(form.noticePeriod)) || Number(form.noticePeriod) < 0) {
+      newErrors.noticePeriod = "Enter a valid positive number for notice period (days).";
+    }
+
+    if (!form.role.trim()) newErrors.role = "Position applied for is required.";
+    if (!form.recruiter.trim()) newErrors.recruiter = "Recruiter is required.";
+    if (!form.resume.trim()) newErrors.resume = "Resume upload is required.";
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name.trim() || !form.email.trim() || !form.role.trim()) {
-      toast.error("Name, email and role are required");
+    if (!validate()) {
+      toast.error("Please fix the validation errors before submitting.");
       return;
     }
 
@@ -164,17 +234,17 @@ export default function CandidateFormPage() {
               .split(",")
               .map((s) => s.trim())
               .filter(Boolean),
-            experience: form.experience,
-            relevantExperience: form.relevantExperience,
+            experience: form.experience + " Years",
+            relevantExperience: form.relevantExperience + " Years",
             currentCompany: form.currentCompany,
             currentDesignation: form.currentDesignation,
-            currentCtc: form.currentCtc,
-            expectedCtc: form.expectedCtc,
+            currentCtc: form.currentCtc + " LPA",
+            expectedCtc: form.expectedCtc ? form.expectedCtc + " LPA" : "",
             location: form.location,
             preferredLocation: form.preferredLocation,
             alternateMobile: form.alternateMobile,
             linkedInProfile: form.linkedInProfile,
-            noticePeriod: form.noticePeriod,
+            noticePeriod: form.noticePeriod + " Days",
             recruiter: form.recruiter,
             appliedAt: new Date(form.appliedAt).toISOString(),
           },
@@ -198,17 +268,17 @@ export default function CandidateFormPage() {
             .split(",")
             .map((s) => s.trim())
             .filter(Boolean),
-          experience: form.experience,
-          relevantExperience: form.relevantExperience,
+          experience: form.experience + " Years",
+          relevantExperience: form.relevantExperience + " Years",
           currentCompany: form.currentCompany,
           currentDesignation: form.currentDesignation,
-          currentCtc: form.currentCtc,
-          expectedCtc: form.expectedCtc,
+          currentCtc: form.currentCtc + " LPA",
+          expectedCtc: form.expectedCtc ? form.expectedCtc + " LPA" : "",
           location: form.location,
           preferredLocation: form.preferredLocation,
           alternateMobile: form.alternateMobile,
           linkedInProfile: form.linkedInProfile,
-          noticePeriod: form.noticePeriod,
+          noticePeriod: form.noticePeriod + " Days",
           recruiter: form.recruiter,
           appliedAt: new Date(form.appliedAt).toISOString(),
         });
@@ -218,6 +288,24 @@ export default function CandidateFormPage() {
     } catch (e) {
       // Error handled by store
     }
+  };
+
+  const handleNameChange = (value: string) => {
+    // Only allow letters, spaces, hyphens, and apostrophes
+    const sanitized = value.replace(/[^a-zA-Z\s\-']/g, "");
+    set("name", sanitized);
+  };
+
+  const handlePhoneChange = (field: "phone" | "alternateMobile", value: string) => {
+    // Only allow digits, max 10
+    const sanitized = value.replace(/\D/g, "").slice(0, 10);
+    set(field, sanitized);
+  };
+
+  const handleNumericChange = (field: keyof typeof form, value: string) => {
+    // Allow digits and dot
+    const sanitized = value.replace(/[^\d.]/g, "");
+    set(field, sanitized);
   };
 
   return (
@@ -232,7 +320,7 @@ export default function CandidateFormPage() {
         </Link>
       </div>
 
-      <form onSubmit={submit} className="space-y-6">
+      <form onSubmit={submit} className="space-y-6" noValidate>
         {/* Section 1: Basic Information */}
         <Card className="p-6 bg-white border-border/50 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] rounded-3xl">
           <div className="flex items-center gap-3 mb-6 pb-5 border-b border-slate-100">
@@ -255,11 +343,12 @@ export default function CandidateFormPage() {
               <Input
                 id="name"
                 value={form.name}
-                onChange={(e) => set("name", e.target.value)}
-                required
+                onChange={(e) => handleNameChange(e.target.value)}
                 maxLength={120}
                 placeholder="Full name"
+                className={errors.name ? "border-destructive focus-visible:ring-destructive" : ""}
               />
+              <ErrorMsg msg={errors.name} />
             </div>
             <div>
               <Label
@@ -272,11 +361,11 @@ export default function CandidateFormPage() {
               <Input
                 id="phone"
                 value={form.phone}
-                onChange={(e) => set("phone", e.target.value)}
-                required
-                maxLength={40}
+                onChange={(e) => handlePhoneChange("phone", e.target.value)}
                 placeholder="10-digit mobile number"
+                className={errors.phone ? "border-destructive focus-visible:ring-destructive" : ""}
               />
+              <ErrorMsg msg={errors.phone} />
             </div>
             <div>
               <Label
@@ -288,10 +377,11 @@ export default function CandidateFormPage() {
               <Input
                 id="alternateMobile"
                 value={form.alternateMobile}
-                onChange={(e) => set("alternateMobile", e.target.value)}
-                maxLength={40}
-                placeholder="Alternate mobile number"
+                onChange={(e) => handlePhoneChange("alternateMobile", e.target.value)}
+                placeholder="Alternate 10-digit number"
+                className={errors.alternateMobile ? "border-destructive focus-visible:ring-destructive" : ""}
               />
+              <ErrorMsg msg={errors.alternateMobile} />
             </div>
             <div className="md:col-span-2">
               <Label
@@ -306,10 +396,11 @@ export default function CandidateFormPage() {
                 type="email"
                 value={form.email}
                 onChange={(e) => set("email", e.target.value)}
-                required
                 maxLength={255}
                 placeholder="email@example.com"
+                className={errors.email ? "border-destructive focus-visible:ring-destructive" : ""}
               />
+              <ErrorMsg msg={errors.email} />
             </div>
             <div>
               <Label
@@ -321,9 +412,11 @@ export default function CandidateFormPage() {
               <Input
                 id="location"
                 value={form.location}
-                onChange={(e) => set("location", e.target.value)}
-                placeholder="City"
+                onChange={(e) => set("location", e.target.value.slice(0, 50))}
+                placeholder="City (max 50 chars)"
+                className={errors.location ? "border-destructive focus-visible:ring-destructive" : ""}
               />
+              <ErrorMsg msg={errors.location} />
             </div>
             <div>
               <Label
@@ -335,9 +428,11 @@ export default function CandidateFormPage() {
               <Input
                 id="preferredLocation"
                 value={form.preferredLocation}
-                onChange={(e) => set("preferredLocation", e.target.value)}
-                placeholder="Preferred city"
+                onChange={(e) => set("preferredLocation", e.target.value.slice(0, 50))}
+                placeholder="Preferred city (max 50 chars)"
+                className={errors.preferredLocation ? "border-destructive focus-visible:ring-destructive" : ""}
               />
+              <ErrorMsg msg={errors.preferredLocation} />
             </div>
           </div>
         </Card>
@@ -358,32 +453,34 @@ export default function CandidateFormPage() {
                 htmlFor="experience"
                 className="flex items-center gap-1.5 text-muted-foreground mb-1.5"
               >
-                <Clock className="h-3.5 w-3.5" /> Total Experience{" "}
+                <Clock className="h-3.5 w-3.5" /> Total Experience (Years){" "}
                 <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="experience"
                 value={form.experience}
-                onChange={(e) => set("experience", e.target.value)}
-                required
-                placeholder="e.g., 5 years"
+                onChange={(e) => handleNumericChange("experience", e.target.value)}
+                placeholder="e.g., 5"
+                className={errors.experience ? "border-destructive focus-visible:ring-destructive" : ""}
               />
+              <ErrorMsg msg={errors.experience} />
             </div>
             <div>
               <Label
                 htmlFor="relevantExperience"
                 className="flex items-center gap-1.5 text-muted-foreground mb-1.5"
               >
-                <Clock className="h-3.5 w-3.5" /> Relevant Experience{" "}
+                <Clock className="h-3.5 w-3.5" /> Relevant Experience (Years){" "}
                 <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="relevantExperience"
                 value={form.relevantExperience}
-                onChange={(e) => set("relevantExperience", e.target.value)}
-                required
-                placeholder="e.g., 4 years"
+                onChange={(e) => handleNumericChange("relevantExperience", e.target.value)}
+                placeholder="e.g., 4"
+                className={errors.relevantExperience ? "border-destructive focus-visible:ring-destructive" : ""}
               />
+              <ErrorMsg msg={errors.relevantExperience} />
             </div>
             <div>
               <Label
@@ -397,9 +494,10 @@ export default function CandidateFormPage() {
                 id="currentCompany"
                 value={form.currentCompany}
                 onChange={(e) => set("currentCompany", e.target.value)}
-                required
                 placeholder="Current employer"
+                className={errors.currentCompany ? "border-destructive focus-visible:ring-destructive" : ""}
               />
+              <ErrorMsg msg={errors.currentCompany} />
             </div>
             <div>
               <Label
@@ -413,55 +511,60 @@ export default function CandidateFormPage() {
                 id="currentDesignation"
                 value={form.currentDesignation}
                 onChange={(e) => set("currentDesignation", e.target.value)}
-                required
                 placeholder="Job title"
+                className={errors.currentDesignation ? "border-destructive focus-visible:ring-destructive" : ""}
               />
+              <ErrorMsg msg={errors.currentDesignation} />
             </div>
             <div>
               <Label
                 htmlFor="currentCtc"
                 className="flex items-center gap-1.5 text-muted-foreground mb-1.5"
               >
-                <IndianRupee className="h-3.5 w-3.5" /> Current CTC{" "}
+                <IndianRupee className="h-3.5 w-3.5" /> Current CTC (LPA){" "}
                 <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="currentCtc"
                 value={form.currentCtc}
-                onChange={(e) => set("currentCtc", e.target.value)}
-                required
-                placeholder="e.g., 12 LPA"
+                onChange={(e) => handleNumericChange("currentCtc", e.target.value)}
+                placeholder="e.g., 12"
+                className={errors.currentCtc ? "border-destructive focus-visible:ring-destructive" : ""}
               />
+              <ErrorMsg msg={errors.currentCtc} />
             </div>
             <div>
               <Label
                 htmlFor="expectedCtc"
                 className="flex items-center gap-1.5 text-muted-foreground mb-1.5"
               >
-                <IndianRupee className="h-3.5 w-3.5" /> Expected CTC
+                <IndianRupee className="h-3.5 w-3.5" /> Expected CTC (LPA)
               </Label>
               <Input
                 id="expectedCtc"
                 value={form.expectedCtc}
-                onChange={(e) => set("expectedCtc", e.target.value)}
-                placeholder="e.g., 18 LPA"
+                onChange={(e) => handleNumericChange("expectedCtc", e.target.value)}
+                placeholder="e.g., 18"
+                className={errors.expectedCtc ? "border-destructive focus-visible:ring-destructive" : ""}
               />
+              <ErrorMsg msg={errors.expectedCtc} />
             </div>
             <div>
               <Label
                 htmlFor="noticePeriod"
                 className="flex items-center gap-1.5 text-muted-foreground mb-1.5"
               >
-                <Clock className="h-3.5 w-3.5" /> Notice Period{" "}
+                <Clock className="h-3.5 w-3.5" /> Notice Period (Days){" "}
                 <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="noticePeriod"
                 value={form.noticePeriod}
-                onChange={(e) => set("noticePeriod", e.target.value)}
-                required
-                placeholder="e.g., 30 days"
+                onChange={(e) => set("noticePeriod", e.target.value.replace(/\D/g, ""))}
+                placeholder="e.g., 30"
+                className={errors.noticePeriod ? "border-destructive focus-visible:ring-destructive" : ""}
               />
+              <ErrorMsg msg={errors.noticePeriod} />
             </div>
             <div>
               <Label
@@ -477,7 +580,27 @@ export default function CandidateFormPage() {
                 placeholder="React, Node.js, Python..."
               />
             </div>
-            <div className="md:col-span-2">
+            <div>
+              <Label
+                htmlFor="resume"
+                className="flex items-center gap-1.5 text-muted-foreground mb-1.5"
+              >
+                <FileText className="h-3.5 w-3.5" /> Resume Upload{" "}
+                <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="resume"
+                type="file"
+                accept=".pdf,.doc,.docx"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) set("resume", file.name);
+                }}
+                className={errors.resume ? "border-destructive focus-visible:ring-destructive pt-1.5" : "pt-1.5"}
+              />
+              <ErrorMsg msg={errors.resume} />
+            </div>
+            <div>
               <Label
                 htmlFor="linkedInProfile"
                 className="flex items-center gap-1.5 text-muted-foreground mb-1.5"
@@ -507,8 +630,7 @@ export default function CandidateFormPage() {
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <div>
               <Label className="flex items-center gap-1.5 text-muted-foreground mb-1.5">
-                <Share2 className="h-3.5 w-3.5" /> Source{" "}
-                <span className="text-destructive">*</span>
+                <Share2 className="h-3.5 w-3.5" /> Source
               </Label>
               <Select value={form.source} onValueChange={(v) => set("source", v as Source)}>
                 <SelectTrigger>
@@ -535,9 +657,10 @@ export default function CandidateFormPage() {
                 id="role"
                 value={form.role}
                 onChange={(e) => set("role", e.target.value)}
-                required
                 placeholder="Select position"
+                className={errors.role ? "border-destructive focus-visible:ring-destructive" : ""}
               />
+              <ErrorMsg msg={errors.role} />
             </div>
             <div>
               <Label
@@ -551,9 +674,10 @@ export default function CandidateFormPage() {
                 id="recruiter"
                 value={form.recruiter}
                 onChange={(e) => set("recruiter", e.target.value)}
-                required
                 placeholder="Select recruiter"
+                className={errors.recruiter ? "border-destructive focus-visible:ring-destructive" : ""}
               />
+              <ErrorMsg msg={errors.recruiter} />
             </div>
             <div>
               <Label className="flex items-center gap-1.5 text-muted-foreground mb-1.5">
@@ -594,6 +718,9 @@ export default function CandidateFormPage() {
           </div>
         </Card>
 
+        <div className="text-[12px] text-muted-foreground font-semibold px-2">
+          Note: <span className="text-destructive">*</span> indicates mandatory fields required for candidate registration and processing.
+        </div>
         <div className="flex justify-end gap-3 pt-4 sticky bottom-6 bg-white/90 p-4 rounded-3xl border border-slate-100 backdrop-blur-md shadow-[0_8px_30px_rgba(0,0,0,0.12)]">
           <Button type="button" variant="ghost" className="font-bold rounded-xl" asChild>
             <Link to={candidate ? `/candidates/${candidate.id}` : "/candidates"}>Cancel</Link>
