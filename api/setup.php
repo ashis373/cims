@@ -33,7 +33,23 @@ $sql = "CREATE TABLE IF NOT EXISTS candidates (
     alternateMobile VARCHAR(50),
     linkedInProfile VARCHAR(255),
     noticePeriod VARCHAR(100),
-    recruiter VARCHAR(255)
+    recruiter VARCHAR(255),
+    isBlacklisted TINYINT(1) DEFAULT 0,
+    blacklistReason TEXT,
+    rejectionReason TEXT,
+    stageReason TEXT,
+    isActive TINYINT(1) DEFAULT 1,
+    positionApplied VARCHAR(255),
+    offerDate DATETIME,
+    offerStatus VARCHAR(50),
+    offerAcceptedDate DATETIME,
+    noJoinReason TEXT,
+    rejectionDate DATETIME,
+    rejectedBy VARCHAR(255),
+    blacklistDate DATETIME,
+    blacklistedBy VARCHAR(255),
+    createdBy VARCHAR(255),
+    updatedBy VARCHAR(255)
 )";
 
 try {
@@ -55,7 +71,23 @@ try {
         "alternateMobile VARCHAR(50)",
         "linkedInProfile VARCHAR(255)",
         "noticePeriod VARCHAR(100)",
-        "recruiter VARCHAR(255)"
+        "recruiter VARCHAR(255)",
+        "isBlacklisted TINYINT(1) DEFAULT 0",
+        "blacklistReason TEXT",
+        "rejectionReason TEXT",
+        "stageReason TEXT",
+        "isActive TINYINT(1) DEFAULT 1",
+        "positionApplied VARCHAR(255)",
+        "offerDate DATETIME",
+        "offerStatus VARCHAR(50)",
+        "offerAcceptedDate DATETIME",
+        "noJoinReason TEXT",
+        "rejectionDate DATETIME",
+        "rejectedBy VARCHAR(255)",
+        "blacklistDate DATETIME",
+        "blacklistedBy VARCHAR(255)",
+        "createdBy VARCHAR(255)",
+        "updatedBy VARCHAR(255)"
     ];
 
     foreach ($newColumns as $colDef) {
@@ -67,7 +99,27 @@ try {
         }
     }
     
-    echo "Table 'candidates' created/updated successfully.";
+    // Add Indexes
+    $indexes = [
+        "CREATE INDEX idx_candidates_stage_role ON candidates(stage, role)",
+        "CREATE INDEX idx_candidates_recruiter ON candidates(recruiter)",
+        "CREATE INDEX idx_candidates_appliedAt ON candidates(appliedAt)",
+        "CREATE INDEX idx_candidates_name ON candidates(name)",
+        "CREATE INDEX idx_candidates_phone ON candidates(phone)",
+        "CREATE INDEX idx_candidates_email ON candidates(email)",
+        "CREATE INDEX idx_candidates_stage ON candidates(stage)",
+        "CREATE INDEX idx_candidates_duplicate_check ON candidates(email, phone)"
+    ];
+
+    foreach ($indexes as $indexSql) {
+        try {
+            $conn->exec($indexSql);
+        } catch(PDOException $e) {
+            // Index likely already exists
+        }
+    }
+    
+    echo "Table 'candidates' created/updated successfully with new fields and indexes.";
 } catch (PDOException $e) {
     die("Error creating table: " . $e->getMessage());
 }

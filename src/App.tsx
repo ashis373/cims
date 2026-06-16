@@ -61,7 +61,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <AtsProvider>
-          <BrowserRouter basename="/cims">
+          <BrowserRouter basename={import.meta.env.MODE === 'production' ? '/cims' : '/'}>
             <AppLayout>
               <Routes>
                 <Route path="/" element={<Dashboard />} />

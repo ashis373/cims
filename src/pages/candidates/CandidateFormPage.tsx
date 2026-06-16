@@ -592,13 +592,36 @@ export default function CandidateFormPage() {
                 id="resume"
                 type="file"
                 accept=".pdf,.doc,.docx"
-                onChange={(e) => {
+                onChange={async (e) => {
                   const file = e.target.files?.[0];
-                  if (file) set("resume", file.name);
+                  if (file) {
+                    const formData = new FormData();
+                    formData.append("resume", file);
+                    const isDev = import.meta.env.DEV;
+                    const uploadUrl = isDev 
+                      ? "http://localhost/full-cims/api/upload.php" 
+                      : "https://demo.hexalearn.com/cims/api/upload.php";
+                    try {
+                      const res = await fetch(uploadUrl, { method: "POST", body: formData });
+                      const data = await res.json();
+                      if (data.success) {
+                        set("resume", data.filename);
+                      } else {
+                        console.error(data.error || "Upload failed");
+                      }
+                    } catch (err) {
+                      console.error("Upload failed", err);
+                    }
+                  }
                 }}
                 className={errors.resume ? "border-destructive focus-visible:ring-destructive pt-1.5" : "pt-1.5"}
               />
               <ErrorMsg msg={errors.resume} />
+              {form.resume && (
+                <div className="text-xs text-muted-foreground mt-1 text-emerald-600">
+                  Uploaded: {form.resume.split('_').slice(1).join('_') || form.resume}
+                </div>
+              )}
             </div>
             <div>
               <Label

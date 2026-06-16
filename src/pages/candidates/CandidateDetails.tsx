@@ -47,6 +47,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -87,6 +93,8 @@ export default function CandidateProfile() {
   const [del, setDel] = useState(false);
   const [blacklistDialogOpen, setBlacklistDialogOpen] = useState(false);
   const [blacklistReason, setBlacklistReason] = useState("");
+  const [fullDetailsOpen, setFullDetailsOpen] = useState(false);
+  const [fullTimelineOpen, setFullTimelineOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("Overview");
 
   if (!candidate) {
@@ -152,6 +160,10 @@ export default function CandidateProfile() {
 
   const formatDate = (d: string) =>
     new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+  const formatDateTime = (d: string) => {
+    const date = new Date(d);
+    return date.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) + ", " + date.toLocaleTimeString("en-US", { hour: '2-digit', minute: '2-digit' });
+  };
   const daysInPipeline = Math.max(
     0,
     Math.floor(
@@ -360,7 +372,7 @@ export default function CandidateProfile() {
                 <DetailItem label="Application Date" value={formatDate(candidate.appliedAt)} />
               </div>
               <div className="mt-5 pt-3 border-t border-slate-100 text-center">
-                <Button variant="link" className="text-blue-600 text-[11px] font-bold">
+                <Button variant="link" className="text-blue-600 text-[11px] font-bold" onClick={() => setFullDetailsOpen(true)}>
                   View Full Details →
                 </Button>
               </div>
@@ -370,59 +382,19 @@ export default function CandidateProfile() {
             <Card id="timeline" className={cn("col-span-1 p-5 bg-white border shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] rounded-2xl flex flex-col transition-all duration-300", activeTab === "Timeline" || activeTab === "Activity Log" ? "border-emerald-500 ring-1 ring-emerald-500 shadow-emerald-100" : "border-border/50")}>
               <h3 className="text-[13px] font-bold text-slate-900 mb-5">Candidate Timeline</h3>
               <div className="space-y-4 flex-1 relative before:absolute before:inset-0 before:ml-4 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-slate-100 before:to-transparent hidden md:block">
-                {[
-                  {
-                    icon: FileText,
-                    title: "Application Submitted",
-                    date: "29 May 2026, 10:30 AM",
-                    status: "Completed",
-                    color: "bg-emerald-100 text-emerald-600",
-                  },
-                  {
-                    icon: Calendar,
-                    title: "Interview Scheduled",
-                    date: "02 Jun 2026, 11:00 AM",
-                    status: "Completed",
-                    color: "bg-emerald-100 text-emerald-600",
-                  },
-                  {
-                    icon: Activity,
-                    title: "Technical Interview",
-                    date: "02 Jun 2026, 11:00 AM",
-                    status: "Completed",
-                    color: "bg-emerald-100 text-emerald-600",
-                  },
-                  {
-                    icon: Users,
-                    title: "HR Interview",
-                    date: "05 Jun 2026, 02:00 PM",
-                    status: "Completed",
-                    color: "bg-emerald-100 text-emerald-600",
-                  },
-                  {
-                    icon: Mail,
-                    title: "Offer Released",
-                    date: "08 Jun 2026, 04:30 PM",
-                    status: "Completed",
-                    color: "bg-emerald-100 text-emerald-600",
-                  },
-                  {
-                    icon: Trash2,
-                    title: "Offer Declined",
-                    date: "09 Jun 2026, 09:15 AM",
-                    status: "Current",
-                    color: "bg-red-100 text-red-600",
-                    isLast: true,
-                  },
-                ].map((item, i) => (
+                {candidate.activity.slice().reverse().slice(0, 4).map((item, i) => (
                   <div key={i} className="flex items-start gap-4">
                     <div
                       className={cn(
                         "h-8 w-8 rounded-full border-2 border-white flex items-center justify-center shrink-0 z-10",
-                        item.color,
+                        i === 0 ? "bg-emerald-100 text-emerald-600" : "bg-slate-100 text-slate-500",
                       )}
                     >
-                      <item.icon className="h-3.5 w-3.5" />
+                      {item.message.includes('Created') || item.message.includes('Application') ? <FileText className="h-3.5 w-3.5" /> :
+                       item.message.includes('Interview') ? <Users className="h-3.5 w-3.5" /> :
+                       item.message.includes('Offer') ? <Mail className="h-3.5 w-3.5" /> :
+                       item.message.includes('Reject') || item.message.includes('Decline') ? <Trash2 className="h-3.5 w-3.5" /> :
+                       <Activity className="h-3.5 w-3.5" />}
                     </div>
                     <div className="flex-1 pb-1">
                       <div className="flex justify-between items-start">
@@ -430,30 +402,35 @@ export default function CandidateProfile() {
                           <div
                             className={cn(
                               "text-[11px] font-bold",
-                              item.isLast ? "text-red-600" : "text-slate-900",
+                              i === 0 ? "text-slate-900" : "text-slate-600",
                             )}
                           >
-                            {item.title}
+                            {item.message.split(':')[0] || "Update"}
                           </div>
                           <div className="text-[9px] font-bold text-slate-400 mt-0.5">
-                            {item.date}
+                            {formatDateTime(item.at)}
                           </div>
                         </div>
                         <Badge
                           className={cn(
                             "text-[9px] font-bold px-1.5 py-0 rounded border-transparent uppercase tracking-wider",
-                            item.color,
+                            i === 0 ? "bg-emerald-100 text-emerald-600" : "bg-slate-100 text-slate-500",
                           )}
                         >
-                          {item.status}
+                          {i === 0 ? "Current" : "Completed"}
                         </Badge>
                       </div>
+                      {item.message.includes(':') && (
+                        <div className="text-[10px] text-slate-500 mt-1 font-medium bg-slate-50 p-1.5 rounded-md border border-slate-100 inline-block">
+                          {item.message.split(':')[1].trim()}
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
               </div>
               <div className="mt-5 pt-3 border-t border-slate-100 text-center">
-                <Button variant="link" className="text-blue-600 text-[11px] font-bold">
+                <Button variant="link" className="text-blue-600 text-[11px] font-bold" onClick={() => setFullTimelineOpen(true)}>
                   View Full Timeline →
                 </Button>
               </div>
@@ -591,25 +568,13 @@ export default function CandidateProfile() {
               </div>
               <div className="space-y-4 flex-1">
                 {[
-                  {
-                    name: `Resume_${candidate.name.replace(" ", "_")}.pdf`,
-                    date: "29 May 2026",
-                    color: "text-red-500 bg-red-50",
-                    ext: "pdf",
-                  },
-                  {
-                    name: "Offer_Letter.pdf",
-                    date: "08 Jun 2026",
-                    color: "text-red-500 bg-red-50",
-                    ext: "pdf",
-                  },
-                  {
-                    name: "ID_Proof.png",
-                    date: "29 May 2026",
-                    color: "text-emerald-500 bg-emerald-50",
-                    ext: "png",
-                  },
-                ].map((doc, i) => (
+                  candidate.resume ? {
+                    name: candidate.resume.split('_').slice(1).join('_') || candidate.resume,
+                    rawName: candidate.resume,
+                    date: new Date(candidate.updatedAt).toLocaleDateString("en-GB", { day: '2-digit', month: 'short', year: 'numeric' }),
+                    color: "text-blue-500 bg-blue-50",
+                  } : null
+                ].filter(Boolean).map((doc: any, i) => (
                   <div key={i} className="flex items-center justify-between group">
                     <div className="flex items-center gap-3">
                       <div
@@ -621,30 +586,30 @@ export default function CandidateProfile() {
                         <FileText className="h-4 w-4" />
                       </div>
                       <div>
-                        <div className="text-[11px] font-bold text-slate-900">{doc.name}</div>
+                        <div className="text-[11px] font-bold text-slate-900 truncate max-w-[150px]" title={doc.name}>{doc.name}</div>
                         <div className="text-[9px] font-bold text-slate-400 mt-0.5">
                           Uploaded on {doc.date}
                         </div>
                       </div>
                     </div>
                     <div className="flex items-center gap-1 transition-opacity">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6 text-slate-400 hover:text-blue-600"
-                      >
-                        <Download className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6 text-slate-400 hover:text-blue-600"
-                      >
-                        <MoreVertical className="h-3.5 w-3.5" />
-                      </Button>
+                      <a href={`http://localhost/full-cims/api/uploads/${doc.rawName}`} target="_blank" rel="noreferrer">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 text-slate-400 hover:text-blue-600"
+                        >
+                          <Download className="h-3.5 w-3.5" />
+                        </Button>
+                      </a>
                     </div>
                   </div>
                 ))}
+                {!candidate.resume && (
+                  <div className="text-center text-slate-400 text-[11px] font-bold py-6">
+                    No documents found.
+                  </div>
+                )}
               </div>
               <div className="mt-5 pt-3 border-t border-slate-100 text-center">
                 <Button variant="link" className="text-blue-600 text-[11px] font-bold">
@@ -835,6 +800,125 @@ export default function CandidateProfile() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={fullDetailsOpen} onOpenChange={setFullDetailsOpen}>
+        <DialogContent className="max-w-2xl bg-white border-0 shadow-2xl rounded-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold text-slate-900">
+              Full Candidate Details
+            </DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-y-6 gap-x-8 mt-4">
+            <div className="space-y-4">
+              <h4 className="text-[11px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-100 pb-2">Personal Information</h4>
+              <DetailItem label="Full Name" value={candidate.name} />
+              <DetailItem label="Email" value={candidate.email} />
+              <DetailItem label="Phone" value={candidate.phone || "-"} />
+              <DetailItem label="Alternate Mobile" value={candidate.alternateMobile || "-"} />
+              <DetailItem label="Current Location" value={candidate.location || "-"} />
+              <DetailItem label="Preferred Location" value={candidate.preferredLocation || "-"} />
+              <DetailItem label="LinkedIn Profile" value={candidate.linkedInProfile || "-"} />
+            </div>
+            
+            <div className="space-y-4">
+              <h4 className="text-[11px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-100 pb-2">Professional Details</h4>
+              <DetailItem label="Position Applied" value={candidate.role} />
+              <DetailItem label="Department" value={candidate.department || "-"} />
+              <DetailItem label="Total Experience" value={candidate.experience ? `${candidate.experience} Years` : "-"} />
+              <DetailItem label="Relevant Experience" value={candidate.relevantExperience ? `${candidate.relevantExperience} Years` : "-"} />
+              <DetailItem label="Current Company" value={candidate.currentCompany || "-"} />
+              <DetailItem label="Current Designation" value={candidate.currentDesignation || "-"} />
+            </div>
+
+            <div className="space-y-4">
+              <h4 className="text-[11px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-100 pb-2">Compensation & Notice</h4>
+              <DetailItem label="Current CTC" value={candidate.currentCtc || "-"} />
+              <DetailItem label="Expected CTC" value={candidate.expectedCtc || "-"} />
+              <DetailItem label="Notice Period" value={candidate.noticePeriod ? `${candidate.noticePeriod} Days` : "-"} />
+            </div>
+
+            <div className="space-y-4">
+              <h4 className="text-[11px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-100 pb-2">Application Info</h4>
+              <DetailItem label="Source" value={candidate.source || "-"} />
+              <DetailItem label="Stage" value={candidate.stage} />
+              <DetailItem label="Recruiter" value={candidate.recruiter || "-"} isRecruiter />
+              <DetailItem label="Applied At" value={formatDate(candidate.appliedAt)} />
+              <div>
+                <span className="block text-[11px] font-bold text-slate-500 mb-1.5">Skills</span>
+                <div className="flex flex-wrap gap-1">
+                  {candidate.skills && candidate.skills.length > 0 ? (
+                    candidate.skills.map((skill) => (
+                      <Badge key={skill} variant="secondary" className="bg-slate-100 text-[10px] font-bold text-slate-600 px-2 rounded-md">
+                        {skill}
+                      </Badge>
+                    ))
+                  ) : (
+                    <span className="text-[13px] font-bold text-slate-900">-</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={fullTimelineOpen} onOpenChange={setFullTimelineOpen}>
+        <DialogContent className="max-w-md bg-white border-0 shadow-2xl rounded-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold text-slate-900">
+              Full Activity Timeline
+            </DialogTitle>
+          </DialogHeader>
+          <div className="mt-6 space-y-6 relative before:absolute before:inset-0 before:ml-4 before:-translate-x-px before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-slate-100 before:to-transparent">
+            {candidate.activity.slice().reverse().map((item, i) => (
+              <div key={i} className="flex items-start gap-4">
+                <div
+                  className={cn(
+                    "h-8 w-8 rounded-full border-2 border-white flex items-center justify-center shrink-0 z-10",
+                    i === 0 ? "bg-emerald-100 text-emerald-600" : "bg-slate-100 text-slate-500",
+                  )}
+                >
+                  {item.message.includes('Created') || item.message.includes('Application') ? <FileText className="h-3.5 w-3.5" /> :
+                   item.message.includes('Interview') ? <Users className="h-3.5 w-3.5" /> :
+                   item.message.includes('Offer') ? <Mail className="h-3.5 w-3.5" /> :
+                   item.message.includes('Reject') || item.message.includes('Decline') ? <Trash2 className="h-3.5 w-3.5" /> :
+                   <Activity className="h-3.5 w-3.5" />}
+                </div>
+                <div className="flex-1 pb-1">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <div
+                        className={cn(
+                          "text-[11px] font-bold",
+                          i === 0 ? "text-slate-900" : "text-slate-600",
+                        )}
+                      >
+                        {item.message.split(':')[0] || "Update"}
+                      </div>
+                      <div className="text-[9px] font-bold text-slate-400 mt-0.5">
+                        {formatDateTime(item.at)}
+                      </div>
+                    </div>
+                    <Badge
+                      className={cn(
+                        "text-[9px] font-bold px-1.5 py-0 rounded border-transparent uppercase tracking-wider",
+                        i === 0 ? "bg-emerald-100 text-emerald-600" : "bg-slate-100 text-slate-500",
+                      )}
+                    >
+                      {i === 0 ? "Current" : "Completed"}
+                    </Badge>
+                  </div>
+                  {item.message.includes(':') && (
+                    <div className="text-[10px] text-slate-500 mt-1 font-medium bg-slate-50 p-1.5 rounded-md border border-slate-100 inline-block">
+                      {item.message.split(':')[1].trim()}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
