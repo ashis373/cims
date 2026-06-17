@@ -20,11 +20,10 @@ import {
   type ActivityEntry,
 } from "@/types/ats-types";
 
+import { API_BASE_URL } from "@/config/api";
+
 const STORAGE_KEY = "ats.candidates.v2";
-const isDev = import.meta.env.DEV;
-const API_URL = isDev
-  ? "http://localhost/full-cims/api/candidates.php"
-  : "https://demo.hexalearn.com/cims/api/candidates.php";
+const API_URL = `${API_BASE_URL}/candidates.php`;
 
 function uid() {
   return Math.random().toString(36).slice(2, 10) + Date.now().toString(36);

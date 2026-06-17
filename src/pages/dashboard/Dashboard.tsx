@@ -24,6 +24,7 @@ import {
 import { ExportDialog } from "@/components/common/ExportDialog";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
+import { API_BASE_URL } from "@/config/api";
 
 const container = {
   hidden: { opacity: 0 },
@@ -91,7 +92,7 @@ function Dashboard() {
   });
 
   useEffect(() => {
-    fetch("http://localhost/full-cims/api/stats.php")
+    fetch(`${API_BASE_URL}/stats.php`)
       .then(res => res.json())
       .then(data => setCounts(data))
       .catch(console.error);

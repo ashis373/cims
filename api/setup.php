@@ -1,7 +1,7 @@
 <?php
 include 'db.php';
 
-$sql = "CREATE TABLE IF NOT EXISTS candidates (
+$sql = "CREATE TABLE IF NOT EXISTS cims_candidates (
     id VARCHAR(50) PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     email VARCHAR(255) NOT NULL,
@@ -93,7 +93,7 @@ try {
     foreach ($newColumns as $colDef) {
         $colName = explode(" ", $colDef)[0];
         try {
-            $conn->exec("ALTER TABLE candidates ADD COLUMN $colDef");
+            $conn->exec("ALTER TABLE cims_candidates ADD COLUMN $colDef");
         } catch(PDOException $e) {
             // Column likely already exists, ignore
         }

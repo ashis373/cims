@@ -30,9 +30,9 @@ try {
                 c.email,
                 c.phone,
                 c.expectedCtc
-            FROM candidate_offers o
-            JOIN applications a ON o.application_id = a.id
-            JOIN candidates c ON a.candidate_id = c.id
+            FROM cims_candidate_offers o
+            JOIN cims_applications a ON o.application_id = a.id
+            JOIN cims_candidates c ON a.candidate_id = c.id
             ORDER BY o.offerDate DESC
         ");
         
@@ -52,7 +52,7 @@ try {
         $conn->beginTransaction();
         
         // Fetch offer info
-        $stmt = $conn->prepare("SELECT o.*, a.candidate_id FROM candidate_offers o JOIN applications a ON o.application_id = a.id WHERE o.id = ?");
+        $stmt = $conn->prepare("SELECT o.*, a.candidate_id FROM cims_candidate_offers o JOIN cims_applications a ON o.application_id = a.id WHERE o.id = ?");
         $stmt->execute([$id]);
         $offer = $stmt->fetch(PDO::FETCH_ASSOC);
         
@@ -66,20 +66,20 @@ try {
 
         if ($action === 'mark_joined') {
             // Update offer
-            $stmtUpdate = $conn->prepare("UPDATE candidate_offers SET offerStatus = 'Joined' WHERE id = ?");
+            $stmtUpdate = $conn->prepare("UPDATE cims_candidate_offers SET offerStatus = 'Joined' WHERE id = ?");
             $stmtUpdate->execute([$id]);
             // Update application stage
-            $stmtApp = $conn->prepare("UPDATE applications SET stage = 'Joined' WHERE id = ?");
+            $stmtApp = $conn->prepare("UPDATE cims_applications SET stage = 'Joined' WHERE id = ?");
             $stmtApp->execute([$offer['application_id']]);
             // Update candidate stage (for legacy fields)
-            $stmtCand = $conn->prepare("UPDATE candidates SET stage = 'Joined', updatedAt = NOW() WHERE id = ?");
+            $stmtCand = $conn->prepare("UPDATE cims_candidates SET stage = 'Joined', updatedAt = NOW() WHERE id = ?");
             $stmtCand->execute([$candidateId]);
             // Log history
-            $stmtHist = $conn->prepare("INSERT INTO candidate_history (candidate_id, action, details) VALUES (?, 'Offer Updated', 'Candidate marked as Joined')");
+            $stmtHist = $conn->prepare("INSERT INTO cims_candidate_history (candidate_id, action, details) VALUES (?, 'Offer Updated', 'Candidate marked as Joined')");
             $stmtHist->execute([$candidateId]);
         } elseif ($action === 'send_reminder') {
             // In a real app, send email here. Just log history.
-            $stmtHist = $conn->prepare("INSERT INTO candidate_history (candidate_id, action, details) VALUES (?, 'Reminder Sent', 'Sent joining reminder to candidate')");
+            $stmtHist = $conn->prepare("INSERT INTO cims_candidate_history (candidate_id, action, details) VALUES (?, 'Reminder Sent', 'Sent joining reminder to candidate')");
             $stmtHist->execute([$candidateId]);
         } else {
             // Generic update
@@ -94,7 +94,7 @@ try {
             }
             if (!empty($updates)) {
                 $params[] = $id;
-                $sql = "UPDATE candidate_offers SET " . implode(", ", $updates) . " WHERE id = ?";
+                $sql = "UPDATE cims_candidate_offers SET " . implode(", ", $updates) . " WHERE id = ?";
                 $stmtUpd = $conn->prepare($sql);
                 $stmtUpd->execute($params);
                 
@@ -108,12 +108,12 @@ try {
                         'No Show' => 'No Show'
                     ];
                     $newStage = $stageMap[$data['offerStatus']] ?? $data['offerStatus'];
-                    $stmtApp = $conn->prepare("UPDATE applications SET stage = ? WHERE id = ?");
+                    $stmtApp = $conn->prepare("UPDATE cims_applications SET stage = ? WHERE id = ?");
                     $stmtApp->execute([$newStage, $offer['application_id']]);
-                    $stmtCand = $conn->prepare("UPDATE candidates SET stage = ?, updatedAt = NOW() WHERE id = ?");
+                    $stmtCand = $conn->prepare("UPDATE cims_candidates SET stage = ?, updatedAt = NOW() WHERE id = ?");
                     $stmtCand->execute([$newStage, $candidateId]);
                     
-                    $stmtHist = $conn->prepare("INSERT INTO candidate_history (candidate_id, action, details) VALUES (?, 'Offer Updated', ?)");
+                    $stmtHist = $conn->prepare("INSERT INTO cims_candidate_history (candidate_id, action, details) VALUES (?, 'Offer Updated', ?)");
                     $stmtHist->execute([$candidateId, "Offer status changed to " . $data['offerStatus']]);
                 }
             }

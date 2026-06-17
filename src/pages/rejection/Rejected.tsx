@@ -5,6 +5,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@
 import { XOctagon, Calendar, ChevronRight } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { API_BASE_URL } from "@/config/api";
 
 export default function Rejected() {
   const [data, setData] = useState<any[]>([]);
@@ -12,7 +13,7 @@ export default function Rejected() {
   const [reasonFilter, setReasonFilter] = useState("All");
 
   useEffect(() => {
-    fetch("http://localhost/full-cims/api/rejected.php")
+    fetch(`${API_BASE_URL}/rejected.php`)
       .then((res) => res.json())
       .then((json) => {
         setData(json.rejected || []);

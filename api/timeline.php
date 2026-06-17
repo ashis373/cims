@@ -40,8 +40,8 @@ try {
                 h.createdAt as timestamp, 
                 'System' as user, 
                 c.name as candidateName 
-            FROM candidate_history h 
-            JOIN candidates c ON h.candidate_id = c.id 
+            FROM cims_candidate_history h 
+            JOIN cims_candidates c ON h.candidate_id = c.id 
             $whereHist
         )
         UNION ALL
@@ -53,8 +53,8 @@ try {
                 n.createdAt as timestamp, 
                 n.createdBy as user, 
                 c.name as candidateName 
-            FROM candidate_notes n 
-            JOIN candidates c ON n.candidate_id = c.id 
+            FROM cims_candidate_notes n 
+            JOIN cims_candidates c ON n.candidate_id = c.id 
             $whereNotes
         )
         UNION ALL
@@ -66,9 +66,9 @@ try {
                 i.interviewDate as timestamp, 
                 'System' as user, 
                 c.name as candidateName 
-            FROM candidate_interviews i 
-            JOIN applications a ON i.application_id = a.id 
-            JOIN candidates c ON a.candidate_id = c.id 
+            FROM cims_candidate_interviews i 
+            JOIN cims_applications a ON i.application_id = a.id 
+            JOIN cims_candidates c ON a.candidate_id = c.id 
             $whereInt
         )
         UNION ALL
@@ -80,8 +80,8 @@ try {
                 r.recordedAt as timestamp, 
                 'System' as user, 
                 c.name as candidateName 
-            FROM candidate_rejections r 
-            JOIN candidates c ON r.candidate_id = c.id 
+            FROM cims_candidate_rejections r 
+            JOIN cims_candidates c ON r.candidate_id = c.id 
             $whereRej
         )
         UNION ALL
@@ -93,8 +93,8 @@ try {
                 a.appliedAt as timestamp, 
                 'System' as user, 
                 c.name as candidateName 
-            FROM applications a 
-            JOIN candidates c ON a.candidate_id = c.id 
+            FROM cims_applications a 
+            JOIN cims_candidates c ON a.candidate_id = c.id 
             $whereApp
         )
         ORDER BY timestamp DESC

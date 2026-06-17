@@ -22,8 +22,8 @@ if ($method === 'GET') {
         // Fetch candidates with primary application details
         $stmt = $conn->query("
             SELECT c.*, a.stage, a.role_applied as role, a.department, a.source, a.recruiter, a.appliedAt 
-            FROM candidates c 
-            LEFT JOIN applications a ON c.id = a.candidate_id 
+            FROM cims_candidates c 
+            LEFT JOIN cims_applications a ON c.id = a.candidate_id 
             ORDER BY c.updatedAt DESC
         ");
         $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -38,7 +38,7 @@ if ($method === 'GET') {
         $inQuery = implode(',', array_fill(0, count($candidateIds), '?'));
         
         // 1. Batch fetch history
-        $stmtHist = $conn->prepare("SELECT * FROM candidate_history WHERE candidate_id IN ($inQuery) ORDER BY createdAt DESC");
+        $stmtHist = $conn->prepare("SELECT * FROM cims_candidate_history WHERE candidate_id IN ($inQuery) ORDER BY createdAt DESC");
         $stmtHist->execute($candidateIds);
         $allHistory = $stmtHist->fetchAll(PDO::FETCH_ASSOC);
         $histByCand = [];
@@ -52,35 +52,35 @@ if ($method === 'GET') {
         }
 
         // 2. Batch fetch notes
-        $stmtNotes = $conn->prepare("SELECT * FROM candidate_notes WHERE candidate_id IN ($inQuery) ORDER BY createdAt DESC");
+        $stmtNotes = $conn->prepare("SELECT * FROM cims_candidate_notes WHERE candidate_id IN ($inQuery) ORDER BY createdAt DESC");
         $stmtNotes->execute($candidateIds);
         $allNotes = $stmtNotes->fetchAll(PDO::FETCH_ASSOC);
         $notesByCand = [];
         foreach ($allNotes as $n) { $notesByCand[$n['candidate_id']][] = $n; }
 
         // 3. Batch fetch documents
-        $stmtDocs = $conn->prepare("SELECT * FROM candidate_documents WHERE candidate_id IN ($inQuery) ORDER BY uploadedAt DESC");
+        $stmtDocs = $conn->prepare("SELECT * FROM cims_candidate_documents WHERE candidate_id IN ($inQuery) ORDER BY uploadedAt DESC");
         $stmtDocs->execute($candidateIds);
         $allDocs = $stmtDocs->fetchAll(PDO::FETCH_ASSOC);
         $docsByCand = [];
         foreach ($allDocs as $d) { $docsByCand[$d['candidate_id']][] = $d; }
 
         // 4. Batch fetch alerts (rejections)
-        $stmtRej = $conn->prepare("SELECT * FROM candidate_rejections WHERE candidate_id IN ($inQuery) ORDER BY recordedAt DESC");
+        $stmtRej = $conn->prepare("SELECT * FROM cims_candidate_rejections WHERE candidate_id IN ($inQuery) ORDER BY recordedAt DESC");
         $stmtRej->execute($candidateIds);
         $allRej = $stmtRej->fetchAll(PDO::FETCH_ASSOC);
         $rejByCand = [];
         foreach ($allRej as $r) { $rejByCand[$r['candidate_id']][] = $r; }
 
         // 5. Batch fetch applications
-        $stmtApps = $conn->prepare("SELECT * FROM applications WHERE candidate_id IN ($inQuery) ORDER BY appliedAt DESC");
+        $stmtApps = $conn->prepare("SELECT * FROM cims_applications WHERE candidate_id IN ($inQuery) ORDER BY appliedAt DESC");
         $stmtApps->execute($candidateIds);
         $allApps = $stmtApps->fetchAll(PDO::FETCH_ASSOC);
         $appsByCand = [];
         foreach ($allApps as $a) { $appsByCand[$a['candidate_id']][] = $a; }
 
         // 6. Batch fetch interviews (via applications)
-        $stmtInt = $conn->prepare("SELECT i.*, a.candidate_id FROM candidate_interviews i JOIN applications a ON i.application_id = a.id WHERE a.candidate_id IN ($inQuery) ORDER BY i.interviewDate DESC");
+        $stmtInt = $conn->prepare("SELECT i.*, a.candidate_id FROM cims_candidate_interviews i JOIN cims_applications a ON i.application_id = a.id WHERE a.candidate_id IN ($inQuery) ORDER BY i.interviewDate DESC");
         $stmtInt->execute($candidateIds);
         $allInt = $stmtInt->fetchAll(PDO::FETCH_ASSOC);
         $intByCand = [];
@@ -136,7 +136,7 @@ if ($method === 'GET') {
         $id = $c['id'];
         
         // Duplicate Check
-        $stmtCheck = $conn->prepare("SELECT id FROM candidates WHERE email = ? OR (phone != '' AND phone = ?)");
+        $stmtCheck = $conn->prepare("SELECT id FROM cims_candidates WHERE email = ? OR (phone != '' AND phone = ?)");
         $stmtCheck->execute([$c['email'], $c['phone'] ?? '']);
         if ($stmtCheck->fetchColumn()) {
             http_response_code(409);
@@ -144,8 +144,8 @@ if ($method === 'GET') {
             exit;
         }
 
-        // 1. Insert into candidates table
-        $stmtCand = $conn->prepare("INSERT INTO candidates (
+        // 1. Insert into cims_candidates table
+        $stmtCand = $conn->prepare("INSERT INTO cims_candidates (
             id, name, email, phone, alternateMobile, location, preferredLocation, 
             experience, relevantExperience, currentCompany, currentDesignation, 
             currentCtc, expectedCtc, noticePeriod, skills, resume, linkedInProfile, 
@@ -181,8 +181,8 @@ if ($method === 'GET') {
             $createdAt
         ]);
         
-        // 2. Insert into applications table
-        $stmtApp = $conn->prepare("INSERT INTO applications (
+        // 2. Insert into cims_applications table
+        $stmtApp = $conn->prepare("INSERT INTO cims_applications (
             candidate_id, role_applied, department, source, stage, recruiter, appliedAt
         ) VALUES (?, ?, ?, ?, ?, ?, ?)");
         
@@ -197,7 +197,7 @@ if ($method === 'GET') {
         ]);
         
         // 3. Log history
-        $stmtHist = $conn->prepare("INSERT INTO candidate_history (candidate_id, action, details, createdAt) VALUES (?, ?, ?, ?)");
+        $stmtHist = $conn->prepare("INSERT INTO cims_candidate_history (candidate_id, action, details, createdAt) VALUES (?, ?, ?, ?)");
         $stmtHist->execute([$id, 'Candidate Created', 'Application received from ' . ($c['source'] ?? 'Website'), $createdAt]);
         
         $conn->commit();
@@ -223,7 +223,7 @@ if ($method === 'GET') {
         $conn->beginTransaction();
         
         // Check if candidate exists
-        $stmt = $conn->prepare("SELECT * FROM candidates WHERE id = ?");
+        $stmt = $conn->prepare("SELECT * FROM cims_candidates WHERE id = ?");
         $stmt->execute([$id]);
         $existing = $stmt->fetch(PDO::FETCH_ASSOC);
         
@@ -233,7 +233,7 @@ if ($method === 'GET') {
             exit;
         }
         
-        // 1. Update candidates table
+        // 1. Update cims_candidates table
         $candFields = [
             'name', 'email', 'phone', 'alternateMobile', 'location', 'preferredLocation', 
             'experience', 'relevantExperience', 'currentCompany', 'currentDesignation', 
@@ -260,12 +260,12 @@ if ($method === 'GET') {
             $params[] = date('Y-m-d H:i:s');
             $params[] = $id; // For WHERE clause
             
-            $updateSql = "UPDATE candidates SET " . implode(", ", $updateStrs) . " WHERE id = ?";
+            $updateSql = "UPDATE cims_candidates SET " . implode(", ", $updateStrs) . " WHERE id = ?";
             $stmt = $conn->prepare($updateSql);
             $stmt->execute($params);
         }
         
-        // 2. Update applications table (assuming 1 active application per candidate for now)
+        // 2. Update cims_applications table (assuming 1 active application per candidate for now)
         $appFields = ['role', 'department', 'source', 'stage', 'recruiter'];
         $appUpdateStrs = [];
         $appParams = [];
@@ -283,7 +283,7 @@ if ($method === 'GET') {
         
         if (!empty($appUpdateStrs)) {
             $appParams[] = $id;
-            $appSql = "UPDATE applications SET " . implode(", ", $appUpdateStrs) . " WHERE candidate_id = ?";
+            $appSql = "UPDATE cims_applications SET " . implode(", ", $appUpdateStrs) . " WHERE candidate_id = ?";
             $stmt = $conn->prepare($appSql);
             $stmt->execute($appParams);
         }
@@ -291,16 +291,16 @@ if ($method === 'GET') {
         // Handle Rejections / Alerts logging
         if (isset($data['stage']) && in_array($data['stage'], ['Rejected', 'No Show', 'Offer Declined', 'Offer Expired'])) {
             $reason = $data['rejectionReason'] ?? $data['stageReason'] ?? 'Status updated to ' . $data['stage'];
-            $stmtRej = $conn->prepare("INSERT INTO candidate_rejections (candidate_id, type, reason) VALUES (?, ?, ?)");
+            $stmtRej = $conn->prepare("INSERT INTO cims_candidate_rejections (candidate_id, type, reason) VALUES (?, ?, ?)");
             $stmtRej->execute([$id, $data['stage'], $reason]);
         }
         if (isset($data['isBlacklisted']) && $data['isBlacklisted']) {
             $reason = $data['blacklistReason'] ?? 'Blacklisted';
             // Only insert if not already recently blacklisted to prevent duplicates on multiple updates
-            $stmtCheck = $conn->prepare("SELECT COUNT(*) FROM candidate_rejections WHERE candidate_id = ? AND type = 'Blacklisted'");
+            $stmtCheck = $conn->prepare("SELECT COUNT(*) FROM cims_candidate_rejections WHERE candidate_id = ? AND type = 'Blacklisted'");
             $stmtCheck->execute([$id]);
             if ($stmtCheck->fetchColumn() == 0) {
-                $stmtRej = $conn->prepare("INSERT INTO candidate_rejections (candidate_id, type, reason) VALUES (?, ?, ?)");
+                $stmtRej = $conn->prepare("INSERT INTO cims_candidate_rejections (candidate_id, type, reason) VALUES (?, ?, ?)");
                 $stmtRej->execute([$id, 'Blacklisted', $reason]);
             }
         }
@@ -310,11 +310,11 @@ if ($method === 'GET') {
             // Find the newest activity and insert it
             $latest = end($data['activity']);
             if ($latest && isset($latest['message'])) {
-                $stmtHist = $conn->prepare("INSERT INTO candidate_history (candidate_id, action, details) VALUES (?, ?, ?)");
+                $stmtHist = $conn->prepare("INSERT INTO cims_candidate_history (candidate_id, action, details) VALUES (?, ?, ?)");
                 $stmtHist->execute([$id, 'Candidate Updated', $latest['message']]);
             }
         } else {
-            $stmtHist = $conn->prepare("INSERT INTO candidate_history (candidate_id, action) VALUES (?, ?)");
+            $stmtHist = $conn->prepare("INSERT INTO cims_candidate_history (candidate_id, action) VALUES (?, ?)");
             $stmtHist->execute([$id, 'Candidate Updated']);
         }
         
@@ -342,8 +342,8 @@ if ($method === 'GET') {
     
     try {
         $inQuery = implode(',', array_fill(0, count($ids), '?'));
-        // With ON DELETE CASCADE, deleting from candidates will also delete from applications, interviews, etc.
-        $stmt = $conn->prepare("DELETE FROM candidates WHERE id IN ($inQuery)");
+        // With ON DELETE CASCADE, deleting from cims_candidates will also delete from cims_applications, interviews, etc.
+        $stmt = $conn->prepare("DELETE FROM cims_candidates WHERE id IN ($inQuery)");
         $stmt->execute($ids);
         echo json_encode(["success" => true]);
     } catch (PDOException $e) {

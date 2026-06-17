@@ -1,10 +1,9 @@
 import { useState, useEffect, useMemo } from "react";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Activity, FileText, Mail, Users, Trash2, Clock, CheckCircle2, Search, Filter } from "lucide-react";
+import { Search, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { API_BASE_URL } from "@/config/api";
 
 export default function CandidateTimeline() {
   const [timeline, setTimeline] = useState<any[]>([]);
@@ -12,10 +11,10 @@ export default function CandidateTimeline() {
 
   // Filters
   const [search, setSearch] = useState("");
-  const [typeFilter, setTypeFilter] = useState("All");
+  const [activeTab, setActiveTab] = useState("All Activities");
 
   useEffect(() => {
-    fetch("http://localhost/full-cims/api/timeline.php")
+    fetch(`${API_BASE_URL}/timeline.php`)
       .then((res) => res.json())
       .then((data) => {
         setTimeline(data);
@@ -32,155 +31,181 @@ export default function CandidateTimeline() {
     return new Date(d).toLocaleTimeString("en-US", { hour: '2-digit', minute: '2-digit' });
   };
 
-  const getIcon = (type: string, action: string) => {
-    if (type === 'Application') return <FileText className="h-4 w-4" />;
-    if (type === 'Interview') return <Users className="h-4 w-4" />;
-    if (type === 'Note') return <Activity className="h-4 w-4" />;
-    if (type === 'Alert' && action.includes('Blacklist')) return <Trash2 className="h-4 w-4" />;
-    if (type === 'Alert') return <CheckCircle2 className="h-4 w-4" />;
-    if (action.includes('Offer')) return <Mail className="h-4 w-4" />;
-    return <Clock className="h-4 w-4" />;
+  const getBadgeStyle = (type: string, action: string) => {
+    if (action.toLowerCase().includes('cancelled')) return "bg-red-50 text-red-600";
+    if (type === 'Feedback') return "bg-emerald-50 text-emerald-600";
+    if (type === 'Application') return "bg-purple-50 text-purple-600";
+    if (action.toLowerCase().includes('offer')) return "bg-orange-50 text-orange-600";
+    if (type === 'Interview') return "bg-slate-100 text-slate-600";
+    return "bg-slate-100 text-slate-600";
   };
 
-  const getColor = (type: string, action: string) => {
-    if (type === 'Application') return "bg-blue-100 text-blue-600 border-blue-200";
-    if (type === 'Interview') return "bg-purple-100 text-purple-600 border-purple-200";
-    if (type === 'Note') return "bg-amber-100 text-amber-600 border-amber-200";
-    if (type === 'Alert' && action.includes('Blacklist')) return "bg-red-100 text-red-600 border-red-200";
-    if (type === 'Alert') return "bg-rose-100 text-rose-600 border-rose-200";
-    if (action.includes('Offer')) return "bg-emerald-100 text-emerald-600 border-emerald-200";
-    return "bg-slate-100 text-slate-500 border-slate-200";
+  const getBadgeLabel = (type: string, action: string) => {
+    if (action.toLowerCase().includes('cancelled')) return "Cancelled";
+    if (action.toLowerCase().includes('offer')) return "Offer";
+    if (type === 'Application') return "Candidate";
+    if (type === 'Interview') return "Interview";
+    if (type === 'Feedback') return "Feedback";
+    return "Update";
   };
 
   // Filter Logic
   const filteredTimeline = useMemo(() => {
     return timeline.filter(item => {
-      const matchSearch = item.candidateName?.toLowerCase().includes(search.toLowerCase()) || 
-                          item.description?.toLowerCase().includes(search.toLowerCase());
-      const matchType = typeFilter === "All" || item.type === typeFilter;
-      return matchSearch && matchType;
+      const matchSearch = item.user?.toLowerCase().includes(search.toLowerCase()) || 
+                          item.description?.toLowerCase().includes(search.toLowerCase()) ||
+                          item.candidateName?.toLowerCase().includes(search.toLowerCase());
+      return matchSearch;
     });
-  }, [timeline, search, typeFilter]);
+  }, [timeline, search]);
+
+  // Pagination Logic
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 20;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, activeTab]);
+
+  const paginatedTimeline = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredTimeline.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredTimeline, currentPage]);
+
+  const totalPages = Math.ceil(filteredTimeline.length / itemsPerPage);
 
   // Group by Date
   const groupedTimeline = useMemo(() => {
     const groups: Record<string, any[]> = {};
-    filteredTimeline.forEach(item => {
-      const dateStr = new Date(item.timestamp).toLocaleDateString("en-GB", { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    paginatedTimeline.forEach(item => {
+      const date = new Date(item.timestamp);
+      const isToday = new Date().toDateString() === date.toDateString();
+      const isYesterday = new Date(Date.now() - 86400000).toDateString() === date.toDateString();
+      
+      let prefix = "";
+      if (isToday) prefix = "TODAY • ";
+      else if (isYesterday) prefix = "YESTERDAY • ";
+      else prefix = date.toLocaleDateString("en-US", { weekday: 'long' }).toUpperCase() + " • ";
+
+      const dateStr = prefix + date.toLocaleDateString("en-US", { month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase();
+      
       if (!groups[dateStr]) groups[dateStr] = [];
       groups[dateStr].push(item);
     });
     return groups;
-  }, [filteredTimeline]);
+  }, [paginatedTimeline]);
 
   return (
-    <div className="flex flex-col gap-6 max-w-5xl mx-auto w-full">
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Global Activity Feed</h1>
-          <p className="text-slate-500 text-[13px] font-medium mt-1">
-            Real-time timeline of candidate interactions and system events.
-          </p>
+    <div className="flex flex-col gap-8 w-full pb-10">
+      
+      {/* Header Area */}
+      <div className="flex flex-col gap-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-[22px] font-bold tracking-tight text-slate-900">Global Activity Feed</h1>
+            <p className="text-slate-500 text-[13px] font-medium mt-1">
+              Real-time updates and activities from all users worldwide.
+            </p>
+          </div>
+          
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Input 
+                placeholder="Search activity or user..." 
+                className="pl-9 h-10 w-[260px] bg-white text-[13px] rounded-lg border-slate-200 focus-visible:ring-1"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+            <div className="relative">
+              <select className="h-10 pl-4 pr-10 bg-white border border-slate-200 rounded-lg text-[13px] font-semibold text-slate-700 outline-none appearance-none focus:ring-1 focus:ring-blue-500">
+                <option>All Users</option>
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+            </div>
+          </div>
         </div>
-        
-        {/* Filters */}
-        <div className="flex items-center gap-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-            <Input 
-              placeholder="Search candidate or note..." 
-              className="pl-9 h-9 w-[250px] bg-white text-[13px] rounded-xl border-slate-200"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
-          <div className="relative">
-            <select 
-              className="h-9 pl-3 pr-8 bg-white border border-slate-200 rounded-xl text-[13px] font-semibold text-slate-700 outline-none appearance-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-              value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value)}
+
+        {/* Tabs */}
+        <div className="flex items-center gap-8 border-b border-slate-200">
+          {["All Activities", "My Activities", "Mentions"].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={cn(
+                "pb-3 text-[13px] font-semibold transition-colors relative",
+                activeTab === tab ? "text-blue-600" : "text-slate-500 hover:text-slate-700"
+              )}
             >
-              <option value="All">All Events</option>
-              <option value="Application">Applications</option>
-              <option value="Interview">Interviews</option>
-              <option value="Note">Notes</option>
-              <option value="Alert">Alerts & Rejections</option>
-              <option value="History">System History</option>
-            </select>
-            <Filter className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
-          </div>
+              {tab}
+              {activeTab === tab && (
+                <span className="absolute bottom-0 left-0 w-full h-[2px] bg-blue-600 rounded-t-full" />
+              )}
+            </button>
+          ))}
         </div>
       </div>
 
-      <Card className="p-0 overflow-hidden bg-white border border-slate-200 shadow-sm rounded-2xl">
+      {/* Timeline Content */}
+      <div className="bg-transparent">
         {loading ? (
-          <div className="p-8 space-y-8">
-            <Skeleton className="h-24 w-full rounded-2xl" />
-            <Skeleton className="h-24 w-full rounded-2xl" />
-            <Skeleton className="h-24 w-full rounded-2xl" />
+          <div className="space-y-8 py-4">
+            <Skeleton className="h-16 w-full rounded-xl" />
+            <Skeleton className="h-16 w-full rounded-xl" />
+            <Skeleton className="h-16 w-full rounded-xl" />
           </div>
         ) : Object.keys(groupedTimeline).length === 0 ? (
-          <div className="text-center py-16">
-            <div className="h-12 w-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3">
-              <Activity className="h-5 w-5 text-slate-400" />
-            </div>
+          <div className="text-center py-16 bg-white border border-slate-200 rounded-2xl">
             <h3 className="text-[14px] font-bold text-slate-900">No activity found</h3>
             <p className="text-[13px] text-slate-500 mt-1">Try adjusting your filters or search query.</p>
           </div>
         ) : (
-          <div className="p-6 sm:p-8">
+          <div className="pb-4">
             {Object.keys(groupedTimeline).map((date, idx) => (
               <div key={idx} className="mb-8 last:mb-0">
                 {/* Date Header */}
-                <div className="flex items-center gap-4 mb-5">
-                  <h3 className="text-[13px] font-bold text-slate-900 uppercase tracking-wider">{date}</h3>
-                  <div className="flex-1 h-px bg-slate-100"></div>
-                </div>
+                <h3 className="text-[11px] font-bold text-slate-500 tracking-[0.05em] mb-6 pl-14">
+                  {date}
+                </h3>
 
-                <div className="relative pl-6 sm:pl-8 before:absolute before:inset-y-0 before:left-[19px] sm:before:left-[27px] before:w-[2px] before:bg-slate-100 space-y-6">
+                <div className="relative pl-14 before:absolute before:inset-y-0 before:left-[27px] before:w-[2px] before:bg-slate-200 space-y-0">
                   {groupedTimeline[date].map((item, i) => (
-                    <div key={i} className="relative group">
-                      {/* Icon */}
-                      <div className={cn(
-                        "absolute -left-6 sm:-left-8 top-1 flex items-center justify-center w-8 h-8 rounded-full border-4 border-white shadow-sm z-10",
-                        getColor(item.type, item.action)
-                      )}>
-                        {getIcon(item.type, item.action)}
+                    <div key={i} className="relative group flex items-center justify-between py-4">
+                      {/* Avatar */}
+                      <div className="absolute left-[-28px] top-1/2 -translate-y-1/2 flex items-center justify-center w-8 h-8 rounded-full border-[3px] border-white shadow-sm z-10 bg-slate-100 overflow-hidden text-[10px] font-bold text-slate-600">
+                        {item.user?.charAt(0)}
                       </div>
 
-                      {/* Content Card */}
-                      <div className="bg-white border border-slate-200 rounded-xl p-4 transition-all hover:shadow-md hover:border-slate-300">
-                        <div className="flex flex-wrap items-start justify-between gap-3 mb-2">
-                          <div className="flex items-center gap-2">
-                            <span className="text-[13px] font-bold text-slate-900">
-                              {item.candidateName}
-                            </span>
-                            <span className="text-slate-400 text-[12px] font-medium">
-                              {item.action}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Badge variant="secondary" className="text-[10px] bg-slate-100 text-slate-600 hover:bg-slate-200 border-transparent font-bold">
-                              {item.type}
-                            </Badge>
-                            <span className="text-[11px] font-bold text-slate-400">
-                              {formatTime(item.timestamp)}
-                            </span>
-                          </div>
+                      {/* Content Left */}
+                      <div className="flex flex-col gap-1 pr-4">
+                        <div className="text-[13px]">
+                          <span className="font-bold text-slate-900">{item.user}</span>
+                          <span className="text-slate-500 ml-1">
+                            {item.action.toLowerCase() === 'note added' ? 'added a new note' : 
+                             item.action.toLowerCase() === 'interview scheduled' ? 'scheduled an interview' :
+                             item.action.toLowerCase() === 'application created' ? 'added a new candidate' :
+                             item.action.toLowerCase().includes('offer') ? 'sent an offer' :
+                             item.action.toLowerCase().includes('reject') ? 'rejected a candidate' :
+                             `updated a ${item.type.toLowerCase()}`}
+                          </span>
                         </div>
-                        
-                        {item.description && (
-                          <div className="text-[13px] text-slate-600 bg-slate-50/50 p-3 rounded-lg border border-slate-100 leading-relaxed mt-2 mb-3">
-                            {item.description}
-                          </div>
-                        )}
+                        <div className="text-[13px] text-slate-500">
+                          {item.candidateName} {item.description ? `– ${item.description}` : ''}
+                        </div>
+                      </div>
 
-                        <div className="flex items-center gap-1.5 mt-3">
-                          <div className="h-5 w-5 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center text-[9px] font-bold">
-                            {item.user.charAt(0)}
-                          </div>
-                          <span className="text-[11px] font-bold text-slate-500">{item.user}</span>
-                        </div>
+                      {/* Content Right */}
+                      <div className="flex items-center gap-6 shrink-0">
+                        <span className={cn(
+                          "px-2.5 py-1 rounded-full text-[11px] font-bold",
+                          getBadgeStyle(item.type, item.action)
+                        )}>
+                          {getBadgeLabel(item.type, item.action)}
+                        </span>
+                        <span className="text-[12px] font-medium text-slate-400 w-16 text-right">
+                          {formatTime(item.timestamp)}
+                        </span>
                       </div>
                     </div>
                   ))}
@@ -189,7 +214,70 @@ export default function CandidateTimeline() {
             ))}
           </div>
         )}
-      </Card>
+
+        {/* Pagination */}
+        {totalPages > 0 && (
+          <div className="mt-4 flex items-center justify-between border-t border-slate-200 pt-6">
+            <p className="text-[13px] font-medium text-slate-500">
+              Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, filteredTimeline.length)} of {filteredTimeline.length} results
+            </p>
+            
+            <div className="flex items-center gap-1.5">
+              <button
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(p => p - 1)}
+                className="flex items-center gap-1 h-8 px-2 text-[13px] font-semibold text-slate-500 hover:text-slate-900 disabled:opacity-50 disabled:hover:text-slate-500 transition-colors"
+              >
+                <ChevronLeft className="h-4 w-4" /> Previous
+              </button>
+              
+              <div className="flex items-center gap-1">
+                {[...Array(Math.min(totalPages, 5))].map((_, i) => {
+                  const page = i + 1;
+                  return (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={cn(
+                        "flex items-center justify-center h-8 w-8 rounded-md text-[13px] font-semibold transition-colors",
+                        currentPage === page 
+                          ? "border border-blue-200 bg-blue-50 text-blue-600" 
+                          : "text-slate-600 hover:bg-slate-100"
+                      )}
+                    >
+                      {page}
+                    </button>
+                  );
+                })}
+                {totalPages > 5 && (
+                  <>
+                    <span className="flex items-center justify-center h-8 w-8 text-slate-400">...</span>
+                    <button
+                      onClick={() => setCurrentPage(totalPages)}
+                      className={cn(
+                        "flex items-center justify-center h-8 w-8 rounded-md text-[13px] font-semibold transition-colors",
+                        currentPage === totalPages 
+                          ? "border border-blue-200 bg-blue-50 text-blue-600" 
+                          : "text-slate-600 hover:bg-slate-100"
+                      )}
+                    >
+                      {totalPages}
+                    </button>
+                  </>
+                )}
+              </div>
+
+              <button
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage(p => p + 1)}
+                className="flex items-center gap-1 h-8 px-2 text-[13px] font-semibold text-slate-500 hover:text-slate-900 disabled:opacity-50 disabled:hover:text-slate-500 transition-colors"
+              >
+                Next <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

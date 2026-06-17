@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, CartesianGrid, Legend } from "recharts";
 import { Briefcase, Filter, Calendar } from "lucide-react";
 import { toast } from "sonner";
+import { API_BASE_URL } from "@/config/api";
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#64748b'];
 
@@ -35,7 +36,7 @@ export default function ReportsPerformance() {
       if (filters.recruiter !== "all") params.append("recruiter", filters.recruiter);
       if (filters.position !== "all") params.append("position", filters.position);
       
-      const res = await fetch(`http://localhost/full-cims/api/reports.php?${params.toString()}`);
+      const res = await fetch(`${API_BASE_URL}/reports.php?${params.toString()}`);
       if (!res.ok) throw new Error("Failed to fetch reports");
       const json = await res.json();
       setData(json);

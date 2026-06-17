@@ -47,7 +47,7 @@ try {
             SUM(CASE WHEN a.stage IN ('Offer Released', 'Offer Accepted', 'Joined') THEN 1 ELSE 0 END) as offers,
             SUM(CASE WHEN a.stage = 'Joined' THEN 1 ELSE 0 END) as joined,
             SUM(CASE WHEN a.stage = 'Rejected' THEN 1 ELSE 0 END) as rejected
-        FROM applications a
+        FROM cims_applications a
         WHERE $whereSql
         GROUP BY a.recruiter
         HAVING a.recruiter IS NOT NULL AND a.recruiter != ''
@@ -59,7 +59,7 @@ try {
     $stages = ['New Applicant', 'Shortlisted', 'Interview Scheduled', 'Offer Released', 'Joined'];
     $funnel = [];
     foreach ($stages as $s) {
-        $stmtF = $conn->prepare("SELECT COUNT(a.id) FROM applications a WHERE a.stage = ? AND $whereSql");
+        $stmtF = $conn->prepare("SELECT COUNT(a.id) FROM cims_applications a WHERE a.stage = ? AND $whereSql");
         // We have to merge the single param with the base params
         $fParams = array_merge([$s], $params);
         // But the WHERE clause uses a.appliedAt which is valid.
@@ -74,8 +74,8 @@ try {
     // Rejection Reasons
     $stmtRej = $conn->prepare("
         SELECT cr.reason as name, COUNT(cr.id) as value
-        FROM candidate_rejections cr
-        JOIN applications a ON cr.candidate_id = a.candidate_id
+        FROM cims_candidate_rejections cr
+        JOIN cims_applications a ON cr.candidate_id = a.candidate_id
         WHERE cr.type = 'Rejected' AND $whereSql
         GROUP BY cr.reason
     ");
@@ -85,7 +85,7 @@ try {
     // No Join Stats
     $stmtNoJoin = $conn->prepare("
         SELECT a.stageReason as name, COUNT(a.id) as value
-        FROM applications a
+        FROM cims_applications a
         WHERE a.stage = 'No Show' AND a.stageReason IS NOT NULL AND a.stageReason != '' AND $whereSql
         GROUP BY a.stageReason
     ");
@@ -94,8 +94,8 @@ try {
 
     // List of Recruiters & Positions for filter dropdowns
     $reports['filters'] = [
-        'recruiters' => $conn->query("SELECT DISTINCT recruiter FROM applications WHERE recruiter IS NOT NULL AND recruiter != ''")->fetchAll(PDO::FETCH_COLUMN),
-        'positions' => $conn->query("SELECT DISTINCT role_applied FROM applications WHERE role_applied IS NOT NULL AND role_applied != ''")->fetchAll(PDO::FETCH_COLUMN)
+        'recruiters' => $conn->query("SELECT DISTINCT recruiter FROM cims_applications WHERE recruiter IS NOT NULL AND recruiter != ''")->fetchAll(PDO::FETCH_COLUMN),
+        'positions' => $conn->query("SELECT DISTINCT role_applied FROM cims_applications WHERE role_applied IS NOT NULL AND role_applied != ''")->fetchAll(PDO::FETCH_COLUMN)
     ];
 
     echo json_encode($reports);

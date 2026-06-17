@@ -3,15 +3,15 @@ include 'db.php';
 
 try {
     $conn->exec("SET FOREIGN_KEY_CHECKS = 0;");
-    $conn->exec("TRUNCATE TABLE candidates;");
-    $conn->exec("TRUNCATE TABLE applications;");
-    $conn->exec("TRUNCATE TABLE candidate_rejections;");
-    $conn->exec("TRUNCATE TABLE candidate_offers;");
+    $conn->exec("TRUNCATE TABLE cims_candidates;");
+    $conn->exec("TRUNCATE TABLE cims_applications;");
+    $conn->exec("TRUNCATE TABLE cims_candidate_rejections;");
+    $conn->exec("TRUNCATE TABLE cims_candidate_offers;");
     $conn->exec("SET FOREIGN_KEY_CHECKS = 1;");
 
     // Data Migration
     $conn->exec("
-    INSERT IGNORE INTO candidates (
+    INSERT IGNORE INTO cims_candidates (
         id, name, email, phone, alternateMobile, location, preferredLocation, 
         experience, relevantExperience, currentCompany, currentDesignation, 
         currentCtc, expectedCtc, noticePeriod, skills, resume, linkedInProfile, 
@@ -22,41 +22,41 @@ try {
         experience, relevantExperience, currentCompany, currentDesignation, 
         currentCtc, expectedCtc, noticePeriod, skills, resume, linkedInProfile, 
         isBlacklisted, isActive, appliedAt, updatedAt
-    FROM candidates_old;
+    FROM cims_candidates_old;
     ");
 
     $conn->exec("
-    INSERT IGNORE INTO applications (
+    INSERT IGNORE INTO cims_applications (
         candidate_id, role_applied, source, stage, recruiter, appliedAt
     )
     SELECT 
         id, role, source, stage, recruiter, appliedAt
-    FROM candidates_old;
+    FROM cims_candidates_old;
     ");
 
     $conn->exec("
-    INSERT IGNORE INTO candidate_rejections (candidate_id, type, reason, recordedAt)
+    INSERT IGNORE INTO cims_candidate_rejections (candidate_id, type, reason, recordedAt)
     SELECT id, 'Blacklisted', blacklistReason, blacklistDate
-    FROM candidates_old WHERE isBlacklisted = 1 AND blacklistReason IS NOT NULL;
+    FROM cims_candidates_old WHERE isBlacklisted = 1 AND blacklistReason IS NOT NULL;
     ");
 
     $conn->exec("
-    INSERT IGNORE INTO candidate_rejections (candidate_id, type, reason, recordedAt)
+    INSERT IGNORE INTO cims_candidate_rejections (candidate_id, type, reason, recordedAt)
     SELECT id, 'Rejected', rejectionReason, rejectionDate
-    FROM candidates_old WHERE stage = 'Rejected' AND rejectionReason IS NOT NULL;
+    FROM cims_candidates_old WHERE stage = 'Rejected' AND rejectionReason IS NOT NULL;
     ");
 
     $conn->exec("
-    INSERT IGNORE INTO candidate_rejections (candidate_id, type, reason)
+    INSERT IGNORE INTO cims_candidate_rejections (candidate_id, type, reason)
     SELECT id, 'No-Join', noJoinReason
-    FROM candidates_old WHERE stage = 'No Show' AND noJoinReason IS NOT NULL;
+    FROM cims_candidates_old WHERE stage = 'No Show' AND noJoinReason IS NOT NULL;
     ");
 
     $conn->exec("
-    INSERT IGNORE INTO candidate_offers (application_id, offeredCtc, offerDate, offerStatus, acceptedDate, joiningDate)
+    INSERT IGNORE INTO cims_candidate_offers (application_id, offeredCtc, offerDate, offerStatus, acceptedDate, joiningDate)
     SELECT a.id, c.expectedCtc, c.offerDate, c.offerStatus, c.offerAcceptedDate, c.joiningDate
-    FROM candidates_old c
-    JOIN applications a ON c.id = a.candidate_id
+    FROM cims_candidates_old c
+    JOIN cims_applications a ON c.id = a.candidate_id
     WHERE c.offerDate IS NOT NULL OR c.offerStatus IS NOT NULL;
     ");
 

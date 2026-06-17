@@ -41,7 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $destPath = $uploadDir . $fileName;
         
         if (move_uploaded_file($fileTmpPath, $destPath)) {
-            $stmt = $conn->prepare("INSERT INTO candidate_documents (candidate_id, name, filePath, uploadedBy) VALUES (?, ?, ?, ?)");
+            $stmt = $conn->prepare("INSERT INTO cims_candidate_documents (candidate_id, name, filePath, uploadedBy) VALUES (?, ?, ?, ?)");
             $stmt->execute([
                 $_POST['candidate_id'],
                 $originalName,

@@ -37,6 +37,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { API_BASE_URL } from "@/config/api";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -449,7 +450,7 @@ export default function CandidateProfile() {
                     const text = window.prompt("Enter note text:");
                     if (!text) return;
                     try {
-                      const res = await fetch("http://localhost/full-cims/api/notes.php", {
+                      const res = await fetch(`${API_BASE_URL}/notes.php`, {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({ candidate_id: candidate.id, text, createdBy: "Admin" })
@@ -606,7 +607,7 @@ export default function CandidateProfile() {
                     formData.append("file", file);
                     formData.append("candidate_id", candidate.id);
                     try {
-                      const res = await fetch("http://localhost/full-cims/api/documents.php", {
+                      const res = await fetch(`${API_BASE_URL}/documents.php`, {
                         method: "POST",
                         body: formData
                       });
@@ -657,7 +658,7 @@ export default function CandidateProfile() {
                       </div>
                     </div>
                     <div className="flex items-center gap-1 transition-opacity">
-                      <a href={`http://localhost/full-cims/api/uploads/${doc.rawName}`} target="_blank" rel="noreferrer">
+                      <a href={`${API_BASE_URL}/uploads/${doc.rawName}`} target="_blank" rel="noreferrer">
                         <Button
                           variant="ghost"
                           size="icon"

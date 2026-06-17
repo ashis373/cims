@@ -3,7 +3,7 @@ include 'db.php';
 
 try {
     try {
-        $conn->exec("ALTER TABLE applications ADD COLUMN stageReason TEXT");
+        $conn->exec("ALTER TABLE cims_applications ADD COLUMN stageReason TEXT");
     } catch(Exception $e) {}
     
     $conn->beginTransaction();
@@ -55,17 +55,17 @@ try {
         $uid = uniqid();
         $name = "Mock Candidate $uid";
         
-        $stmtCand = $conn->prepare("INSERT INTO candidates (id, name, email, phone) VALUES (?, ?, ?, ?)");
+        $stmtCand = $conn->prepare("INSERT INTO cims_candidates (id, name, email, phone) VALUES (?, ?, ?, ?)");
         $stmtCand->execute([$uid, $name, "$uid@example.com", "1234567890"]);
         
         // Insert mock application
-        $stmtApp = $conn->prepare("INSERT INTO applications (candidate_id, role_applied, recruiter, stage, stageReason, appliedAt) VALUES (?, ?, ?, ?, ?, ?)");
+        $stmtApp = $conn->prepare("INSERT INTO cims_applications (candidate_id, role_applied, recruiter, stage, stageReason, appliedAt) VALUES (?, ?, ?, ?, ?, ?)");
         $stmtApp->execute([$uid, $role, $recruiter, $stage, $stageReason, $date]);
         
         // If rejected, insert rejection reason
         if ($stage === 'Rejected') {
             $reason = $rejectionReasons[array_rand($rejectionReasons)];
-            $stmtRej = $conn->prepare("INSERT INTO candidate_rejections (candidate_id, type, reason) VALUES (?, 'Rejected', ?)");
+            $stmtRej = $conn->prepare("INSERT INTO cims_candidate_rejections (candidate_id, type, reason) VALUES (?, 'Rejected', ?)");
             $stmtRej->execute([$uid, $reason]);
         }
     }

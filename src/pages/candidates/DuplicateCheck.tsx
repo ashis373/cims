@@ -3,13 +3,14 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AlertCircle, FileWarning } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { API_BASE_URL } from "@/config/api";
 
 export default function DuplicateCheck() {
   const [data, setData] = useState<{ exact: any[]; possible: any[] } | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("http://localhost/full-cims/api/duplicates.php")
+    fetch(`${API_BASE_URL}/duplicates.php`)
       .then((res) => res.json())
       .then((json) => {
         setData(json);

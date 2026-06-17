@@ -13,12 +13,12 @@ try {
     // 1. Exact Duplicates (Same Email or Phone)
     $stmtExact = $conn->query("
         SELECT c.*, a.stage 
-        FROM candidates c 
-        LEFT JOIN applications a ON c.id = a.candidate_id 
+        FROM cims_candidates c 
+        LEFT JOIN cims_applications a ON c.id = a.candidate_id 
         WHERE c.email IN (
-            SELECT email FROM candidates GROUP BY email HAVING COUNT(*) > 1
+            SELECT email FROM cims_candidates GROUP BY email HAVING COUNT(*) > 1
         ) OR (c.phone != '' AND c.phone IN (
-            SELECT phone FROM candidates WHERE phone != '' GROUP BY phone HAVING COUNT(*) > 1
+            SELECT phone FROM cims_candidates WHERE phone != '' GROUP BY phone HAVING COUNT(*) > 1
         ))
         ORDER BY c.email, c.phone, c.updatedAt DESC
     ");
@@ -27,10 +27,10 @@ try {
     // 2. Possible Duplicates (Same Name)
     $stmtPossible = $conn->query("
         SELECT c.*, a.stage 
-        FROM candidates c 
-        LEFT JOIN applications a ON c.id = a.candidate_id 
+        FROM cims_candidates c 
+        LEFT JOIN cims_applications a ON c.id = a.candidate_id 
         WHERE c.name IN (
-            SELECT name FROM candidates GROUP BY name HAVING COUNT(*) > 1
+            SELECT name FROM cims_candidates GROUP BY name HAVING COUNT(*) > 1
         )
         ORDER BY c.name, c.updatedAt DESC
     ");

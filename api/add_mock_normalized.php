@@ -32,11 +32,11 @@ for ($i = 0; $i < 68; $i++) {
     $skills = json_encode($selectedSkills);
 
     // Insert Candidate
-    $stmt = $conn->prepare("INSERT INTO candidates (id, name, email, phone, location, experience, skills, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    $stmt = $conn->prepare("INSERT INTO cims_candidates (id, name, email, phone, location, experience, skills, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
     $stmt->execute([$id, $name, $email, $phone, $location, $experience, $skills, $appliedAt, $appliedAt]);
     
     // Insert Application
-    $stmtApp = $conn->prepare("INSERT INTO applications (candidate_id, role_applied, source, stage, appliedAt) VALUES (?, ?, ?, ?, ?)");
+    $stmtApp = $conn->prepare("INSERT INTO cims_applications (candidate_id, role_applied, source, stage, appliedAt) VALUES (?, ?, ?, ?, ?)");
     $stmtApp->execute([$id, $role, $source, $stage, $appliedAt]);
 }
 

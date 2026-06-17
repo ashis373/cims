@@ -50,6 +50,7 @@ import {
   MessageSquare,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { API_BASE_URL } from "@/config/api";
 
 const empty = {
   name: "",
@@ -597,10 +598,7 @@ export default function CandidateFormPage() {
                   if (file) {
                     const formData = new FormData();
                     formData.append("resume", file);
-                    const isDev = import.meta.env.DEV;
-                    const uploadUrl = isDev 
-                      ? "http://localhost/full-cims/api/upload.php" 
-                      : "https://demo.hexalearn.com/cims/api/upload.php";
+                    const uploadUrl = `${API_BASE_URL}/upload.php`;
                     try {
                       const res = await fetch(uploadUrl, { method: "POST", body: formData });
                       const data = await res.json();

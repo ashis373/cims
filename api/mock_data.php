@@ -54,7 +54,7 @@ for ($i = 0; $i < 30; $i++) {
     $appliedAt = date('Y-m-d H:i:s', strtotime('-' . rand(0, 60) . ' days'));
     $updatedAt = date('Y-m-d H:i:s', strtotime('-' . rand(0, 5) . ' days'));
 
-    $stmt = $conn->prepare("INSERT INTO candidates (
+    $stmt = $conn->prepare("INSERT INTO cims_candidates (
         id, name, email, phone, source, role, department, stage, tags, skills, experience, relevantExperience, currentCompany, currentDesignation, currentCtc, expectedCtc, location, preferredLocation, alternateMobile, linkedInProfile, noticePeriod, recruiter, appliedAt, updatedAt
     ) VALUES (
         :id, :name, :email, :phone, :source, :role, :department, :stage, :tags, :skills, :experience, :relevantExperience, :currentCompany, :currentDesignation, :currentCtc, :expectedCtc, :location, :preferredLocation, :alternateMobile, :linkedInProfile, :noticePeriod, :recruiter, :appliedAt, :updatedAt

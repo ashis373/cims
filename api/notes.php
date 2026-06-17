@@ -21,7 +21,7 @@ if ($method === 'POST') {
     }
 
     try {
-        $stmt = $conn->prepare("INSERT INTO candidate_notes (candidate_id, text, createdBy) VALUES (?, ?, ?)");
+        $stmt = $conn->prepare("INSERT INTO cims_candidate_notes (candidate_id, text, createdBy) VALUES (?, ?, ?)");
         $stmt->execute([
             $data['candidate_id'],
             $data['text'],

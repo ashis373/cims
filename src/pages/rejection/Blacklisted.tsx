@@ -5,6 +5,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@
 import { Ban, Calendar, ChevronRight } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { API_BASE_URL } from "@/config/api";
 
 export default function Blacklisted() {
   const [data, setData] = useState<any[]>([]);
@@ -12,7 +13,7 @@ export default function Blacklisted() {
   const [reasonFilter, setReasonFilter] = useState("All");
 
   useEffect(() => {
-    fetch("http://localhost/full-cims/api/blacklisted.php")
+    fetch(`${API_BASE_URL}/blacklisted.php`)
       .then((res) => res.json())
       .then((json) => {
         setData(json.blacklisted || []);
