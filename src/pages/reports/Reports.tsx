@@ -206,31 +206,41 @@ function ReportsPage() {
   };
 
   return (
-    <div className="space-y-8 pb-12">
+    <div className="flex flex-col gap-8 w-full pb-10">
       {/* Header */}
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-black tracking-tight text-slate-900">Reports & Analytics</h1>
-          <p className="mt-1.5 text-[13px] font-medium text-slate-500">
-            Comprehensive insights across your entire recruitment pipeline.
-          </p>
-        </div>
-        <div className="flex gap-3">
-          <Button
-            variant="outline"
-            className="h-10 px-5 rounded-xl font-bold text-[13px] border-slate-200 text-slate-700 bg-white"
-            asChild
-          >
-            <Link to="/pipeline">
-              <Activity className="h-4 w-4 mr-2 text-blue-600" /> Pipeline View
-            </Link>
-          </Button>
-          <Button
-            onClick={() => setExportOpen(true)}
-            className="h-10 px-5 rounded-xl font-bold text-[13px] bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/20"
-          >
-            <Download className="mr-2 h-4 w-4" /> Export Report
-          </Button>
+      <div className="relative overflow-hidden rounded-3xl bg-white shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] border border-slate-100 p-8 sm:p-10">
+        <div className="absolute top-0 right-0 -mt-16 -mr-16 w-64 h-64 bg-gradient-to-br from-blue-100 to-indigo-50 rounded-full blur-3xl opacity-50 pointer-events-none" />
+        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+          <div className="flex items-center gap-5">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl shadow-sm border bg-blue-50 border-blue-100 text-blue-600">
+              <TrendingUp className="h-6 w-6" />
+            </div>
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
+                Reports & Analytics
+              </h1>
+              <p className="text-slate-500 text-[13px] sm:text-[14px] font-medium mt-1.5 max-w-lg leading-relaxed">
+                Comprehensive insights across your entire recruitment pipeline and team performance.
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-3">
+            <Button
+              variant="outline"
+              className="h-10 px-5 rounded-xl font-bold text-[13px] border-slate-200 text-slate-700 bg-white"
+              asChild
+            >
+              <Link to="/pipeline">
+                <Activity className="h-4 w-4 mr-2 text-blue-600" /> Pipeline View
+              </Link>
+            </Button>
+            <Button
+              onClick={() => setExportOpen(true)}
+              className="h-10 px-5 rounded-xl font-bold text-[13px] bg-slate-900 hover:bg-slate-800 text-white shadow-sm"
+            >
+              <Download className="mr-2 h-4 w-4" /> Export Report
+            </Button>
+          </div>
         </div>
       </div>
 

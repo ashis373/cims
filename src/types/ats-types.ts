@@ -20,43 +20,32 @@ export const SOURCES = ["Website", "LinkedIn", "Job Board", "Referral", "Other"]
 export type Source = (typeof SOURCES)[number];
 
 export const DEPARTMENTS = [
-  "Engineering",
-  "Product",
-  "Design",
-  "Data & Analytics",
-  "Marketing",
-  "Operations",
-  "Security",
+  "Elearning",
+  "software development",
+  "multimedia design",
+  "QA testing",
+  "Digital Marketing",
+  "Business Development",
 ] as const;
 export type Department = (typeof DEPARTMENTS)[number];
 
 export function inferDepartment(role: string): Department {
   const r = role.toLowerCase();
-  if (r.includes("design") || r.includes("ux")) return "Design";
-  if (r.includes("product manager")) return "Product";
-  if (r.includes("data") || r.includes("ml") || r.includes("scientist")) return "Data & Analytics";
-  if (r.includes("marketing")) return "Marketing";
-  if (r.includes("security")) return "Security";
-  if (
-    r.includes("devops") ||
-    r.includes("cloud") ||
-    r.includes("engineer") ||
-    r.includes("developer") ||
-    r.includes("qa")
-  )
-    return "Engineering";
-  if (r.includes("manager")) return "Operations";
-  return "Engineering";
+  if (r.includes("design") || r.includes("multimedia")) return "multimedia design";
+  if (r.includes("qa") || r.includes("test")) return "QA testing";
+  if (r.includes("market") || r.includes("seo") || r.includes("digital")) return "Digital Marketing";
+  if (r.includes("business") || r.includes("sales") || r.includes("bde")) return "Business Development";
+  if (r.includes("elearning") || r.includes("content")) return "Elearning";
+  return "software development";
 }
 
 export const DEPARTMENT_COLORS: Record<Department, string> = {
-  Engineering: "bg-blue-500/12 text-blue-700 dark:text-blue-300 border-blue-500/25",
-  Product: "bg-violet-500/12 text-violet-700 dark:text-violet-300 border-violet-500/25",
-  Design: "bg-fuchsia-500/12 text-fuchsia-700 dark:text-fuchsia-300 border-fuchsia-500/25",
-  "Data & Analytics": "bg-cyan-500/12 text-cyan-700 dark:text-cyan-300 border-cyan-500/25",
-  Marketing: "bg-orange-500/12 text-orange-700 dark:text-orange-300 border-orange-500/25",
-  Operations: "bg-slate-500/12 text-slate-700 dark:text-slate-300 border-slate-500/25",
-  Security: "bg-red-500/12 text-red-700 dark:text-red-300 border-red-500/25",
+  "Elearning": "bg-blue-500/12 text-blue-700 dark:text-blue-300 border-blue-500/25",
+  "software development": "bg-violet-500/12 text-violet-700 dark:text-violet-300 border-violet-500/25",
+  "multimedia design": "bg-fuchsia-500/12 text-fuchsia-700 dark:text-fuchsia-300 border-fuchsia-500/25",
+  "QA testing": "bg-cyan-500/12 text-cyan-700 dark:text-cyan-300 border-cyan-500/25",
+  "Digital Marketing": "bg-orange-500/12 text-orange-700 dark:text-orange-300 border-orange-500/25",
+  "Business Development": "bg-emerald-500/12 text-emerald-700 dark:text-emerald-300 border-emerald-500/25",
 };
 
 export const INTERVIEW_TYPES = ["HR Call", "Technical", "Practical", "Managerial"] as const;

@@ -49,9 +49,9 @@ export default function Rejected() {
   };
 
   return (
-    <div className="flex flex-col gap-8 max-w-6xl mx-auto w-full pb-10">
+    <div className="flex flex-col gap-8 w-full pb-10">
       {/* Header Section */}
-      <div className="relative overflow-hidden rounded-3xl bg-white border border-slate-200/60 shadow-sm p-8 sm:p-10">
+      <div className="relative overflow-hidden rounded-3xl bg-white shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] border border-slate-100 p-8 sm:p-10">
         <div className="absolute top-0 right-0 -mt-16 -mr-16 w-64 h-64 bg-gradient-to-br from-slate-100 to-slate-50 rounded-full blur-3xl opacity-50 pointer-events-none" />
         <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
           <div className="flex items-center gap-5">
@@ -153,20 +153,21 @@ function RejectionTable({
       {list.map((c) => (
         <Card 
           key={c.rejection_id} 
-          className="group relative overflow-hidden p-0 border-slate-200/60 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.02)] hover:shadow-md hover:border-slate-300 transition-all duration-300 rounded-2xl bg-white"
+          className="group relative overflow-hidden p-0 border-slate-100 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.02)] hover:shadow-lg hover:border-slate-200 transition-all duration-300 rounded-3xl bg-white"
         >
-          <div className="flex flex-col md:flex-row items-start md:items-center p-5 gap-5">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-red-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+          <div className="flex flex-col md:flex-row items-start md:items-center p-6 gap-6 relative z-10">
             {/* Avatar & Info */}
-            <div className="flex items-center justify-between w-full md:w-auto md:min-w-[240px] lg:min-w-[280px]">
+            <div className="flex items-center justify-between w-full md:w-auto md:min-w-[280px] lg:min-w-[320px]">
               <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-[14px] font-black uppercase shadow-sm border bg-red-50 text-red-600 border-red-100">
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-[16px] font-black uppercase shadow-sm border bg-red-50 text-red-600 border-red-100">
                   {c.name?.charAt(0) || "?"}
                 </div>
-                <div className="min-w-0">
-                  <div className="font-bold text-[15px] text-slate-900 truncate mb-1 group-hover:text-blue-600 transition-colors">
+              <div className="min-w-0">
+                  <div className="font-bold text-[16px] text-slate-900 truncate mb-1 group-hover:text-blue-600 transition-colors">
                     {c.name}
                   </div>
-                  <div className="text-[12px] font-medium text-slate-500 truncate">{c.email}</div>
+                  <div className="text-[13px] font-medium text-slate-500 truncate">{c.email}</div>
                 </div>
               </div>
               <Link
@@ -178,40 +179,37 @@ function RejectionTable({
             </div>
 
             {/* Data Grid for Mobile / Flex for Desktop */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:flex flex-1 gap-4 w-full md:w-auto">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:flex flex-1 gap-6 w-full md:w-auto">
               {/* Position */}
-              <div className="flex-1 md:min-w-[120px] lg:min-w-[150px]">
-                <div className="text-[10px] md:text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">Position</div>
-                <div className="text-[12px] md:text-[13px] font-semibold text-slate-700 truncate">{c.position || "N/A"}</div>
+              <div className="flex-1 bg-slate-50/50 p-3 rounded-xl border border-slate-100/50">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Position</div>
+                <div className="text-[13px] font-bold text-slate-700 truncate">{c.position || "N/A"}</div>
               </div>
 
               {/* Date */}
-              <div className="flex-1 md:min-w-[100px] lg:min-w-[120px] order-last sm:order-none">
-                <div className="text-[10px] md:text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">Recorded On</div>
-                <div className="flex items-center gap-1.5 text-[12px] md:text-[13px] font-semibold text-slate-700">
-                  <Calendar className="h-3 md:h-3.5 w-3 md:w-3.5 text-slate-400" />
+              <div className="flex-1 bg-slate-50/50 p-3 rounded-xl border border-slate-100/50">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Recorded On</div>
+                <div className="text-[13px] font-bold text-slate-700 truncate">
                   {formatDate(c.recordedAt)}
                 </div>
               </div>
 
               {/* Reason */}
-              <div className="col-span-2 sm:col-span-1 md:flex-[1.5] md:min-w-[160px] lg:min-w-[200px]">
-                <div className="text-[10px] md:text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">Reason</div>
-                <div className="inline-flex max-w-full">
-                  <div className="text-[11px] md:text-[12px] font-bold truncate px-2 md:px-3 py-1 md:py-1.5 rounded-lg border bg-red-50 text-red-700 border-red-100" title={c.reason}>
-                    {c.reason || "Unspecified"}
-                  </div>
+              <div className="col-span-2 sm:col-span-1 md:flex-[1.5] bg-red-50/30 p-3 rounded-xl border border-red-100/50">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-red-500 mb-1">Reason</div>
+                <div className="text-[13px] font-bold text-red-900 truncate" title={c.reason}>
+                  {c.reason || "Unspecified"}
                 </div>
               </div>
             </div>
 
             {/* Action Desktop */}
-            <div className="hidden md:flex items-center justify-end shrink-0 pl-2">
+            <div className="hidden md:flex items-center justify-end shrink-0 pl-4">
               <Link
                 to={`/candidates/${c.id}`}
-                className="flex items-center justify-center h-10 w-10 rounded-xl bg-slate-50 border border-slate-200 text-slate-400 hover:text-white hover:border-blue-600 hover:bg-blue-600 transition-all shadow-sm opacity-0 group-hover:opacity-100"
+                className="flex items-center justify-center h-12 w-12 rounded-2xl bg-slate-50 border border-slate-200 text-slate-400 hover:text-white hover:border-slate-900 hover:bg-slate-900 transition-all shadow-sm opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0"
               >
-                <ChevronRight className="h-5 w-5" />
+                <ChevronRight className="h-6 w-6" />
               </Link>
             </div>
           </div>

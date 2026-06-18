@@ -45,7 +45,7 @@ if ($method === 'GET') {
         foreach ($allHistory as $h) {
             $histByCand[$h['candidate_id']][] = [
                 'id' => $h['id'],
-                'at' => str_replace(' ', 'T', $h['createdAt']) . 'Z',
+                'at' => str_replace(' ', 'T', $h['createdAt']),
                 'kind' => 'system',
                 'message' => $h['action'] . ($h['details'] ? ': ' . $h['details'] : '')
             ];
@@ -56,35 +56,51 @@ if ($method === 'GET') {
         $stmtNotes->execute($candidateIds);
         $allNotes = $stmtNotes->fetchAll(PDO::FETCH_ASSOC);
         $notesByCand = [];
-        foreach ($allNotes as $n) { $notesByCand[$n['candidate_id']][] = $n; }
+        foreach ($allNotes as $n) { 
+            if ($n['createdAt']) $n['createdAt'] = str_replace(' ', 'T', $n['createdAt']);
+            $notesByCand[$n['candidate_id']][] = $n; 
+        }
 
         // 3. Batch fetch documents
         $stmtDocs = $conn->prepare("SELECT * FROM cims_candidate_documents WHERE candidate_id IN ($inQuery) ORDER BY uploadedAt DESC");
         $stmtDocs->execute($candidateIds);
         $allDocs = $stmtDocs->fetchAll(PDO::FETCH_ASSOC);
         $docsByCand = [];
-        foreach ($allDocs as $d) { $docsByCand[$d['candidate_id']][] = $d; }
+        foreach ($allDocs as $d) { 
+            if ($d['uploadedAt']) $d['uploadedAt'] = str_replace(' ', 'T', $d['uploadedAt']);
+            $docsByCand[$d['candidate_id']][] = $d; 
+        }
 
         // 4. Batch fetch alerts (rejections)
         $stmtRej = $conn->prepare("SELECT * FROM cims_candidate_rejections WHERE candidate_id IN ($inQuery) ORDER BY recordedAt DESC");
         $stmtRej->execute($candidateIds);
         $allRej = $stmtRej->fetchAll(PDO::FETCH_ASSOC);
         $rejByCand = [];
-        foreach ($allRej as $r) { $rejByCand[$r['candidate_id']][] = $r; }
+        foreach ($allRej as $r) { 
+            if ($r['recordedAt']) $r['recordedAt'] = str_replace(' ', 'T', $r['recordedAt']);
+            $rejByCand[$r['candidate_id']][] = $r; 
+        }
 
         // 5. Batch fetch applications
         $stmtApps = $conn->prepare("SELECT * FROM cims_applications WHERE candidate_id IN ($inQuery) ORDER BY appliedAt DESC");
         $stmtApps->execute($candidateIds);
         $allApps = $stmtApps->fetchAll(PDO::FETCH_ASSOC);
         $appsByCand = [];
-        foreach ($allApps as $a) { $appsByCand[$a['candidate_id']][] = $a; }
+        foreach ($allApps as $a) { 
+            if ($a['appliedAt']) $a['appliedAt'] = str_replace(' ', 'T', $a['appliedAt']);
+            $appsByCand[$a['candidate_id']][] = $a; 
+        }
 
         // 6. Batch fetch interviews (via applications)
         $stmtInt = $conn->prepare("SELECT i.*, a.candidate_id FROM cims_candidate_interviews i JOIN cims_applications a ON i.application_id = a.id WHERE a.candidate_id IN ($inQuery) ORDER BY i.interviewDate DESC");
         $stmtInt->execute($candidateIds);
         $allInt = $stmtInt->fetchAll(PDO::FETCH_ASSOC);
         $intByCand = [];
-        foreach ($allInt as $i) { $intByCand[$i['candidate_id']][] = $i; }
+        foreach ($allInt as $i) { 
+            if ($i['interviewDate']) $i['interviewDate'] = str_replace(' ', 'T', $i['interviewDate']);
+            if ($i['createdAt']) $i['createdAt'] = str_replace(' ', 'T', $i['createdAt']);
+            $intByCand[$i['candidate_id']][] = $i; 
+        }
 
         // Hydrate results
         foreach ($results as &$row) {
@@ -97,7 +113,7 @@ if ($method === 'GET') {
             if (empty($row['activity']) && isset($row['appliedAt'])) {
                 $row['activity'][] = [
                     'id' => 'initial',
-                    'at' => str_replace(' ', 'T', $row['appliedAt']) . 'Z',
+                    'at' => str_replace(' ', 'T', $row['appliedAt']),
                     'kind' => 'created',
                     'message' => 'Application received'
                 ];
@@ -109,9 +125,9 @@ if ($method === 'GET') {
             $row['applicationsList'] = $appsByCand[$cid] ?? [];
             $row['interviewsList'] = $intByCand[$cid] ?? [];
             
-            if ($row['appliedAt']) $row['appliedAt'] = str_replace(' ', 'T', $row['appliedAt']) . 'Z';
-            if ($row['updatedAt']) $row['updatedAt'] = str_replace(' ', 'T', $row['updatedAt']) . 'Z';
-            if ($row['createdAt']) $row['createdAt'] = str_replace(' ', 'T', $row['createdAt']) . 'Z';
+            if ($row['appliedAt']) $row['appliedAt'] = str_replace(' ', 'T', $row['appliedAt']);
+            if ($row['updatedAt']) $row['updatedAt'] = str_replace(' ', 'T', $row['updatedAt']);
+            if ($row['createdAt']) $row['createdAt'] = str_replace(' ', 'T', $row['createdAt']);
             $row['isBlacklisted'] = (bool)$row['isBlacklisted'];
             $row['isActive'] = (bool)$row['isActive'];
         }
@@ -155,7 +171,8 @@ if ($method === 'GET') {
         )");
         
         $skills = json_encode($c['skills'] ?? []);
-        $createdAt = parseDate($c['appliedAt'] ?? 'now');
+        $appliedAt = parseDate($c['appliedAt'] ?? 'now');
+        $now = date('Y-m-d H:i:s');
         
         $stmtCand->execute([
             $id,
@@ -177,8 +194,8 @@ if ($method === 'GET') {
             $c['linkedInProfile'] ?? '',
             isset($c['isBlacklisted']) ? (int)$c['isBlacklisted'] : 0,
             isset($c['isActive']) ? (int)$c['isActive'] : 1,
-            $createdAt,
-            $createdAt
+            $now,
+            $now
         ]);
         
         // 2. Insert into cims_applications table
@@ -193,12 +210,12 @@ if ($method === 'GET') {
             $c['source'] ?? 'Website',
             $c['stage'] ?? 'New Applicant',
             $c['recruiter'] ?? '',
-            $createdAt
+            $appliedAt
         ]);
         
         // 3. Log history
         $stmtHist = $conn->prepare("INSERT INTO cims_candidate_history (candidate_id, action, details, createdAt) VALUES (?, ?, ?, ?)");
-        $stmtHist->execute([$id, 'Candidate Created', 'Application received from ' . ($c['source'] ?? 'Website'), $createdAt]);
+        $stmtHist->execute([$id, 'Candidate Created', 'Application received from ' . ($c['source'] ?? 'Website'), $now]);
         
         $conn->commit();
         echo json_encode(["success" => true, "message" => "Candidate added"]);

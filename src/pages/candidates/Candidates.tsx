@@ -204,8 +204,10 @@ export default function CandidatesPage() {
     };
   }, [candidates]);
 
+  const [sortOrder, setSortOrder] = useState("newest");
+
   const filtered = useMemo(() => {
-    return candidates.filter((c) => {
+    let result = candidates.filter((c) => {
       let matchQ = true;
       if (q && q.trim().length > 0) {
         const query = q.toLowerCase();
@@ -228,7 +230,21 @@ export default function CandidatesPage() {
 
       return matchQ && matchQuick && matchStage && matchPosition && matchSource && matchRecruiter;
     });
-  }, [candidates, q, quickFilter, stageFilter, positionFilter, sourceFilter, recruiterFilter]);
+
+    result.sort((a, b) => {
+      // Prioritize createdAt so that brand new insertions show up top
+      // Fallback to appliedAt or 0
+      const dateA = new Date(a.createdAt || a.appliedAt || 0).getTime();
+      const dateB = new Date(b.createdAt || b.appliedAt || 0).getTime();
+      if (sortOrder === "newest") {
+        return dateB - dateA;
+      } else {
+        return dateA - dateB;
+      }
+    });
+
+    return result;
+  }, [candidates, q, quickFilter, stageFilter, positionFilter, sourceFilter, recruiterFilter, sortOrder]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
   const safePage = Math.min(page, totalPages);
@@ -464,9 +480,13 @@ export default function CandidatesPage() {
                 <span className="text-slate-500 font-medium">({filtered.length})</span>
               </h2>
               <div className="flex items-center gap-3">
-                <select className="text-xs border border-slate-200 rounded-lg h-8 px-2 font-semibold text-slate-700 bg-white">
-                  <option>Sort by: Newest First</option>
-                  <option>Sort by: Oldest First</option>
+                <select 
+                  className="text-xs border border-slate-200 rounded-lg h-8 px-2 font-semibold text-slate-700 bg-white"
+                  value={sortOrder}
+                  onChange={(e) => setSortOrder(e.target.value)}
+                >
+                  <option value="newest">Sort by: Newest First</option>
+                  <option value="oldest">Sort by: Oldest First</option>
                 </select>
                 <div className="flex bg-slate-100 rounded-lg p-0.5">
                   <button className="p-1.5 bg-blue-600 text-white rounded shadow-sm">
@@ -653,14 +673,22 @@ export default function CandidatesPage() {
                     {i + 1}
                   </Button>
                 ))}
-                {totalPages > 5 && <span className="text-[11px] text-slate-400 px-1">...</span>}
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-7 w-7 rounded border-slate-200 text-[11px] font-bold"
-                >
-                  {totalPages}
-                </Button>
+                {totalPages > 5 && (
+                  <>
+                    <span className="text-[11px] text-slate-400 px-1">...</span>
+                    <Button
+                      variant={page === totalPages ? "default" : "outline"}
+                      size="icon"
+                      className={cn(
+                        "h-7 w-7 rounded border-slate-200 text-[11px] font-bold",
+                        page === totalPages ? "bg-blue-600 text-white border-blue-600" : "text-slate-600"
+                      )}
+                      onClick={() => setPage(totalPages)}
+                    >
+                      {totalPages}
+                    </Button>
+                  </>
+                )}
                 <Button
                   variant="outline"
                   size="icon"

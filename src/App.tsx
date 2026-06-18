@@ -12,19 +12,26 @@ import Reports from "@/pages/reports/Reports";
 import CandidateFormPage from "@/pages/candidates/CandidateFormPage";
 
 // New Pages
+import AllJobs from "@/pages/jobs/AllJobs";
+import CreateJob from "@/pages/jobs/CreateJob";
 import DuplicateCheck from "@/pages/candidates/DuplicateCheck";
 import CandidateTimeline from "@/pages/candidates/CandidateTimeline";
 import InterviewsUpcoming from "@/pages/interviews/InterviewsUpcoming";
 import InterviewsFeedback from "@/pages/interviews/InterviewsFeedback";
 import InterviewsHistory from "@/pages/interviews/InterviewsHistory";
 import Offers from "@/pages/offers/Offers";
+import JoiningTracker from "@/pages/offers/JoiningTracker";
+import NoJoiners from "@/pages/offers/NoJoiners";
 import Rejected from "@/pages/rejection/Rejected";
 import Blacklisted from "@/pages/rejection/Blacklisted";
 import ReportsPerformance from "@/pages/reports/ReportsPerformance";
 import Notifications from "@/pages/notifications/Notifications";
-import SettingsUsers from "@/pages/settings/SettingsUsers";
-import SettingsRoles from "@/pages/settings/SettingsRoles";
-import SettingsMasters from "@/pages/settings/SettingsMasters";
+import UserProfile from "@/pages/settings/system/UserProfile";
+import UserRoles from "@/pages/settings/system/UserRoles";
+import SystemSettings from "@/pages/settings/system/SystemSettings";
+import EmailTemplates from "@/pages/settings/email/EmailTemplates";
+import EmailTriggers from "@/pages/settings/email/EmailTriggers";
+import EmailLogs from "@/pages/settings/email/EmailLogs";
 
 const queryClient = new QueryClient();
 
@@ -63,6 +70,10 @@ function App() {
                 <Route path="/pipeline" element={<Pipeline />} />
                 <Route path="/reports" element={<Reports />} />
 
+                {/* Jobs */}
+                <Route path="/jobs/all" element={<AllJobs />} />
+                <Route path="/jobs/create" element={<CreateJob />} />
+
                 {/* Candidates */}
                 <Route path="/candidates" element={<Candidates />} />
                 <Route path="/candidates/add" element={<CandidateFormPage />} />
@@ -78,6 +89,9 @@ function App() {
                 <Route path="/interviews/history" element={<InterviewsHistory />} />
 
                 {/* Offers */}
+                <Route path="/offers/management" element={<Offers />} />
+                <Route path="/offers/joining-tracker" element={<JoiningTracker />} />
+                <Route path="/offers/no-joiners" element={<NoJoiners />} />
                 <Route path="/offers/:tab?" element={<Offers />} />
 
                 {/* Rejections & Blacklist */}
@@ -85,14 +99,22 @@ function App() {
                 <Route path="/rejections/blacklisted" element={<Blacklisted />} />
 
                 {/* Reports */}
-                <Route path="/reports/dashboard" element={<Dashboard />} />
-                <Route path="/reports/performance" element={<ReportsPerformance />} />
+                <Route path="/reports/candidate" element={<Reports />} />
+                <Route path="/reports/recruiter-performance" element={<ReportsPerformance />} />
+                <Route path="/reports/hiring" element={<Reports />} />
+                <Route path="/reports/rejection-analysis" element={<ReportsPerformance />} />
+                <Route path="/reports/blacklist" element={<Blacklisted />} />
+                <Route path="/reports/no-joiners" element={<NoJoiners />} />
+                <Route path="/reports" element={<Reports />} />
 
                 {/* Others */}
-                <Route path="/notifications" element={<Notifications />} />
-                <Route path="/settings/users" element={<SettingsUsers />} />
-                <Route path="/settings/roles" element={<SettingsRoles />} />
-                <Route path="/settings/masters" element={<SettingsMasters />} />
+                <Route path="/notifications/alerts" element={<Notifications />} />
+                <Route path="/email-settings/templates" element={<EmailTemplates />} />
+                <Route path="/email-settings/triggers" element={<EmailTriggers />} />
+                <Route path="/email-settings/logs" element={<EmailLogs />} />
+                <Route path="/system-settings/profile" element={<UserProfile />} />
+                <Route path="/system-settings/roles" element={<UserRoles />} />
+                <Route path="/system-settings/general" element={<SystemSettings />} />
 
                 <Route path="*" element={<NotFound />} />
               </Routes>

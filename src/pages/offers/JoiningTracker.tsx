@@ -1,44 +1,22 @@
 import { useState, useMemo } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useAts } from "@/services/ats-store";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Search, ChevronRight, Briefcase, FileText, CheckCircle2, XCircle, AlertTriangle, UserCheck, Percent } from "lucide-react";
+import { Search, ChevronRight, UserCheck, Clock, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const TABS = [
-  { id: "released", label: "Released", icon: FileText, stage: "Offer Released", color: "text-blue-600 bg-blue-50 border-blue-100", tone: "border-blue-500" },
-  { id: "accepted", label: "Accepted", icon: CheckCircle2, stage: "Offer Accepted", color: "text-emerald-600 bg-emerald-50 border-emerald-100", tone: "border-emerald-500" },
-  { id: "declined", label: "Declined", icon: XCircle, stage: "Offer Declined", color: "text-rose-600 bg-rose-50 border-rose-100", tone: "border-rose-500" },
-  { id: "no-join", label: "No-Show", icon: AlertTriangle, stage: "No Show", color: "text-amber-600 bg-amber-50 border-amber-100", tone: "border-amber-500" },
-  { id: "joined", label: "Joined", icon: UserCheck, stage: "Joined", color: "text-teal-600 bg-teal-50 border-teal-100", tone: "border-teal-500" },
+  { id: "pending", label: "Pending Joining", icon: Clock, stage: "Offer Accepted", color: "text-blue-600 bg-blue-50 border-blue-100" },
+  { id: "joined", label: "Joined", icon: UserCheck, stage: "Joined", color: "text-teal-600 bg-teal-50 border-teal-100" },
 ];
 
-export default function Offers() {
-  const { tab } = useParams();
-  const navigate = useNavigate();
+export default function JoiningTracker() {
   const { candidates } = useAts();
-
-  const activeTabId = tab || "released";
-  const activeTabDef = TABS.find((t) => t.id === activeTabId) || TABS[0];
-
+  const [activeTabId, setActiveTabId] = useState("pending");
   const [search, setSearch] = useState("");
 
-  const analytics = useMemo(() => {
-    let released = 0, accepted = 0, declined = 0, noShow = 0, joined = 0;
-    candidates.forEach(c => {
-      if (c.stage === "Offer Released") released++;
-      if (c.stage === "Offer Accepted") accepted++;
-      if (c.stage === "Offer Declined") declined++;
-      if (c.stage === "No Show") noShow++;
-      if (c.stage === "Joined") joined++;
-    });
-    const total = released + accepted + declined + noShow + joined;
-    const acceptedTotal = accepted + joined;
-    const rate = total > 0 ? Math.round((acceptedTotal / total) * 100) : 0;
-    
-    return { total, released, accepted: acceptedTotal, declined, noShow, joined, rate };
-  }, [candidates]);
+  const activeTabDef = TABS.find((t) => t.id === activeTabId) || TABS[0];
 
   const filteredCandidates = useMemo(() => {
     return candidates.filter((c) => {
@@ -64,47 +42,22 @@ export default function Offers() {
     <div className="flex flex-col gap-8 w-full pb-10">
       {/* Header */}
       <div className="relative overflow-hidden rounded-3xl bg-white shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] border border-slate-100 p-8 sm:p-10">
-        <div className="absolute top-0 right-0 -mt-16 -mr-16 w-64 h-64 bg-gradient-to-br from-blue-100 to-indigo-50 rounded-full blur-3xl opacity-50 pointer-events-none" />
+        <div className="absolute top-0 right-0 -mt-16 -mr-16 w-64 h-64 bg-gradient-to-br from-teal-100 to-emerald-50 rounded-full blur-3xl opacity-50 pointer-events-none" />
         <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
           <div className="flex items-center gap-5">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl shadow-sm border bg-indigo-50 border-indigo-100 text-indigo-600">
-              <Briefcase className="h-6 w-6" />
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl shadow-sm border bg-teal-50 border-teal-100 text-teal-600">
+              <CheckCircle2 className="h-6 w-6" />
             </div>
             <div>
               <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
-                Offer Management
+                Joining Tracker
               </h1>
               <p className="text-slate-500 text-[13px] sm:text-[14px] font-medium mt-1.5 max-w-lg leading-relaxed">
-                Track candidate offers, monitor acceptance rates, and identify potential no-shows in real-time.
+                Track candidates who are pending joining and those who have successfully joined.
               </p>
             </div>
           </div>
         </div>
-      </div>
-
-      {/* Analytics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-        {[
-          { label: "Total Offers", value: analytics.total, icon: FileText, tone: "bg-blue-50 text-blue-600", borderTone: "border-blue-500", trend: "Active Pipeline" },
-          { label: "Acceptance Rate", value: `${analytics.rate}%`, icon: Percent, tone: "bg-indigo-50 text-indigo-600", borderTone: "border-indigo-500", trend: "Overall Health" },
-          { label: "Accepted & Joined", value: analytics.accepted, icon: CheckCircle2, tone: "bg-emerald-50 text-emerald-600", borderTone: "border-emerald-500", trend: "Successfully Closed" },
-          { label: "Declined", value: analytics.declined, icon: XCircle, tone: "bg-rose-50 text-rose-600", borderTone: "border-rose-500", trend: "Lost Candidates" },
-          { label: "No-Shows", value: analytics.noShow, icon: AlertTriangle, tone: "bg-amber-50 text-amber-600", borderTone: "border-amber-500", trend: "Dropped Post-Offer" },
-        ].map((stat, i) => (
-          <div key={i} className={cn("p-5 bg-white shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] rounded-3xl relative overflow-hidden group border-t-[3px] flex-1 min-w-[160px]", stat.borderTone)}>
-            <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-gradient-to-br from-transparent to-black/[0.02] rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500" />
-            <div className="flex items-start justify-between relative z-10">
-              <div className="flex flex-col h-full">
-                <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">{stat.label}</div>
-                <div className="text-3xl font-black tracking-tight text-slate-900 mb-2">{stat.value}</div>
-                <div className="mt-auto text-[10px] font-bold text-slate-400">{stat.trend}</div>
-              </div>
-              <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl", stat.tone)}>
-                <stat.icon className="h-5 w-5" />
-              </div>
-            </div>
-          </div>
-        ))}
       </div>
 
       {/* Filters & Tabs */}
@@ -119,7 +72,7 @@ export default function Offers() {
                 key={t.id}
                 onClick={() => {
                   setSearch("");
-                  navigate(`/offers/${t.id}`);
+                  setActiveTabId(t.id);
                 }}
                 className={cn(
                   "flex items-center gap-2 px-5 py-3 rounded-xl text-[13px] font-bold transition-all duration-300 whitespace-nowrap",
@@ -215,15 +168,6 @@ export default function Offers() {
                     <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Last Updated</div>
                     <div className="text-[13px] font-bold text-slate-700 truncate">{formatDate(c.updatedAt)}</div>
                   </div>
-
-                  {c.stageReason && (
-                    <div className="col-span-2 md:flex-[1.5] bg-amber-50/30 p-3 rounded-xl border border-amber-100/50">
-                      <div className="text-[10px] font-bold uppercase tracking-wider text-amber-500 mb-1">Notes / Reason</div>
-                      <div className="text-[13px] font-bold text-amber-900 truncate" title={c.stageReason}>
-                        {c.stageReason}
-                      </div>
-                    </div>
-                  )}
                 </div>
 
                 <div className="hidden md:flex items-center justify-end shrink-0 pl-4">

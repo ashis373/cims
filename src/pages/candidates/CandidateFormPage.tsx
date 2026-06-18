@@ -58,7 +58,7 @@ const empty = {
   phone: "",
   alternateMobile: "",
   role: "",
-  department: "Engineering" as Department,
+  department: "software development" as Department,
   source: "Website" as Source,
   stage: "New Applicant" as Stage,
   resume: "",
@@ -93,6 +93,31 @@ export default function CandidateFormPage() {
   const [form, setForm] = useState(empty);
   const [dup, setDup] = useState<Candidate | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [openJobs, setOpenJobs] = useState<any[]>([]);
+  const [dbDepartments, setDbDepartments] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [jobsRes, deptsRes] = await Promise.all([
+          fetch(`${API_BASE_URL}/jobs.php`),
+          fetch(`${API_BASE_URL}/departments.php`)
+        ]);
+        const jobsData = await jobsRes.json();
+        const deptsData = await deptsRes.json();
+        
+        if (Array.isArray(jobsData)) {
+          setOpenJobs(jobsData.filter((j: any) => j.status === 'Open'));
+        }
+        if (Array.isArray(deptsData)) {
+          setDbDepartments(deptsData);
+        }
+      } catch (e) {
+        console.error("Failed to fetch data", e);
+      }
+    };
+    fetchData();
+  }, []);
 
   useEffect(() => {
     if (candidate) {
@@ -674,13 +699,25 @@ export default function CandidateFormPage() {
                 <Briefcase className="h-3.5 w-3.5" /> Position Applied For{" "}
                 <span className="text-destructive">*</span>
               </Label>
-              <Input
-                id="role"
-                value={form.role}
-                onChange={(e) => set("role", e.target.value)}
-                placeholder="Select position"
-                className={errors.role ? "border-destructive focus-visible:ring-destructive" : ""}
-              />
+              <Select value={form.role} onValueChange={(v) => set("role", v)}>
+                <SelectTrigger className={errors.role ? "border-destructive focus:ring-destructive" : ""}>
+                  <SelectValue placeholder="Select position" />
+                </SelectTrigger>
+                <SelectContent>
+                  {openJobs.length > 0 ? (
+                    openJobs.map((job) => (
+                      <SelectItem key={job.id} value={job.title}>
+                        {job.title} ({job.id})
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="loading" disabled>Loading jobs...</SelectItem>
+                  )}
+                  {form.role && !openJobs.find(j => j.title === form.role) && form.role !== "loading" && (
+                    <SelectItem value={form.role}>{form.role}</SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
               <ErrorMsg msg={errors.role} />
             </div>
             <div>
@@ -712,11 +749,19 @@ export default function CandidateFormPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {DEPARTMENTS.map((d) => (
-                    <SelectItem key={d} value={d}>
-                      {d}
-                    </SelectItem>
-                  ))}
+                  {dbDepartments.length > 0 ? (
+                    dbDepartments.map((d) => (
+                      <SelectItem key={d.id} value={d.name}>
+                        {d.name}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    DEPARTMENTS.map((d) => (
+                      <SelectItem key={d} value={d}>
+                        {d}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>
