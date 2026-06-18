@@ -21,7 +21,7 @@ export default function Notifications() {
   useEffect(() => {
     const fetchAlerts = async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/notifications.php`);
+        const res = await fetch(`${API_BASE_URL}/notifications/notifications.php`);
         const data = await res.json();
         setAlerts(data);
       } catch (err) {

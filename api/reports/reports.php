@@ -7,7 +7,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit(0);
 }
 
-include 'db.php';
+include '../db.php';
 
 try {
     $startDate = $_GET['startDate'] ?? null;

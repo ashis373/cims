@@ -13,7 +13,7 @@ export default function Blacklisted() {
   const [reasonFilter, setReasonFilter] = useState("All");
 
   useEffect(() => {
-    fetch(`${API_BASE_URL}/blacklisted.php`)
+    fetch(`${API_BASE_URL}/rejections/blacklisted.php`)
       .then((res) => res.json())
       .then((json) => {
         setData(json.blacklisted || []);

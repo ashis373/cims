@@ -7,7 +7,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit(0);
 }
 
-include 'db.php';
+include '../db.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_FILES['file']) && $_FILES['file']['error'] === UPLOAD_ERR_OK && isset($_POST['candidate_id'])) {

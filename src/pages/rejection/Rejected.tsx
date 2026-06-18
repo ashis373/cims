@@ -13,7 +13,7 @@ export default function Rejected() {
   const [reasonFilter, setReasonFilter] = useState("All");
 
   useEffect(() => {
-    fetch(`${API_BASE_URL}/rejected.php`)
+    fetch(`${API_BASE_URL}/rejections/rejected.php`)
       .then((res) => res.json())
       .then((json) => {
         setData(json.rejected || []);

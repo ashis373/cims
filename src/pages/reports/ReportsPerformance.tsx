@@ -37,7 +37,7 @@ export default function ReportsPerformance() {
       if (filters.recruiter !== "all") params.append("recruiter", filters.recruiter);
       if (filters.position !== "all") params.append("position", filters.position);
       
-      const res = await fetch(`${API_BASE_URL}/reports.php?${params.toString()}`);
+      const res = await fetch(`${API_BASE_URL}/reports/reports.php?${params.toString()}`);
       if (!res.ok) throw new Error("Failed to fetch reports");
       const json = await res.json();
       setData(json);

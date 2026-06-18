@@ -100,8 +100,8 @@ export default function CandidateFormPage() {
     const fetchData = async () => {
       try {
         const [jobsRes, deptsRes] = await Promise.all([
-          fetch(`${API_BASE_URL}/jobs.php`),
-          fetch(`${API_BASE_URL}/departments.php`)
+          fetch(`${API_BASE_URL}/jobs/jobs.php`, { credentials: 'include' }),
+          fetch(`${API_BASE_URL}/jobs/departments.php`)
         ]);
         const jobsData = await jobsRes.json();
         const deptsData = await deptsRes.json();
@@ -623,9 +623,9 @@ export default function CandidateFormPage() {
                   if (file) {
                     const formData = new FormData();
                     formData.append("resume", file);
-                    const uploadUrl = `${API_BASE_URL}/upload.php`;
+                    const uploadUrl = `${API_BASE_URL}/candidates/upload.php`;
                     try {
-                      const res = await fetch(uploadUrl, { method: "POST", body: formData });
+                      const res = await fetch(uploadUrl, { credentials: 'include',  method: "POST", body: formData });
                       const data = await res.json();
                       if (data.success) {
                         set("resume", data.filename);

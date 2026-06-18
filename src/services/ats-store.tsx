@@ -23,7 +23,7 @@ import {
 import { API_BASE_URL } from "@/config/api";
 
 const STORAGE_KEY = "ats.candidates.v2";
-const API_URL = `${API_BASE_URL}/candidates.php`;
+const API_URL = `${API_BASE_URL}/candidates/candidates.php`;
 
 function uid() {
   return Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
@@ -142,7 +142,7 @@ export function AtsProvider({ children }: { children: ReactNode }) {
   };
 
   const syncPut = async (c: Candidate) => {
-    const res = await fetch(`${API_URL}?id=${c.id}`, {
+    const res = await fetch(`${API_URL}?id=${c.id}`, { credentials: 'include', 
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(c),
@@ -193,7 +193,7 @@ export function AtsProvider({ children }: { children: ReactNode }) {
           ],
         };
         try {
-          const res = await fetch(API_URL, {
+          const res = await fetch(API_URL, { credentials: 'include', 
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(cand),
@@ -231,7 +231,7 @@ export function AtsProvider({ children }: { children: ReactNode }) {
       },
       remove: async (ids) => {
         try {
-          const res = await fetch(API_URL, {
+          const res = await fetch(API_URL, { credentials: 'include', 
             method: "DELETE",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ ids }),
@@ -372,7 +372,7 @@ export function AtsProvider({ children }: { children: ReactNode }) {
         setCanUndo(history.current.length > 0);
 
         // Push the entire 'prev' state back to the DB to sync undo
-        fetch(API_URL, {
+        fetch(API_URL, { credentials: 'include', 
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ bulk: true, candidates: prev }),

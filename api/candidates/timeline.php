@@ -7,7 +7,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit(0);
 }
 
-include 'db.php';
+include '../db.php';
 
 $id = $_GET['id'] ?? null;
 $params = [];

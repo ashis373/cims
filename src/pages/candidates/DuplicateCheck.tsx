@@ -17,7 +17,7 @@ export default function DuplicateCheck() {
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
-    fetch(`${API_BASE_URL}/duplicates.php`)
+    fetch(`${API_BASE_URL}/candidates/duplicates.php`)
       .then((res) => res.json())
       .then((json) => {
         setData(json);

@@ -14,6 +14,7 @@ import {
   Mail,
   ChevronDown,
   ChevronRight,
+  LogOut,
 } from "lucide-react";
 import { Toaster } from "@/components/ui/sonner";
 import { cn } from "@/lib/utils";
@@ -227,11 +228,16 @@ const NavItem = ({
 export function AppLayout({ children }: { children: ReactNode }) {
   const { pathname } = useLocation();
   const [unreadCount, setUnreadCount] = useState(0);
+  const [currentUser, setCurrentUser] = useState({
+    name: "Loading...",
+    designation: "Please wait",
+    initial: "L"
+  });
 
   useEffect(() => {
     const fetchNotifications = async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/notifications.php`);
+        const res = await fetch(`${API_BASE_URL}/notifications/notifications.php`);
         const data = await res.json();
         const count = data.filter((a: any) => a.unread).length;
         setUnreadCount(count);
@@ -240,6 +246,34 @@ export function AppLayout({ children }: { children: ReactNode }) {
       }
     };
     fetchNotifications();
+
+    const fetchProfile = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/system/profile.php`);
+        const data = await res.json();
+        if (data.status === 'success' && data.data) {
+          setCurrentUser({
+            name: data.data.full_name || "User",
+            designation: data.data.designation || "User Role",
+            initial: data.data.full_name ? data.data.full_name.charAt(0) : "U"
+          });
+        } else {
+          setCurrentUser({
+            name: "Super Admin",
+            designation: "System Administrator",
+            initial: "S"
+          });
+        }
+      } catch (error) {
+        console.error("Failed to load profile", error);
+        setCurrentUser({
+          name: "Super Admin",
+          designation: "System Administrator",
+          initial: "S"
+        });
+      }
+    };
+    fetchProfile();
   }, [pathname]);
 
   const isActive = (to: string) => (to === "/" ? pathname === "/" : pathname === to);
@@ -267,17 +301,15 @@ export function AppLayout({ children }: { children: ReactNode }) {
 
         <div className="shrink-0 p-5 border-t border-slate-800/50">
           <div className="flex items-center gap-3 rounded-2xl bg-slate-800/30 hover:bg-slate-800/60 p-3 transition-colors cursor-pointer border border-slate-800/50 shadow-sm">
-            <img
-              src="https://api.dicebear.com/7.x/notionists/svg?seed=John"
-              alt="User profile"
-              className="h-10 w-10 rounded-full bg-slate-800 object-cover ring-2 ring-slate-800 shadow-sm"
-            />
+            <div className="h-10 w-10 rounded-full bg-slate-700 flex items-center justify-center text-white font-bold ring-2 ring-slate-800 shadow-sm">
+              {currentUser.initial}
+            </div>
             <div className="flex flex-col items-start flex-1 min-w-0">
               <span className="text-[13px] font-bold text-white leading-none truncate w-full">
-                John Doe
+                {currentUser.name}
               </span>
               <span className="text-[11px] font-bold text-slate-400 mt-1.5 leading-none truncate w-full">
-                HR Manager
+                {currentUser.designation}
               </span>
             </div>
             <Settings className="h-4 w-4 text-slate-400" />
@@ -324,18 +356,33 @@ export function AppLayout({ children }: { children: ReactNode }) {
             </Link>
             <div className="h-8 w-px bg-slate-200" />
             <button className="flex items-center gap-3 hover:bg-white bg-slate-50 p-1.5 rounded-full pr-5 transition-colors border border-slate-200 shadow-sm">
-              <img
-                src="https://api.dicebear.com/7.x/notionists/svg?seed=John"
-                alt="User profile"
-                className="h-8 w-8 rounded-full bg-white shadow-sm object-cover"
-              />
+              <div className="h-8 w-8 rounded-full bg-[#1447E6] flex items-center justify-center text-white font-bold shadow-sm">
+                {currentUser.initial}
+              </div>
               <div className="hidden sm:flex flex-col items-start">
-                <span className="text-[13px] font-bold text-slate-900 leading-none">John Doe</span>
+                <span className="text-[13px] font-bold text-slate-900 leading-none">{currentUser.name}</span>
                 <span className="text-[10px] font-bold text-slate-500 mt-1.5 leading-none uppercase tracking-wider">
-                  HR Manager
+                  {currentUser.designation}
                 </span>
               </div>
               <ChevronDown className="h-3.5 w-3.5 text-slate-400 ml-1 hidden sm:block" />
+            </button>
+            <div className="h-8 w-px bg-slate-200 hidden sm:block" />
+            <button 
+              onClick={async () => {
+                try {
+                  await fetch(`${API_BASE_URL}/auth/logout.php`, { credentials: 'include' });
+                } catch (e) {
+                  console.error(e);
+                }
+                localStorage.removeItem('cims_user');
+                localStorage.removeItem('cims_login_time');
+                window.location.href = '/login';
+              }}
+              title="Log out"
+              className="flex items-center justify-center h-10 w-10 rounded-full bg-slate-50 border border-slate-200 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition-colors shadow-sm text-slate-500"
+            >
+              <LogOut className="h-4 w-4" />
             </button>
           </div>
         </header>

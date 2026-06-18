@@ -92,7 +92,7 @@ function Dashboard() {
   });
 
   useEffect(() => {
-    fetch(`${API_BASE_URL}/stats.php`)
+    fetch(`${API_BASE_URL}/dashboard/stats.php`)
       .then(res => res.json())
       .then(data => setCounts(data))
       .catch(console.error);

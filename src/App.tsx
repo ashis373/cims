@@ -10,6 +10,8 @@ import CandidateDetails from "@/pages/candidates/CandidateDetails";
 import Pipeline from "@/pages/pipeline/Pipeline";
 import Reports from "@/pages/reports/Reports";
 import CandidateFormPage from "@/pages/candidates/CandidateFormPage";
+import Login from "@/pages/auth/Login";
+import { PrivateRoute } from "@/components/auth/PrivateRoute";
 
 // New Pages
 import AllJobs from "@/pages/jobs/AllJobs";
@@ -63,62 +65,70 @@ function App() {
       <ThemeProvider>
         <AtsProvider>
           <BrowserRouter basename={import.meta.env.MODE === 'production' ? '/cims' : '/'}>
-            <AppLayout>
-              <Routes>
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/calendar" element={<Calendar />} />
-                <Route path="/pipeline" element={<Pipeline />} />
-                <Route path="/reports" element={<Reports />} />
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route path="/*" element={
+                <PrivateRoute>
+                  <AppLayout>
+                    <Routes>
+                    <Route path="/" element={<Dashboard />} />
+                    <Route path="/calendar" element={<Calendar />} />
+                    <Route path="/pipeline" element={<Pipeline />} />
+                    <Route path="/reports" element={<Reports />} />
 
-                {/* Jobs */}
-                <Route path="/jobs/all" element={<AllJobs />} />
-                <Route path="/jobs/create" element={<CreateJob />} />
+                    {/* Jobs */}
+                    <Route path="/jobs/all" element={<AllJobs />} />
+                    <Route path="/jobs/create" element={<CreateJob />} />
 
-                {/* Candidates */}
-                <Route path="/candidates" element={<Candidates />} />
-                <Route path="/candidates/add" element={<CandidateFormPage />} />
-                <Route path="/candidates/new" element={<CandidateFormPage />} />
-                <Route path="/candidates/duplicate-check" element={<DuplicateCheck />} />
-                <Route path="/candidates/timeline" element={<CandidateTimeline />} />
-                <Route path="/candidates/:id" element={<CandidateDetails />} />
-                <Route path="/candidates/:id/edit" element={<CandidateFormPage />} />
+                    {/* Candidates */}
+                    <Route path="/candidates" element={<Candidates />} />
+                    <Route path="/candidates/add" element={<CandidateFormPage />} />
+                    <Route path="/candidates/new" element={<CandidateFormPage />} />
+                    <Route path="/candidates/duplicate-check" element={<DuplicateCheck />} />
+                    <Route path="/candidates/timeline" element={<CandidateTimeline />} />
+                    <Route path="/candidates/:id" element={<CandidateDetails />} />
+                    <Route path="/candidates/:id/edit" element={<CandidateFormPage />} />
 
-                {/* Interviews */}
-                <Route path="/interviews/upcoming" element={<InterviewsUpcoming />} />
-                <Route path="/interviews/feedback-pending" element={<InterviewsFeedback />} />
-                <Route path="/interviews/history" element={<InterviewsHistory />} />
+                    {/* Interviews */}
+                    <Route path="/interviews/upcoming" element={<InterviewsUpcoming />} />
+                    <Route path="/interviews/feedback-pending" element={<InterviewsFeedback />} />
+                    <Route path="/interviews/history" element={<InterviewsHistory />} />
 
-                {/* Offers */}
-                <Route path="/offers/management" element={<Offers />} />
-                <Route path="/offers/joining-tracker" element={<JoiningTracker />} />
-                <Route path="/offers/no-joiners" element={<NoJoiners />} />
-                <Route path="/offers/:tab?" element={<Offers />} />
+                    {/* Offers */}
+                    <Route path="/offers/management" element={<Offers />} />
+                    <Route path="/offers/joining-tracker" element={<JoiningTracker />} />
+                    <Route path="/offers/no-joiners" element={<NoJoiners />} />
+                    <Route path="/offers/:tab?" element={<Offers />} />
 
-                {/* Rejections & Blacklist */}
-                <Route path="/rejections/rejected" element={<Rejected />} />
-                <Route path="/rejections/blacklisted" element={<Blacklisted />} />
+                    {/* Rejections & Blacklist */}
+                    <Route path="/rejections/rejected" element={<Rejected />} />
+                    <Route path="/rejections/blacklisted" element={<Blacklisted />} />
 
-                {/* Reports */}
-                <Route path="/reports/candidate" element={<Reports />} />
-                <Route path="/reports/recruiter-performance" element={<ReportsPerformance />} />
-                <Route path="/reports/hiring" element={<Reports />} />
-                <Route path="/reports/rejection-analysis" element={<ReportsPerformance />} />
-                <Route path="/reports/blacklist" element={<Blacklisted />} />
-                <Route path="/reports/no-joiners" element={<NoJoiners />} />
-                <Route path="/reports" element={<Reports />} />
+                    {/* Reports */}
+                    <Route path="/reports/candidate" element={<Reports />} />
+                    <Route path="/reports/recruiter-performance" element={<ReportsPerformance />} />
+                    <Route path="/reports/hiring" element={<Reports />} />
+                    <Route path="/reports/rejection-analysis" element={<ReportsPerformance />} />
+                    <Route path="/reports/blacklist" element={<Blacklisted />} />
+                    <Route path="/reports/no-joiners" element={<NoJoiners />} />
+                    <Route path="/reports" element={<Reports />} />
 
-                {/* Others */}
-                <Route path="/notifications/alerts" element={<Notifications />} />
-                <Route path="/email-settings/templates" element={<EmailTemplates />} />
-                <Route path="/email-settings/triggers" element={<EmailTriggers />} />
-                <Route path="/email-settings/logs" element={<EmailLogs />} />
-                <Route path="/system-settings/profile" element={<UserProfile />} />
-                <Route path="/system-settings/roles" element={<UserRoles />} />
-                <Route path="/system-settings/general" element={<SystemSettings />} />
+                    {/* Others */}
+                    <Route path="/notifications/alerts" element={<Notifications />} />
+                    {/* System Settings & Email (Admin/HR only) */}
+                    <Route path="/email-settings/templates" element={<PrivateRoute allowedRoles={["Administrator", "HR Manager"]}><EmailTemplates /></PrivateRoute>} />
+                    <Route path="/email-settings/triggers" element={<PrivateRoute allowedRoles={["Administrator", "HR Manager"]}><EmailTriggers /></PrivateRoute>} />
+                    <Route path="/email-settings/logs" element={<PrivateRoute allowedRoles={["Administrator", "HR Manager"]}><EmailLogs /></PrivateRoute>} />
+                    <Route path="/system-settings/profile" element={<UserProfile />} />
+                    <Route path="/system-settings/roles" element={<PrivateRoute allowedRoles={["Administrator"]}><UserRoles /></PrivateRoute>} />
+                    <Route path="/system-settings/general" element={<PrivateRoute allowedRoles={["Administrator", "HR Manager"]}><SystemSettings /></PrivateRoute>} />
 
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </AppLayout>
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </AppLayout>
+                </PrivateRoute>
+              } />
+            </Routes>
           </BrowserRouter>
         </AtsProvider>
       </ThemeProvider>

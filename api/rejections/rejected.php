@@ -7,7 +7,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit(0);
 }
 
-include 'db.php';
+include '../db.php';
 
 try {
     $stmt = $conn->query("
@@ -24,13 +24,13 @@ try {
         FROM cims_candidate_rejections cr
         JOIN cims_candidates c ON cr.candidate_id = c.id
         LEFT JOIN cims_applications a ON cr.application_id = a.id
-        WHERE cr.type = 'Blacklisted'
+        WHERE cr.type = 'Rejected'
         ORDER BY cr.recordedAt DESC
     ");
     
     $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    echo json_encode(['blacklisted' => $results]);
+    echo json_encode(['rejected' => $results]);
 } catch (PDOException $e) {
     http_response_code(500);
     echo json_encode(["error" => $e->getMessage()]);

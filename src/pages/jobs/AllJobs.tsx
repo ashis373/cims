@@ -113,7 +113,7 @@ export default function AllJobs() {
   useEffect(() => {
     const fetchJobs = async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/jobs.php`);
+        const res = await fetch(`${API_BASE_URL}/jobs/jobs.php`);
         const data = await res.json();
         setJobs(data);
       } catch (err) {
@@ -127,7 +127,7 @@ export default function AllJobs() {
 
   const handleDelete = async (jobId: string) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/jobs.php?job_id=${jobId}`, {
+      const res = await fetch(`${API_BASE_URL}/jobs/jobs.php?job_id=${jobId}`, { credentials: 'include', 
         method: "DELETE"
       });
       if (res.ok) {
@@ -142,7 +142,7 @@ export default function AllJobs() {
 
   const handleUpdateStatus = async (jobId: string, newStatus: string) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/jobs.php`, {
+      const res = await fetch(`${API_BASE_URL}/jobs/jobs.php`, { credentials: 'include', 
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ job_id: jobId, status: newStatus })
@@ -230,7 +230,7 @@ export default function AllJobs() {
           </div>
         </div>
         <Link to="/jobs/create">
-          <Button className="rounded-xl font-bold bg-indigo-600 hover:bg-indigo-700 shadow-md shadow-indigo-600/20 px-6 h-11">
+          <Button className="rounded-xl font-bold bg-[#1447E6] hover:bg-[#0c31a6] shadow-md shadow-[#1447E6]/20 px-6 h-11 text-white transition-colors">
             <Plus className="w-4 h-4 mr-2" />
             Create Job
           </Button>

@@ -25,8 +25,8 @@ export default function CandidateTimeline() {
 
   useEffect(() => {
     Promise.all([
-      fetch(`${API_BASE_URL}/timeline.php`).then(res => res.json()),
-      fetch(`${API_BASE_URL}/stats.php`).then(res => res.json())
+      fetch(`${API_BASE_URL}/candidates/timeline.php`).then(res => res.json()),
+      fetch(`${API_BASE_URL}/dashboard/stats.php`).then(res => res.json())
     ])
       .then(([timelineData, statsData]) => {
         setTimeline(timelineData);

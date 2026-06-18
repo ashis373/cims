@@ -1,0 +1,33 @@
+<?php
+if (isset($_SERVER['HTTP_ORIGIN'])) { header("Access-Control-Allow-Origin: {$_SERVER['HTTP_ORIGIN']}"); }
+header('Access-Control-Allow-Credentials: true');
+header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, Authorization');
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { exit(0); }
+
+require_once '../auth_middleware.php';
+require_once '../db.php';
+
+$user_id = $_SESSION['user_id'];
+
+try {
+    $stmt = $conn->prepare("
+        SELECT u.id, u.full_name, u.email, u.designation, u.department, u.profile_photo, r.role_name 
+        FROM system_users u 
+        LEFT JOIN system_roles r ON u.role_id = r.id 
+        WHERE u.id = ? AND u.is_active = 1
+    ");
+    $stmt->execute([$user_id]);
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($user) {
+        echo json_encode(["status" => "success", "data" => $user]);
+    } else {
+        http_response_code(401);
+        echo json_encode(["status" => "error", "message" => "User not found or inactive"]);
+    }
+} catch (PDOException $e) {
+    http_response_code(500);
+    echo json_encode(["status" => "error", "message" => "Server error"]);
+}
+?>

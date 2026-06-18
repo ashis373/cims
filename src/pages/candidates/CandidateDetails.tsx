@@ -450,7 +450,7 @@ export default function CandidateProfile() {
                     const text = window.prompt("Enter note text:");
                     if (!text) return;
                     try {
-                      const res = await fetch(`${API_BASE_URL}/notes.php`, {
+                      const res = await fetch(`${API_BASE_URL}/candidates/notes.php`, { credentials: 'include', 
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({ candidate_id: candidate.id, text, createdBy: "Admin" })
@@ -607,7 +607,7 @@ export default function CandidateProfile() {
                     formData.append("file", file);
                     formData.append("candidate_id", candidate.id);
                     try {
-                      const res = await fetch(`${API_BASE_URL}/documents.php`, {
+                      const res = await fetch(`${API_BASE_URL}/candidates/documents.php`, { credentials: 'include', 
                         method: "POST",
                         body: formData
                       });

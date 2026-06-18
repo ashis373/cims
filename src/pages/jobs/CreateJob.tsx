@@ -17,7 +17,7 @@ export default function CreateJob() {
   useEffect(() => {
     const fetchDepts = async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/departments.php`);
+        const res = await fetch(`${API_BASE_URL}/jobs/departments.php`);
         const data = await res.json();
         if (Array.isArray(data)) setDbDepartments(data);
       } catch (e) {
@@ -53,7 +53,7 @@ export default function CreateJob() {
 
     setIsSubmitting(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/jobs.php`, {
+      const res = await fetch(`${API_BASE_URL}/jobs/jobs.php`, { credentials: 'include', 
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData)
@@ -88,17 +88,6 @@ export default function CreateJob() {
               Add a new position to your organization's recruitment pipeline.
             </p>
           </div>
-        </div>
-        <div className="flex items-center gap-3 relative z-10 w-full sm:w-auto">
-          <Link to="/jobs/all" className="w-full sm:w-auto">
-            <Button variant="outline" className="w-full sm:w-auto rounded-xl font-bold border-slate-200 text-slate-600 h-11 px-6">
-              Cancel
-            </Button>
-          </Link>
-          <Button onClick={handleSubmit} disabled={isSubmitting} className="w-full sm:w-auto rounded-xl font-bold bg-indigo-600 hover:bg-indigo-700 shadow-md shadow-indigo-600/20 h-11 px-6">
-            <Save className="w-4 h-4 mr-2" />
-            {isSubmitting ? "Creating..." : "Create Job"}
-          </Button>
         </div>
       </div>
 
@@ -299,7 +288,7 @@ export default function CreateJob() {
                 Cancel
               </Button>
             </Link>
-            <Button onClick={handleSubmit} disabled={isSubmitting} className="rounded-xl font-bold bg-indigo-600 hover:bg-indigo-700 shadow-md shadow-indigo-600/20 h-11 px-6">
+            <Button onClick={handleSubmit} disabled={isSubmitting} className="rounded-xl font-bold bg-[#1447E6] hover:bg-[#0c31a6] shadow-md shadow-[#1447E6]/20 h-11 px-6 text-white transition-colors">
               <Save className="w-4 h-4 mr-2" />
               {isSubmitting ? "Creating..." : "Create Job"}
             </Button>
