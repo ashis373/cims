@@ -28,4 +28,23 @@ if (isset($_SESSION['LAST_ACTIVITY']) && (time() - $_SESSION['LAST_ACTIVITY']) >
 
 // Update last activity time stamp
 $_SESSION['LAST_ACTIVITY'] = time();
+
+// Optional RBAC check
+if (isset($allowed_roles) && is_array($allowed_roles) && count($allowed_roles) > 0) {
+    // We need to know the user's role
+    global $conn;
+    if (!isset($conn)) {
+        require_once dirname(__DIR__) . '/db.php';
+    }
+    
+    $stmt = $conn->prepare("SELECT r.role_name FROM system_users u JOIN system_roles r ON u.role_id = r.id WHERE u.id = ?");
+    $stmt->execute([$_SESSION['user_id']]);
+    $userRole = $stmt->fetchColumn();
+    
+    if (!$userRole || !in_array($userRole, $allowed_roles)) {
+        http_response_code(403);
+        echo json_encode(["status" => "error", "message" => "Forbidden: Insufficient privileges"]);
+        exit;
+    }
+}
 ?>

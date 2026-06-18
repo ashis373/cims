@@ -122,24 +122,26 @@ export default function Login() {
           </form>
         </Card>
 
-        {/* Test Accounts Reference */}
-        <div className="p-5 bg-slate-200/50 backdrop-blur-sm border border-slate-200 rounded-3xl mt-8">
-          <h3 className="text-xs font-black text-slate-600 uppercase tracking-wider mb-3 text-center">Test Accounts</h3>
-          <div className="grid grid-cols-1 gap-2">
-            {testAccounts.map((acc, idx) => (
-              <div key={idx} className="flex flex-col sm:flex-row sm:items-center justify-between p-2.5 bg-white rounded-xl shadow-sm border border-slate-100 cursor-pointer hover:border-[#1447E6]/30 transition-colors"
-                   onClick={() => { setEmail(acc.email); setPassword(acc.pass); }}>
-                <div className="mb-1 sm:mb-0">
-                  <div className="text-[10px] font-black uppercase text-[#1447E6] tracking-wider leading-none mb-1">{acc.role}</div>
-                  <div className="text-xs font-medium text-slate-700 leading-none">{acc.email}</div>
+        {/* Test Accounts Reference - Only visible in development mode */}
+        {import.meta.env.DEV && (
+          <div className="p-5 bg-slate-200/50 backdrop-blur-sm border border-slate-200 rounded-3xl mt-8">
+            <h3 className="text-xs font-black text-slate-600 uppercase tracking-wider mb-3 text-center">Test Accounts</h3>
+            <div className="grid grid-cols-1 gap-2">
+              {testAccounts.map((acc, idx) => (
+                <div key={idx} className="flex flex-col sm:flex-row sm:items-center justify-between p-2.5 bg-white rounded-xl shadow-sm border border-slate-100 cursor-pointer hover:border-[#1447E6]/30 transition-colors"
+                     onClick={() => { setEmail(acc.email); setPassword(acc.pass); }}>
+                  <div className="mb-1 sm:mb-0">
+                    <div className="text-[10px] font-black uppercase text-[#1447E6] tracking-wider leading-none mb-1">{acc.role}</div>
+                    <div className="text-xs font-medium text-slate-700 leading-none">{acc.email}</div>
+                  </div>
+                  <div className="text-xs font-mono font-medium text-slate-500 bg-slate-50 px-2 py-1 rounded-lg border border-slate-100">
+                    {acc.pass}
+                  </div>
                 </div>
-                <div className="text-xs font-mono font-medium text-slate-500 bg-slate-50 px-2 py-1 rounded-lg border border-slate-100">
-                  {acc.pass}
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

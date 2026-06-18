@@ -7,6 +7,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { exit(0); }
 
 header('Content-Type: application/json');
 require '../db.php';
+$allowed_roles = ['Administrator'];
 require_once '../auth_middleware.php';
 session_start();
 

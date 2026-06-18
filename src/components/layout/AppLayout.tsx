@@ -21,100 +21,110 @@ import { cn } from "@/lib/utils";
 import { API_BASE_URL } from "@/config/api";
 
 const nav = [
-  { to: "/", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/", label: "Dashboard", icon: LayoutDashboard, roles: ["Administrator", "HR Manager", "Recruiter", "Hiring Manager"] },
   {
     to: "/jobs",
     label: "Job Openings",
     icon: Briefcase,
+    roles: ["Administrator", "HR Manager", "Recruiter"],
     children: [
-      { to: "/jobs/all", label: "All Jobs" },
-      { to: "/jobs/create", label: "Create Job" },
+      { to: "/jobs/all", label: "All Jobs", roles: ["Administrator", "HR Manager", "Recruiter"] },
+      { to: "/jobs/create", label: "Create Job", roles: ["Administrator", "HR Manager", "Recruiter"] },
     ],
   },
   {
     to: "/candidates",
     label: "Candidates",
     icon: Users,
+    roles: ["Administrator", "HR Manager", "Recruiter", "Hiring Manager"],
     children: [
-      { to: "/candidates", label: "All Candidates" },
-      { to: "/candidates/add", label: "Add Candidate" },
-      { to: "/candidates/duplicate-check", label: "Duplicate Check" },
-      { to: "/candidates/timeline", label: "Candidate Timeline" },
+      { to: "/candidates", label: "All Candidates", roles: ["Administrator", "HR Manager", "Recruiter", "Hiring Manager"] },
+      { to: "/candidates/add", label: "Add Candidate", roles: ["Administrator", "HR Manager", "Recruiter"] },
+      { to: "/candidates/duplicate-check", label: "Duplicate Check", roles: ["Administrator", "HR Manager", "Recruiter"] },
+      { to: "/candidates/timeline", label: "Candidate Timeline", roles: ["Administrator", "HR Manager", "Recruiter"] },
     ],
   },
   {
     to: "/interviews",
     label: "Interviews",
     icon: CalendarDays,
+    roles: ["Administrator", "HR Manager", "Recruiter", "Hiring Manager"],
     children: [
-      { to: "/interviews/upcoming", label: "Upcoming Interviews" },
-      { to: "/interviews/feedback-pending", label: "Feedback Pending" },
-      { to: "/interviews/history", label: "Interview History" },
+      { to: "/interviews/upcoming", label: "Upcoming Interviews", roles: ["Administrator", "HR Manager", "Recruiter", "Hiring Manager"] },
+      { to: "/interviews/feedback-pending", label: "Feedback Pending", roles: ["Administrator", "HR Manager", "Recruiter", "Hiring Manager"] },
+      { to: "/interviews/history", label: "Interview History", roles: ["Administrator", "HR Manager", "Recruiter", "Hiring Manager"] },
     ],
   },
   {
     to: "/pipeline",
     label: "Recruitment Pipeline",
     icon: KanbanSquare,
+    roles: ["Administrator", "HR Manager", "Recruiter"],
   },
   {
     to: "/offers",
     label: "Offers",
     icon: FileText,
+    roles: ["Administrator", "HR Manager"],
     children: [
-      { to: "/offers/management", label: "Offer Management" },
-      { to: "/offers/joining-tracker", label: "Joining Tracker" },
-      { to: "/offers/no-joiners", label: "No-Joiners" },
+      { to: "/offers/management", label: "Offer Management", roles: ["Administrator", "HR Manager"] },
+      { to: "/offers/joining-tracker", label: "Joining Tracker", roles: ["Administrator", "HR Manager"] },
+      { to: "/offers/no-joiners", label: "No-Joiners", roles: ["Administrator", "HR Manager"] },
     ],
   },
   {
     to: "/rejections",
     label: "Risk Management",
     icon: Ban,
+    roles: ["Administrator", "HR Manager"],
     children: [
-      { to: "/rejections/rejected", label: "Rejected Candidates" },
-      { to: "/rejections/blacklisted", label: "Blacklisted Candidates" },
+      { to: "/rejections/rejected", label: "Rejected Candidates", roles: ["Administrator", "HR Manager"] },
+      { to: "/rejections/blacklisted", label: "Blacklisted Candidates", roles: ["Administrator", "HR Manager"] },
     ],
   },
   {
     to: "/reports",
     label: "Reports",
     icon: BarChart3,
+    roles: ["Administrator", "HR Manager"],
     children: [
-      { to: "/reports/candidate", label: "Candidate Report" },
-      { to: "/reports/recruiter-performance", label: "Recruiter Performance" },
-      { to: "/reports/hiring", label: "Hiring Report" },
-      { to: "/reports/rejection-analysis", label: "Rejection Analysis" },
-      { to: "/reports/blacklist", label: "Blacklist Report" },
-      { to: "/reports/no-joiners", label: "No-Joiner Report" },
+      { to: "/reports/candidate", label: "Candidate Report", roles: ["Administrator", "HR Manager"] },
+      { to: "/reports/recruiter-performance", label: "Recruiter Performance", roles: ["Administrator", "HR Manager"] },
+      { to: "/reports/hiring", label: "Hiring Report", roles: ["Administrator", "HR Manager"] },
+      { to: "/reports/rejection-analysis", label: "Rejection Analysis", roles: ["Administrator", "HR Manager"] },
+      { to: "/reports/blacklist", label: "Blacklist Report", roles: ["Administrator", "HR Manager"] },
+      { to: "/reports/no-joiners", label: "No-Joiner Report", roles: ["Administrator", "HR Manager"] },
     ],
   },
   {
     to: "/notifications",
     label: "Alerts Center",
     icon: Bell,
+    roles: ["Administrator", "HR Manager", "Recruiter", "Hiring Manager"],
     children: [
-      { to: "/notifications/alerts", label: "Alerts Center" },
+      { to: "/notifications/alerts", label: "Alerts Center", roles: ["Administrator", "HR Manager", "Recruiter", "Hiring Manager"] },
     ],
   },
   {
     to: "/email-settings",
     label: "Email Settings",
     icon: Mail,
+    roles: ["Administrator", "HR Manager"],
     children: [
-      { to: "/email-settings/templates", label: "Email Templates" },
-      { to: "/email-settings/triggers", label: "Auto Email Triggers" },
-      { to: "/email-settings/logs", label: "Email Logs" },
+      { to: "/email-settings/templates", label: "Email Templates", roles: ["Administrator", "HR Manager"] },
+      { to: "/email-settings/triggers", label: "Auto Email Triggers", roles: ["Administrator", "HR Manager"] },
+      { to: "/email-settings/logs", label: "Email Logs", roles: ["Administrator", "HR Manager"] },
     ],
   },
   {
     to: "/system-settings",
     label: "System Settings",
     icon: Settings,
+    roles: ["Administrator", "HR Manager", "Recruiter", "Hiring Manager"],
     children: [
-      { to: "/system-settings/profile", label: "User Profile" },
-      { to: "/system-settings/roles", label: "User Roles & Permissions" },
-      { to: "/system-settings/general", label: "System Settings" },
+      { to: "/system-settings/profile", label: "User Profile", roles: ["Administrator", "HR Manager", "Recruiter", "Hiring Manager"] },
+      { to: "/system-settings/roles", label: "User Roles & Permissions", roles: ["Administrator"] },
+      { to: "/system-settings/general", label: "System Settings", roles: ["Administrator", "HR Manager"] },
     ],
   },
 ];
@@ -123,26 +133,31 @@ const NavItem = ({
   item,
   isActive,
   pathname,
+  role,
 }: {
   item: {
     to: string;
     label: string;
     icon: React.ElementType;
-    children?: { to: string; label: string }[];
+    roles: string[];
+    children?: { to: string; label: string; roles: string[] }[];
   };
   isActive: (to: string) => boolean;
   pathname: string;
+  role: string;
 }) => {
-  const isChildrenActive = item.children?.some(
-    (child: { to: string; label: string }) =>
-      pathname === child.to || pathname.startsWith(child.to + "?"),
+  const visibleChildren = item.children?.filter(child => child.roles.includes(role));
+  
+  const isChildrenActive = visibleChildren?.some(
+    (child) => pathname === child.to || pathname.startsWith(child.to + "?"),
   );
   const isDirectActive = isActive(item.to);
   const [isOpen, setIsOpen] = useState(isChildrenActive || isDirectActive);
 
   const active = isDirectActive || isChildrenActive;
 
-  if (!item.children) {
+  if (!visibleChildren || visibleChildren.length === 0) {
+    if (!item.roles.includes(role)) return null;
     return (
       <Link
         to={item.to}
@@ -197,7 +212,7 @@ const NavItem = ({
       {isOpen && (
         <div className="flex flex-col gap-1 pl-12 pr-2 pb-2 mt-1 relative">
           <div className="absolute left-[26px] top-0 bottom-4 w-[2px] bg-slate-800" />
-          {item.children.map((child: { to: string; label: string }) => {
+          {visibleChildren.map((child) => {
             const childActive = pathname === child.to || pathname.startsWith(child.to + "?");
             return (
               <Link
@@ -228,16 +243,31 @@ const NavItem = ({
 export function AppLayout({ children }: { children: ReactNode }) {
   const { pathname } = useLocation();
   const [unreadCount, setUnreadCount] = useState(0);
-  const [currentUser, setCurrentUser] = useState({
-    name: "Loading...",
-    designation: "Please wait",
-    initial: "L"
+  const [currentUser, setCurrentUser] = useState(() => {
+    const userStr = localStorage.getItem("cims_user");
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        return {
+          name: user.full_name || user.email || "User",
+          designation: user.designation || user.role_name || "User Role",
+          role_name: user.role_name || "User Role",
+          initial: user.full_name ? user.full_name.charAt(0) : "U"
+        };
+      } catch (e) {}
+    }
+    return {
+      name: "Loading...",
+      designation: "Please wait",
+      role_name: "Loading...",
+      initial: "L"
+    };
   });
 
   useEffect(() => {
     const fetchNotifications = async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/notifications/notifications.php`);
+        const res = await fetch(`${API_BASE_URL}/notifications/notifications.php`, { credentials: 'include' });
         const data = await res.json();
         const count = data.filter((a: any) => a.unread).length;
         setUnreadCount(count);
@@ -247,33 +277,21 @@ export function AppLayout({ children }: { children: ReactNode }) {
     };
     fetchNotifications();
 
-    const fetchProfile = async () => {
+    // Use synchronously available local storage data populated by PrivateRoute
+    const userStr = localStorage.getItem("cims_user");
+    if (userStr) {
       try {
-        const res = await fetch(`${API_BASE_URL}/system/profile.php`);
-        const data = await res.json();
-        if (data.status === 'success' && data.data) {
-          setCurrentUser({
-            name: data.data.full_name || "User",
-            designation: data.data.designation || "User Role",
-            initial: data.data.full_name ? data.data.full_name.charAt(0) : "U"
-          });
-        } else {
-          setCurrentUser({
-            name: "Super Admin",
-            designation: "System Administrator",
-            initial: "S"
-          });
-        }
-      } catch (error) {
-        console.error("Failed to load profile", error);
+        const user = JSON.parse(userStr);
         setCurrentUser({
-          name: "Super Admin",
-          designation: "System Administrator",
-          initial: "S"
+          name: user.full_name || user.email || "User",
+          designation: user.designation || user.role_name || "User Role",
+          role_name: user.role_name || "User Role",
+          initial: user.full_name ? user.full_name.charAt(0) : "U"
         });
+      } catch (e) {
+        console.error("Failed to parse user data", e);
       }
-    };
-    fetchProfile();
+    }
   }, [pathname]);
 
   const isActive = (to: string) => (to === "/" ? pathname === "/" : pathname === to);
@@ -293,11 +311,17 @@ export function AppLayout({ children }: { children: ReactNode }) {
           </div>
         </div>
 
-        <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-5 pb-4 pt-2 scrollbar-thin scrollbar-thumb-slate-800 scrollbar-track-transparent">
-          {nav.map((n) => (
-            <NavItem key={n.label} item={n} isActive={isActive} pathname={pathname} />
+        <div className="flex-1 overflow-y-auto py-6 px-4 space-y-1 scrollbar-hide">
+          {nav.filter((item) => item.roles.includes(currentUser.role_name as string)).map((item) => (
+            <NavItem 
+              key={item.label} 
+              item={item as any} 
+              isActive={isActive} 
+              pathname={pathname} 
+              role={currentUser.role_name as string} 
+            />
           ))}
-        </nav>
+        </div>
 
         <div className="shrink-0 p-5 border-t border-slate-800/50">
           <div className="flex items-center gap-3 rounded-2xl bg-slate-800/30 hover:bg-slate-800/60 p-3 transition-colors cursor-pointer border border-slate-800/50 shadow-sm">
