@@ -9,7 +9,7 @@ header('Content-Type: application/json');
 require '../db.php';
 $allowed_roles = ['Administrator'];
 require_once '../auth_middleware.php';
-session_start();
+if (session_status() === PHP_SESSION_NONE) { session_start(); }
 
 $method = $_SERVER['REQUEST_METHOD'];
 $role_id = $_GET['role_id'] ?? null;
@@ -52,6 +52,10 @@ try {
         }
         
         $conn->commit();
+        
+        $logStmt = $conn->prepare("INSERT INTO system_audit_logs (user_id, action, module, details) VALUES (?, 'Update Permissions', 'Roles', ?)");
+        $logStmt->execute([$_SESSION['user_id'], json_encode(['role_id' => $role_id])]);
+        
         echo json_encode(["status" => "success", "message" => "Permissions updated"]);
     }
 } catch(PDOException $e) {

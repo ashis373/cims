@@ -116,12 +116,12 @@ function App() {
                     {/* Others */}
                     <Route path="/notifications/alerts" element={<Notifications />} />
                     {/* System Settings & Email (Admin/HR only) */}
-                    <Route path="/email-settings/templates" element={<PrivateRoute allowedRoles={["Administrator", "HR Manager"]}><EmailTemplates /></PrivateRoute>} />
-                    <Route path="/email-settings/triggers" element={<PrivateRoute allowedRoles={["Administrator", "HR Manager"]}><EmailTriggers /></PrivateRoute>} />
-                    <Route path="/email-settings/logs" element={<PrivateRoute allowedRoles={["Administrator", "HR Manager"]}><EmailLogs /></PrivateRoute>} />
+                    <Route path="/email-settings/templates" element={<PrivateRoute requiredModule="Email Settings"><EmailTemplates /></PrivateRoute>} />
+                    <Route path="/email-settings/triggers" element={<PrivateRoute requiredModule="Email Settings"><EmailTriggers /></PrivateRoute>} />
+                    <Route path="/email-settings/logs" element={<PrivateRoute requiredModule="Email Settings"><EmailLogs /></PrivateRoute>} />
                     <Route path="/system-settings/profile" element={<UserProfile />} />
                     <Route path="/system-settings/roles" element={<PrivateRoute allowedRoles={["Administrator"]}><UserRoles /></PrivateRoute>} />
-                    <Route path="/system-settings/general" element={<PrivateRoute allowedRoles={["Administrator", "HR Manager"]}><SystemSettings /></PrivateRoute>} />
+                    <Route path="/system-settings/general" element={<PrivateRoute requiredModule="System Settings"><SystemSettings /></PrivateRoute>} />
 
                     <Route path="*" element={<NotFound />} />
                   </Routes>

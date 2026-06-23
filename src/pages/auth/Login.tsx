@@ -7,7 +7,6 @@ import { toast } from "sonner";
 import { Lock, Mail } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost/cims_api";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -26,7 +25,7 @@ export default function Login() {
     try {
       // In a production app, the correct API_BASE_URL would be used
       const apiUrl = import.meta.env.PROD 
-        ? "https://demo.hexalearn.com/cims/api" 
+        ? "https://demo.hexalearn.com/cimss/api" 
         : "http://localhost/full-cims/api";
         
       const res = await fetch(`${apiUrl}/auth/login.php`, { credentials: 'include', 

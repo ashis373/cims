@@ -91,12 +91,30 @@ function Dashboard() {
     total: 0, active: 0, scheduled: 0, selected: 0, offersReleased: 0, offersAccepted: 0, joined: 0, rejected: 0, blacklisted: 0, noShow: 0, funnel: {}
   });
 
+  const [currentUser, setCurrentUser] = useState<any>(null);
+
   useEffect(() => {
+    const userStr = localStorage.getItem("cims_user");
+    if (userStr) {
+      try {
+        setCurrentUser(JSON.parse(userStr));
+      } catch (e) {}
+    }
+
     fetch(`${API_BASE_URL}/dashboard/stats.php`)
       .then(res => res.json())
       .then(data => setCounts(data))
       .catch(console.error);
   }, []);
+
+  const hasAccess = (moduleName: string, action: string = 'can_view') => {
+    if (currentUser?.role_name === 'Administrator') return true;
+    if (currentUser?.permissions) {
+      const p = currentUser.permissions.find((p: any) => p.module_name === moduleName);
+      if (p) return p[action] === 1 || p[action] === "1" || p[action] === true;
+    }
+    return false;
+  };
 
   const recent = [...candidates]
     .sort((a, b) => +new Date(b.updatedAt) - +new Date(a.updatedAt))
@@ -172,20 +190,23 @@ function Dashboard() {
       filter: "Rejected",
       icon: XCircle,
       color: "text-rose-600 bg-rose-50 border-rose-100",
+      module: "Risk Management"
     },
     {
       label: "Blacklisted",
       filter: "Blacklisted",
       icon: Ban,
       color: "text-slate-600 bg-slate-100 border-slate-200",
+      module: "Risk Management"
     },
     {
       label: "Future Pool",
       filter: "On Hold",
       icon: Users,
       color: "text-indigo-600 bg-indigo-50 border-indigo-100",
+      module: "Candidates"
     },
-  ];
+  ].filter(q => q.module ? hasAccess(q.module) : true);
 
   return (
     <motion.div initial="hidden" animate="show" variants={container} className="space-y-6">
@@ -197,23 +218,27 @@ function Dashboard() {
           </p>
         </div>
         <div className="flex gap-3">
-          <Button
-            variant="outline"
-            onClick={() => setExportOpen(true)}
-            className="bg-white text-slate-700 shadow-sm border-slate-200 text-xs h-9"
-          >
-            <Download className="mr-2 h-3.5 w-3.5" />
-            Export
-          </Button>
-          <Button
-            asChild
-            className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm text-xs h-9"
-          >
-            <Link to="/candidates/new">
-              <Plus className="mr-1.5 h-3.5 w-3.5" />
-              Add candidate
-            </Link>
-          </Button>
+          {hasAccess("Candidates", "can_view") && (
+            <Button
+              variant="outline"
+              onClick={() => setExportOpen(true)}
+              className="bg-white text-slate-700 shadow-sm border-slate-200 text-xs h-9"
+            >
+              <Download className="mr-2 h-3.5 w-3.5" />
+              Export
+            </Button>
+          )}
+          {hasAccess("Candidates", "can_add") && (
+            <Button
+              asChild
+              className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm text-xs h-9"
+            >
+              <Link to="/candidates/new">
+                <Plus className="mr-1.5 h-3.5 w-3.5" />
+                Add candidate
+              </Link>
+            </Button>
+          )}
         </div>
       </div>
 
@@ -268,20 +293,24 @@ function Dashboard() {
           tone="bg-purple-50 text-purple-600"
           borderTone="border-purple-500"
         />
-        <Stat
-          label="Rejected"
-          value={counts.rejected}
-          icon={XCircle}
-          tone="bg-red-50 text-red-500"
-          borderTone="border-red-500"
-        />
-        <Stat
-          label="Blacklisted"
-          value={counts.blacklisted}
-          icon={Ban}
-          tone="bg-slate-100 text-slate-600"
-          borderTone="border-slate-300"
-        />
+        {hasAccess("Risk Management") && (
+          <Stat
+            label="Rejected"
+            value={counts.rejected}
+            icon={XCircle}
+            tone="bg-red-50 text-red-500"
+            borderTone="border-red-500"
+          />
+        )}
+        {hasAccess("Risk Management") && (
+          <Stat
+            label="Blacklisted"
+            value={counts.blacklisted}
+            icon={Ban}
+            tone="bg-slate-100 text-slate-600"
+            borderTone="border-slate-300"
+          />
+        )}
         <Stat
           label="No Join"
           value={counts.noShow}

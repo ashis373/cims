@@ -5,18 +5,20 @@ import { ShieldAlert, ArrowLeft, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const API_BASE_URL = import.meta.env.PROD 
-  ? "https://demo.hexalearn.com/cims/api" 
+  ? "https://demo.hexalearn.com/cimss/api" 
   : "http://localhost/full-cims/api";
 
 interface PrivateRouteProps {
   children: React.ReactNode;
   allowedRoles?: string[];
+  requiredModule?: string;
 }
 
-export function PrivateRoute({ children, allowedRoles }: PrivateRouteProps) {
+export function PrivateRoute({ children, allowedRoles, requiredModule }: PrivateRouteProps) {
   const location = useLocation();
   const [isVerifying, setIsVerifying] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthorized, setIsAuthorized] = useState(true);
   const [userRole, setUserRole] = useState<string | null>(null);
 
   useEffect(() => {
@@ -30,6 +32,18 @@ export function PrivateRoute({ children, allowedRoles }: PrivateRouteProps) {
             localStorage.setItem("cims_login_time", Date.now().toString());
             setUserRole(data.data.role_name);
             setIsAuthenticated(true);
+            
+            // Check module permissions
+            if (data.data.role_name === 'Administrator') {
+              setIsAuthorized(true);
+            } else if (requiredModule && data.data.permissions) {
+              const p = data.data.permissions.find((p: any) => p.module_name === requiredModule);
+              setIsAuthorized(p ? (p.can_view === 1 || p.can_view === "1" || p.can_view === true) : false);
+            } else if (allowedRoles && !allowedRoles.includes(data.data.role_name)) {
+              setIsAuthorized(false);
+            } else {
+              setIsAuthorized(true);
+            }
           } else {
             throw new Error("Invalid session");
           }
@@ -60,33 +74,22 @@ export function PrivateRoute({ children, allowedRoles }: PrivateRouteProps) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // Check role-based access if allowedRoles is provided
-  if (allowedRoles && allowedRoles.length > 0 && userRole) {
-    if (!allowedRoles.includes(userRole)) {
-      return (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 p-4">
-          <div className="text-center max-w-md space-y-6">
-            <div className="flex justify-center">
-              <div className="h-24 w-24 rounded-full bg-rose-100 flex items-center justify-center">
-                <ShieldAlert className="h-12 w-12 text-rose-500" />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <h1 className="text-3xl font-black text-slate-900 tracking-tight">Access Denied</h1>
-              <p className="text-sm text-slate-500">
-                You do not have the required permissions to view this page. If you believe this is an error, please contact your System Administrator.
-              </p>
-            </div>
-            <Button 
-              onClick={() => window.history.back()}
-              className="mt-4 bg-[#1447E6] hover:bg-[#0c31a6] text-white font-bold rounded-xl h-11 px-6 shadow-md shadow-[#1447E6]/20 transition-all"
-            >
-              <ArrowLeft className="mr-2 h-4 w-4" /> Go Back
-            </Button>
-          </div>
-        </div>
-      );
-    }
+  if (!isAuthorized) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center min-h-[80vh] p-8">
+        <ShieldAlert className="h-20 w-20 text-rose-500 mb-6 opacity-80" />
+        <h1 className="text-3xl font-black tracking-tight text-slate-900 mb-2">403 Access Denied</h1>
+        <p className="text-slate-500 max-w-md text-center">
+          You do not have the required permissions to view this page. If you believe this is an error, please contact your System Administrator.
+        </p>
+        <Button 
+          onClick={() => window.history.back()}
+          className="mt-8 bg-slate-900 hover:bg-slate-800 text-white rounded-xl px-6 h-11 font-bold"
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" /> Go Back
+        </Button>
+      </div>
+    );
   }
 
   return <>{children}</>;

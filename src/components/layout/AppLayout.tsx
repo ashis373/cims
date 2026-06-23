@@ -21,15 +21,16 @@ import { cn } from "@/lib/utils";
 import { API_BASE_URL } from "@/config/api";
 
 const nav = [
-  { to: "/", label: "Dashboard", icon: LayoutDashboard, roles: ["Administrator", "HR Manager", "Recruiter", "Hiring Manager"] },
+  { to: "/", label: "Dashboard", icon: LayoutDashboard, roles: ["Administrator", "HR Manager", "Recruiter", "Hiring Manager"], module: "Dashboard" },
   {
     to: "/jobs",
     label: "Job Openings",
     icon: Briefcase,
     roles: ["Administrator", "HR Manager", "Recruiter"],
+    module: "Candidates",
     children: [
-      { to: "/jobs/all", label: "All Jobs", roles: ["Administrator", "HR Manager", "Recruiter"] },
-      { to: "/jobs/create", label: "Create Job", roles: ["Administrator", "HR Manager", "Recruiter"] },
+      { to: "/jobs/all", label: "All Jobs", roles: ["Administrator", "HR Manager", "Recruiter"], module: "Candidates" },
+      { to: "/jobs/create", label: "Create Job", roles: ["Administrator", "HR Manager", "Recruiter"], module: "Candidates" },
     ],
   },
   {
@@ -37,11 +38,12 @@ const nav = [
     label: "Candidates",
     icon: Users,
     roles: ["Administrator", "HR Manager", "Recruiter", "Hiring Manager"],
+    module: "Candidates",
     children: [
-      { to: "/candidates", label: "All Candidates", roles: ["Administrator", "HR Manager", "Recruiter", "Hiring Manager"] },
-      { to: "/candidates/add", label: "Add Candidate", roles: ["Administrator", "HR Manager", "Recruiter"] },
-      { to: "/candidates/duplicate-check", label: "Duplicate Check", roles: ["Administrator", "HR Manager", "Recruiter"] },
-      { to: "/candidates/timeline", label: "Candidate Timeline", roles: ["Administrator", "HR Manager", "Recruiter"] },
+      { to: "/candidates", label: "All Candidates", roles: ["Administrator", "HR Manager", "Recruiter", "Hiring Manager"], module: "Candidates" },
+      { to: "/candidates/add", label: "Add Candidate", roles: ["Administrator", "HR Manager", "Recruiter"], module: "Candidates" },
+      { to: "/candidates/duplicate-check", label: "Duplicate Check", roles: ["Administrator", "HR Manager", "Recruiter"], module: "Candidates" },
+      { to: "/candidates/timeline", label: "Candidate Timeline", roles: ["Administrator", "HR Manager", "Recruiter"], module: "Candidates" },
     ],
   },
   {
@@ -49,10 +51,11 @@ const nav = [
     label: "Interviews",
     icon: CalendarDays,
     roles: ["Administrator", "HR Manager", "Recruiter", "Hiring Manager"],
+    module: "Interviews",
     children: [
-      { to: "/interviews/upcoming", label: "Upcoming Interviews", roles: ["Administrator", "HR Manager", "Recruiter", "Hiring Manager"] },
-      { to: "/interviews/feedback-pending", label: "Feedback Pending", roles: ["Administrator", "HR Manager", "Recruiter", "Hiring Manager"] },
-      { to: "/interviews/history", label: "Interview History", roles: ["Administrator", "HR Manager", "Recruiter", "Hiring Manager"] },
+      { to: "/interviews/upcoming", label: "Upcoming Interviews", roles: ["Administrator", "HR Manager", "Recruiter", "Hiring Manager"], module: "Interviews" },
+      { to: "/interviews/feedback-pending", label: "Feedback Pending", roles: ["Administrator", "HR Manager", "Recruiter", "Hiring Manager"], module: "Interviews" },
+      { to: "/interviews/history", label: "Interview History", roles: ["Administrator", "HR Manager", "Recruiter", "Hiring Manager"], module: "Interviews" },
     ],
   },
   {
@@ -60,16 +63,18 @@ const nav = [
     label: "Recruitment Pipeline",
     icon: KanbanSquare,
     roles: ["Administrator", "HR Manager", "Recruiter"],
+    module: "Pipeline",
   },
   {
     to: "/offers",
     label: "Offers",
     icon: FileText,
     roles: ["Administrator", "HR Manager"],
+    module: "Offers",
     children: [
-      { to: "/offers/management", label: "Offer Management", roles: ["Administrator", "HR Manager"] },
-      { to: "/offers/joining-tracker", label: "Joining Tracker", roles: ["Administrator", "HR Manager"] },
-      { to: "/offers/no-joiners", label: "No-Joiners", roles: ["Administrator", "HR Manager"] },
+      { to: "/offers/management", label: "Offer Management", roles: ["Administrator", "HR Manager"], module: "Offers" },
+      { to: "/offers/joining-tracker", label: "Joining Tracker", roles: ["Administrator", "HR Manager"], module: "Offers" },
+      { to: "/offers/no-joiners", label: "No-Joiners", roles: ["Administrator", "HR Manager"], module: "Offers" },
     ],
   },
   {
@@ -77,9 +82,10 @@ const nav = [
     label: "Risk Management",
     icon: Ban,
     roles: ["Administrator", "HR Manager"],
+    module: "Risk Management",
     children: [
-      { to: "/rejections/rejected", label: "Rejected Candidates", roles: ["Administrator", "HR Manager"] },
-      { to: "/rejections/blacklisted", label: "Blacklisted Candidates", roles: ["Administrator", "HR Manager"] },
+      { to: "/rejections/rejected", label: "Rejected Candidates", roles: ["Administrator", "HR Manager"], module: "Risk Management" },
+      { to: "/rejections/blacklisted", label: "Blacklisted Candidates", roles: ["Administrator", "HR Manager"], module: "Risk Management" },
     ],
   },
   {
@@ -87,13 +93,14 @@ const nav = [
     label: "Reports",
     icon: BarChart3,
     roles: ["Administrator", "HR Manager"],
+    module: "Reports",
     children: [
-      { to: "/reports/candidate", label: "Candidate Report", roles: ["Administrator", "HR Manager"] },
-      { to: "/reports/recruiter-performance", label: "Recruiter Performance", roles: ["Administrator", "HR Manager"] },
-      { to: "/reports/hiring", label: "Hiring Report", roles: ["Administrator", "HR Manager"] },
-      { to: "/reports/rejection-analysis", label: "Rejection Analysis", roles: ["Administrator", "HR Manager"] },
-      { to: "/reports/blacklist", label: "Blacklist Report", roles: ["Administrator", "HR Manager"] },
-      { to: "/reports/no-joiners", label: "No-Joiner Report", roles: ["Administrator", "HR Manager"] },
+      { to: "/reports/candidate", label: "Candidate Report", roles: ["Administrator", "HR Manager"], module: "Reports" },
+      { to: "/reports/recruiter-performance", label: "Recruiter Performance", roles: ["Administrator", "HR Manager"], module: "Reports" },
+      { to: "/reports/hiring", label: "Hiring Report", roles: ["Administrator", "HR Manager"], module: "Reports" },
+      { to: "/reports/rejection-analysis", label: "Rejection Analysis", roles: ["Administrator", "HR Manager"], module: "Reports" },
+      { to: "/reports/blacklist", label: "Blacklist Report", roles: ["Administrator", "HR Manager"], module: "Reports" },
+      { to: "/reports/no-joiners", label: "No-Joiner Report", roles: ["Administrator", "HR Manager"], module: "Reports" },
     ],
   },
   {
@@ -101,8 +108,9 @@ const nav = [
     label: "Alerts Center",
     icon: Bell,
     roles: ["Administrator", "HR Manager", "Recruiter", "Hiring Manager"],
+    module: "Alerts",
     children: [
-      { to: "/notifications/alerts", label: "Alerts Center", roles: ["Administrator", "HR Manager", "Recruiter", "Hiring Manager"] },
+      { to: "/notifications/alerts", label: "Alerts Center", roles: ["Administrator", "HR Manager", "Recruiter", "Hiring Manager"], module: "Alerts" },
     ],
   },
   {
@@ -110,10 +118,11 @@ const nav = [
     label: "Email Settings",
     icon: Mail,
     roles: ["Administrator", "HR Manager"],
+    module: "Email Settings",
     children: [
-      { to: "/email-settings/templates", label: "Email Templates", roles: ["Administrator", "HR Manager"] },
-      { to: "/email-settings/triggers", label: "Auto Email Triggers", roles: ["Administrator", "HR Manager"] },
-      { to: "/email-settings/logs", label: "Email Logs", roles: ["Administrator", "HR Manager"] },
+      { to: "/email-settings/templates", label: "Email Templates", roles: ["Administrator", "HR Manager"], module: "Email Settings" },
+      { to: "/email-settings/triggers", label: "Auto Email Triggers", roles: ["Administrator", "HR Manager"], module: "Email Settings" },
+      { to: "/email-settings/logs", label: "Email Logs", roles: ["Administrator", "HR Manager"], module: "Email Settings" },
     ],
   },
   {
@@ -121,10 +130,11 @@ const nav = [
     label: "System Settings",
     icon: Settings,
     roles: ["Administrator", "HR Manager", "Recruiter", "Hiring Manager"],
+    module: "System Settings",
     children: [
-      { to: "/system-settings/profile", label: "User Profile", roles: ["Administrator", "HR Manager", "Recruiter", "Hiring Manager"] },
+      { to: "/system-settings/profile", label: "User Profile", roles: ["Administrator", "HR Manager", "Recruiter", "Hiring Manager"], module: "System Settings" },
       { to: "/system-settings/roles", label: "User Roles & Permissions", roles: ["Administrator"] },
-      { to: "/system-settings/general", label: "System Settings", roles: ["Administrator", "HR Manager"] },
+      { to: "/system-settings/general", label: "System Settings", roles: ["Administrator", "HR Manager"], module: "System Settings" },
     ],
   },
 ];
@@ -133,31 +143,26 @@ const NavItem = ({
   item,
   isActive,
   pathname,
-  role,
+  hasAccess,
 }: {
-  item: {
-    to: string;
-    label: string;
-    icon: React.ElementType;
-    roles: string[];
-    children?: { to: string; label: string; roles: string[] }[];
-  };
+  item: any;
   isActive: (to: string) => boolean;
   pathname: string;
-  role: string;
+  hasAccess: (item: any) => boolean;
 }) => {
-  const visibleChildren = item.children?.filter(child => child.roles.includes(role));
+  const visibleChildren = item.children?.filter(hasAccess);
   
   const isChildrenActive = visibleChildren?.some(
-    (child) => pathname === child.to || pathname.startsWith(child.to + "?"),
+    (child: any) => pathname === child.to || pathname.startsWith(child.to + "?"),
   );
   const isDirectActive = isActive(item.to);
   const [isOpen, setIsOpen] = useState(isChildrenActive || isDirectActive);
 
+  if (!hasAccess(item)) return null;
+
   const active = isDirectActive || isChildrenActive;
 
   if (!visibleChildren || visibleChildren.length === 0) {
-    if (!item.roles.includes(role)) return null;
     return (
       <Link
         to={item.to}
@@ -212,7 +217,7 @@ const NavItem = ({
       {isOpen && (
         <div className="flex flex-col gap-1 pl-12 pr-2 pb-2 mt-1 relative">
           <div className="absolute left-[26px] top-0 bottom-4 w-[2px] bg-slate-800" />
-          {visibleChildren.map((child) => {
+          {visibleChildren.map((child: any) => {
             const childActive = pathname === child.to || pathname.startsWith(child.to + "?");
             return (
               <Link
@@ -264,6 +269,18 @@ export function AppLayout({ children }: { children: ReactNode }) {
     };
   });
 
+  const hasAccess = (navItem: any) => {
+    if (currentUser?.role_name === 'Administrator') return true;
+    if (navItem.module) {
+      if (currentUser?.permissions && Array.isArray(currentUser.permissions)) {
+         const p = currentUser.permissions.find((p: any) => p.module_name === navItem.module);
+         return p ? (p.can_view === 1 || p.can_view === "1" || p.can_view === true) : false;
+      }
+    }
+    // Fallback to static roles if no permissions array
+    return navItem.roles.includes(currentUser?.role_name || "HR Manager");
+  };
+
   useEffect(() => {
     const fetchNotifications = async () => {
       try {
@@ -312,13 +329,13 @@ export function AppLayout({ children }: { children: ReactNode }) {
         </div>
 
         <div className="flex-1 overflow-y-auto py-6 px-4 space-y-1 scrollbar-hide">
-          {nav.filter((item) => item.roles.includes(currentUser.role_name as string)).map((item) => (
+          {nav.filter(hasAccess).map((item) => (
             <NavItem 
               key={item.label} 
               item={item as any} 
               isActive={isActive} 
               pathname={pathname} 
-              role={currentUser.role_name as string} 
+              hasAccess={hasAccess} 
             />
           ))}
         </div>
@@ -349,7 +366,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
           </div>
 
           <div className="flex max-w-full gap-1 overflow-x-auto rounded-xl border border-slate-200/60 bg-slate-50 p-1 scrollbar-thin md:hidden">
-            {nav.map((n) => {
+            {nav.filter(hasAccess).map((n) => {
               const active =
                 isActive(n.to) || (n.children && n.children.some((c) => pathname === c.to));
               return (

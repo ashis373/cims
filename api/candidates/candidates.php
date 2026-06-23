@@ -1,5 +1,7 @@
 <?php
-header("Access-Control-Allow-Origin: *");
+$origin = isset($_SERVER['HTTP_ORIGIN']) ? $_SERVER['HTTP_ORIGIN'] : '*';
+header("Access-Control-Allow-Origin: $origin");
+header("Access-Control-Allow-Credentials: true");
 header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type");
 header("Content-Type: application/json");
@@ -9,6 +11,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 include '../db.php';
+$required_module = 'Candidates';
+require_once '../auth_middleware.php';
 
 $method = $_SERVER['REQUEST_METHOD'];
 

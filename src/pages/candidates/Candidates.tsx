@@ -99,6 +99,25 @@ export default function CandidatesPage() {
 
   const initialFilter = new URLSearchParams(location.search).get("filter") || "All";
   const [quickFilter, setQuickFilter] = useState(initialFilter);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+
+  useEffect(() => {
+    const userStr = localStorage.getItem("cims_user");
+    if (userStr) {
+      try {
+        setCurrentUser(JSON.parse(userStr));
+      } catch (e) {}
+    }
+  }, []);
+
+  const hasAccess = (moduleName: string, action: string = 'can_view') => {
+    if (currentUser?.role_name === 'Administrator') return true;
+    if (currentUser?.permissions) {
+      const p = currentUser.permissions.find((p: any) => p.module_name === moduleName);
+      if (p) return p[action] === 1 || p[action] === "1" || p[action] === true;
+    }
+    return false;
+  };
 
   useEffect(() => {
     const filter = new URLSearchParams(location.search).get("filter");
@@ -294,20 +313,24 @@ export default function CandidatesPage() {
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <Button
-            variant="outline"
-            className="h-10 text-sm bg-white shadow-sm border-slate-200 text-slate-700 font-semibold rounded-xl"
-          >
-            <Download className="mr-2 h-4 w-4" /> Export
-          </Button>
-          <Button
-            asChild
-            className="h-10 text-sm bg-blue-600 hover:bg-blue-700 text-white shadow-sm font-semibold rounded-xl"
-          >
-            <Link to="/candidates/new">
-              <Plus className="mr-1.5 h-4 w-4" /> Add Candidate
-            </Link>
-          </Button>
+          {hasAccess("Candidates", "can_view") && (
+            <Button
+              variant="outline"
+              className="h-10 text-sm font-semibold bg-white border-slate-200 text-slate-700 hover:bg-slate-50 rounded-xl"
+            >
+              <Download className="mr-2 h-4 w-4" /> Export
+            </Button>
+          )}
+          {hasAccess("Candidates", "can_add") && (
+            <Button
+              asChild
+              className="h-10 text-sm bg-blue-600 hover:bg-blue-700 text-white shadow-sm font-semibold rounded-xl"
+            >
+              <Link to="/candidates/new">
+                <Plus className="mr-1.5 h-4 w-4" /> Add Candidate
+              </Link>
+            </Button>
+          )}
         </div>
       </div>
 

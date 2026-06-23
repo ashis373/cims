@@ -90,7 +90,7 @@ export function AtsProvider({ children }: { children: ReactNode }) {
     let isMounted = true;
     
     const fetchData = () => {
-      fetch(API_URL)
+      fetch(API_URL, { credentials: 'include' })
         .then(async (r) => {
           if (!r.ok) throw new Error(await r.text());
           return r.json();
