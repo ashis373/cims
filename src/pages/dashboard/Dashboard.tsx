@@ -46,37 +46,40 @@ function StatCard({
   value,
   icon: Icon,
   trend,
-  bgClass,
+  theme,
 }: {
   label: string;
   value: number | string;
   icon: React.ElementType;
   trend: string;
-  bgClass: string;
+  theme: 'blue' | 'emerald' | 'purple' | 'amber' | 'cyan' | 'rose';
 }) {
+  const styles = {
+    blue: { border: "border-t-blue-500", text: "text-blue-600", bg: "bg-blue-50" },
+    emerald: { border: "border-t-emerald-500", text: "text-emerald-600", bg: "bg-emerald-50" },
+    purple: { border: "border-t-purple-500", text: "text-purple-600", bg: "bg-purple-50" },
+    amber: { border: "border-t-amber-500", text: "text-amber-600", bg: "bg-amber-50" },
+    cyan: { border: "border-t-cyan-500", text: "text-cyan-600", bg: "bg-cyan-50" },
+    rose: { border: "border-t-rose-500", text: "text-rose-600", bg: "bg-rose-50" }
+  }[theme];
+
   return (
     <motion.div variants={item} className="h-full">
-      <Card className={cn("relative overflow-hidden shadow-md rounded-2xl h-full flex flex-col pt-5 px-5 pb-5 text-white transition-all hover:-translate-y-1 hover:shadow-xl", bgClass)}>
-
-        {/* Large faint watermark icon */}
-        <Icon className="absolute -bottom-4 -right-4 w-28 h-28 opacity-20 text-white transform -rotate-12" />
-
-        <div className="relative z-10 flex flex-col h-full">
-          <div className="flex justify-between items-start mb-2">
-            <div className="text-sm font-medium opacity-90">{label}</div>
-            <div className="p-2 bg-white/20 rounded-xl backdrop-blur-sm shadow-sm border border-white/20">
-              <Icon className="w-5 h-5 text-white" />
-            </div>
+      <Card className={cn("relative overflow-hidden bg-white shadow-sm border border-slate-100 border-t-[3px] rounded-2xl h-full flex flex-col p-4 transition-all hover:-translate-y-1 hover:shadow-md", styles.border)}>
+        <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-gradient-to-br from-transparent to-black/[0.02] rounded-full blur-2xl pointer-events-none" />
+        <div className="flex items-start justify-between mb-2 relative z-10">
+          <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider pr-2 leading-tight">{label}</div>
+          <div className={cn("p-1.5 rounded-lg shrink-0", styles.bg, styles.text)}>
+            <Icon className="w-4 h-4" />
           </div>
-
-          <div className="mt-1">
-            <div className="text-4xl font-black tracking-tight drop-shadow-sm">{value}</div>
-          </div>
-
-          <div className="mt-auto pt-6">
-            <div className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold text-white bg-black/10 rounded-full backdrop-blur-md border border-white/10 shadow-sm">
+        </div>
+        <div className="mt-auto relative z-10">
+          <div className="text-2xl font-black tracking-tight text-slate-900">{value}</div>
+          <div className="mt-1 flex items-center gap-1.5 text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+            <span className={cn("flex items-center gap-0.5 px-1 py-0.5 rounded", styles.bg, styles.text)}>
               <ArrowUp className="w-3 h-3" /> {trend}
-            </div>
+            </span>
+            <span>vs last month</span>
           </div>
         </div>
       </Card>
@@ -168,43 +171,43 @@ function Dashboard() {
           label="Total Candidates"
           value={counts.total}
           icon={Users}
-          bgClass="bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-600 border-none"
-          trend="+12.5%"
+          theme="blue"
+          trend="12.5%"
         />
         <StatCard
           label="Active Candidates"
           value={counts.active}
           icon={ClipboardList}
-          bgClass="bg-gradient-to-br from-emerald-500 via-emerald-400 to-teal-500 border-none"
-          trend="+8.2%"
+          theme="emerald"
+          trend="8.2%"
         />
         <StatCard
           label="Interviews Scheduled"
           value={counts.scheduled}
           icon={CalendarCheck}
-          bgClass="bg-gradient-to-br from-purple-600 via-purple-500 to-fuchsia-500 border-none"
-          trend="+15.3%"
+          theme="purple"
+          trend="15.3%"
         />
         <StatCard
           label="Offers Released"
           value={counts.offersReleased}
           icon={Star}
-          bgClass="bg-gradient-to-br from-amber-500 via-orange-400 to-rose-500 border-none"
-          trend="+11.1%"
+          theme="amber"
+          trend="11.1%"
         />
         <StatCard
           label="Joined"
           value={counts.joined}
           icon={Users}
-          bgClass="bg-gradient-to-br from-cyan-500 via-cyan-400 to-sky-500 border-none"
-          trend="+7.8%"
+          theme="cyan"
+          trend="7.8%"
         />
         <StatCard
           label="Rejected"
           value={counts.rejected}
           icon={XCircle}
-          bgClass="bg-gradient-to-br from-rose-600 via-rose-500 to-red-500 border-none"
-          trend="+9.3%"
+          theme="rose"
+          trend="9.3%"
         />
       </div>
 

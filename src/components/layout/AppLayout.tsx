@@ -318,7 +318,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex min-h-screen w-full bg-slate-50 text-slate-900 antialiased selection:bg-blue-500/10 selection:text-blue-700">
-      <aside className="hidden md:flex w-[280px] shrink-0 flex-col bg-[#0A0F1C] border-r border-slate-800/50 shadow-[4px_0_24px_-10px_rgba(0,0,0,0.5)] relative z-30">
+      <aside className="hidden md:flex w-[280px] shrink-0 flex-col bg-[#011627] border-r border-slate-800/50 shadow-[4px_0_24px_-10px_rgba(0,0,0,0.5)] relative z-30">
         <div className="flex items-center gap-4 px-6 py-8 w-full">
           <img src="/logos.png" alt="Logo" className="h-14 w-auto object-contain shrink-0" />
           <div className="text-left">
