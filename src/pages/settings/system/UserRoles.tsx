@@ -16,6 +16,7 @@ import {
 
 const mockModules = [
   "Dashboard",
+  "Job Openings",
   "Candidates",
   "Interviews",
   "Pipeline",
@@ -24,12 +25,14 @@ const mockModules = [
   "Reports",
   "Alerts",
   "Email Settings",
+  "Users & Roles",
   "System Settings"
 ];
 
 // Map modules to descriptive names like in the reference
 const moduleDescriptions: Record<string, string> = {
   "Dashboard": "Dashboard Access",
+  "Job Openings": "Job Openings",
   "Candidates": "Candidate Management",
   "Interviews": "Interview Tracking",
   "Pipeline": "Pipeline Management",
@@ -38,7 +41,8 @@ const moduleDescriptions: Record<string, string> = {
   "Reports": "Reports & Analytics",
   "Alerts": "Alerts & Notifications",
   "Email Settings": "Email Templates",
-  "System Settings": "Users & Roles",
+  "Users & Roles": "Users & Roles",
+  "System Settings": "System Settings",
 };
 
 const API_BASE_URL = import.meta.env.PROD 

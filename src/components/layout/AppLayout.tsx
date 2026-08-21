@@ -27,10 +27,10 @@ const nav = [
     label: "Job Openings",
     icon: Briefcase,
     roles: ["Administrator", "HR Manager", "Recruiter"],
-    module: "Candidates",
+    module: "Job Openings",
     children: [
-      { to: "/jobs/all", label: "All Jobs", roles: ["Administrator", "HR Manager", "Recruiter"], module: "Candidates" },
-      { to: "/jobs/create", label: "Create Job", roles: ["Administrator", "HR Manager", "Recruiter"], module: "Candidates" },
+      { to: "/jobs/all", label: "All Jobs", roles: ["Administrator", "HR Manager", "Recruiter"], module: "Job Openings" },
+      { to: "/jobs/create", label: "Create Job", roles: ["Administrator", "HR Manager", "Recruiter"], module: "Job Openings" },
     ],
   },
   {
@@ -133,7 +133,7 @@ const nav = [
     module: "System Settings",
     children: [
       { to: "/system-settings/profile", label: "User Profile", roles: ["Administrator", "HR Manager", "Recruiter", "Hiring Manager"], module: "System Settings" },
-      { to: "/system-settings/roles", label: "User Roles & Permissions", roles: ["Administrator"] },
+      { to: "/system-settings/roles", label: "User Roles & Permissions", roles: ["Administrator"], module: "Users & Roles" },
       { to: "/system-settings/general", label: "System Settings", roles: ["Administrator", "HR Manager"], module: "System Settings" },
     ],
   },
@@ -257,7 +257,8 @@ export function AppLayout({ children }: { children: ReactNode }) {
           name: user.full_name || user.email || "User",
           designation: user.designation || user.role_name || "User Role",
           role_name: user.role_name || "User Role",
-          initial: user.full_name ? user.full_name.charAt(0) : "U"
+          initial: user.full_name ? user.full_name.charAt(0) : "U",
+          permissions: user.permissions
         };
       } catch (e) {}
     }
@@ -265,7 +266,8 @@ export function AppLayout({ children }: { children: ReactNode }) {
       name: "Loading...",
       designation: "Please wait",
       role_name: "Loading...",
-      initial: "L"
+      initial: "L",
+      permissions: []
     };
   });
 
@@ -303,7 +305,8 @@ export function AppLayout({ children }: { children: ReactNode }) {
           name: user.full_name || user.email || "User",
           designation: user.designation || user.role_name || "User Role",
           role_name: user.role_name || "User Role",
-          initial: user.full_name ? user.full_name.charAt(0) : "U"
+          initial: user.full_name ? user.full_name.charAt(0) : "U",
+          permissions: user.permissions
         });
       } catch (e) {
         console.error("Failed to parse user data", e);
@@ -363,6 +366,15 @@ export function AppLayout({ children }: { children: ReactNode }) {
           <div className="flex items-center gap-2 md:hidden">
             <img src="/logos.png" alt="Logo" className="h-8 w-auto object-contain shrink-0" />
             <span className="text-base font-black tracking-tight text-slate-900">Hireflow</span>
+          </div>
+
+          <div className="hidden md:flex flex-col">
+            <h1 className="text-xl font-black tracking-tight text-slate-800">
+              Good morning, {currentUser?.name || "Super Admin"} <span className="inline-block animate-wave">👋</span>
+            </h1>
+            <p className="text-xs text-slate-500 font-medium mt-0.5">
+              Here's what's happening with your recruitment today.
+            </p>
           </div>
 
           <div className="flex max-w-full gap-1 overflow-x-auto rounded-xl border border-slate-200/60 bg-slate-50 p-1 scrollbar-thin md:hidden">
