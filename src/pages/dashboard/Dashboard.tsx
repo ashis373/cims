@@ -55,28 +55,38 @@ function StatCard({
   theme: 'blue' | 'emerald' | 'purple' | 'amber' | 'cyan' | 'rose';
 }) {
   const styles = {
-    blue: { border: "border-t-blue-500", text: "text-blue-600", bg: "bg-blue-50" },
-    emerald: { border: "border-t-emerald-500", text: "text-emerald-600", bg: "bg-emerald-50" },
-    purple: { border: "border-t-purple-500", text: "text-purple-600", bg: "bg-purple-50" },
-    amber: { border: "border-t-amber-500", text: "text-amber-600", bg: "bg-amber-50" },
-    cyan: { border: "border-t-cyan-500", text: "text-cyan-600", bg: "bg-cyan-50" },
-    rose: { border: "border-t-rose-500", text: "text-rose-600", bg: "bg-rose-50" }
+    blue: { cardBg: "bg-blue-50/70", text: "text-blue-700", iconBg: "bg-blue-100/80 text-blue-700", border: "border-blue-200/50" },
+    emerald: { cardBg: "bg-emerald-50/70", text: "text-emerald-700", iconBg: "bg-emerald-100/80 text-emerald-700", border: "border-emerald-200/50" },
+    purple: { cardBg: "bg-purple-50/70", text: "text-purple-700", iconBg: "bg-purple-100/80 text-purple-700", border: "border-purple-200/50" },
+    amber: { cardBg: "bg-amber-50/70", text: "text-amber-700", iconBg: "bg-amber-100/80 text-amber-700", border: "border-amber-200/50" },
+    cyan: { cardBg: "bg-cyan-50/70", text: "text-cyan-700", iconBg: "bg-cyan-100/80 text-cyan-700", border: "border-cyan-200/50" },
+    rose: { cardBg: "bg-rose-50/70", text: "text-rose-700", iconBg: "bg-rose-100/80 text-rose-700", border: "border-rose-200/50" }
   }[theme];
 
   return (
-    <motion.div variants={item} className="h-full">
-      <Card className={cn("relative overflow-hidden bg-white shadow-sm border border-slate-100 border-t-[3px] rounded-2xl h-full flex flex-col p-4 transition-all hover:-translate-y-1 hover:shadow-md", styles.border)}>
-        <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-gradient-to-br from-transparent to-black/[0.02] rounded-full blur-2xl pointer-events-none" />
+    <motion.div variants={item} className="h-full group">
+      <Card className={cn(
+        "relative overflow-hidden shadow-sm border rounded-2xl h-full flex flex-col p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-md",
+        styles.cardBg,
+        styles.border
+      )}>
+        <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-gradient-to-br from-white/40 to-transparent rounded-full blur-2xl pointer-events-none" />
+        
         <div className="flex items-start justify-between mb-2 relative z-10">
-          <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider pr-2 leading-tight">{label}</div>
-          <div className={cn("p-1.5 rounded-lg shrink-0", styles.bg, styles.text)}>
+          <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider pr-2 leading-tight">
+            {label}
+          </div>
+          <div className={cn("p-1.5 rounded-lg shrink-0 border border-white/50 shadow-sm", styles.iconBg)}>
             <Icon className="w-4 h-4" />
           </div>
         </div>
+        
         <div className="mt-auto relative z-10">
-          <div className="text-2xl font-black tracking-tight text-slate-900">{value}</div>
-          <div className="mt-1 flex items-center gap-1.5 text-[9px] font-bold text-slate-400 uppercase tracking-wider">
-            <span className={cn("flex items-center gap-0.5 px-1 py-0.5 rounded", styles.bg, styles.text)}>
+          <div className="text-2xl font-black tracking-tight text-slate-800">
+            {value}
+          </div>
+          <div className="mt-1 flex items-center gap-1.5 text-[9px] font-bold text-slate-500 uppercase tracking-wider">
+            <span className={cn("flex items-center gap-0.5 px-1.5 py-0.5 rounded shadow-sm border border-white/40 bg-white/60", styles.text)}>
               <ArrowUp className="w-3 h-3" /> {trend}
             </span>
             <span>vs last month</span>
