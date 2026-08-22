@@ -77,6 +77,7 @@ const empty = {
   linkedInProfile: "",
   noticePeriod: "",
   recruiter: "",
+  photo: "",
 };
 
 const ErrorMsg = ({ msg }: { msg?: string }) => {
@@ -92,6 +93,7 @@ export default function CandidateFormPage() {
 
   const [form, setForm] = useState(empty);
   const [dup, setDup] = useState<Candidate | null>(null);
+  const [dupType, setDupType] = useState<"EXACT" | "POSSIBLE" | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [openJobs, setOpenJobs] = useState<any[]>([]);
   const [dbDepartments, setDbDepartments] = useState<any[]>([]);
@@ -100,7 +102,7 @@ export default function CandidateFormPage() {
     const fetchData = async () => {
       try {
         const [jobsRes, deptsRes] = await Promise.all([
-          fetch(`${API_BASE_URL}/jobs/jobs.php`, { credentials: 'include' }),
+          fetch(`${API_BASE_URL}/jobs/jobs.php`),
           fetch(`${API_BASE_URL}/jobs/departments.php`)
         ]);
         const jobsData = await jobsRes.json();
@@ -122,13 +124,13 @@ export default function CandidateFormPage() {
   useEffect(() => {
     if (candidate) {
       setForm({
-        name: candidate.name,
-        email: candidate.email,
-        phone: candidate.phone,
-        role: candidate.role,
-        department: candidate.department,
-        source: candidate.source,
-        stage: candidate.stage,
+        name: candidate.name || "",
+        email: candidate.email || "",
+        phone: candidate.phone || "",
+        role: candidate.role || "",
+        department: candidate.department || "",
+        source: candidate.source || "",
+        stage: candidate.stage || "New Applicant",
         resume: candidate.resume || "",
         notes: candidate.notes || "",
         tags: candidate.tags.join(", "),
@@ -146,6 +148,7 @@ export default function CandidateFormPage() {
         noticePeriod: candidate.noticePeriod ? String(candidate.noticePeriod).replace(/[^\d]/g, '') : "",
         recruiter: candidate.recruiter || "",
         appliedAt: candidate.appliedAt.slice(0, 10),
+        photo: candidate.photo || "",
       });
     } else {
       setForm(empty);
@@ -226,9 +229,10 @@ export default function CandidateFormPage() {
     }
 
     if (!candidate) {
-      const existing = findDuplicate(form.email, form.phone);
+      const existing = findDuplicate(form.email, form.phone, form.name);
       if (existing) {
-        setDup(existing);
+        setDup(existing.candidate);
+        setDupType(existing.type);
         return;
       }
     }
@@ -273,6 +277,7 @@ export default function CandidateFormPage() {
             noticePeriod: form.noticePeriod + " Days",
             recruiter: form.recruiter,
             appliedAt: new Date(form.appliedAt).toISOString(),
+            photo: form.photo,
           },
           "Profile edited",
         );
@@ -307,6 +312,7 @@ export default function CandidateFormPage() {
           noticePeriod: form.noticePeriod + " Days",
           recruiter: form.recruiter,
           appliedAt: new Date(form.appliedAt).toISOString(),
+          photo: form.photo,
         });
         toast.success("Candidate added");
         navigate(`/candidates/${c.id}`);
@@ -358,6 +364,53 @@ export default function CandidateFormPage() {
             </h3>
           </div>
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <div className="md:col-span-2">
+              <Label
+                htmlFor="photo"
+                className="flex items-center gap-1.5 text-muted-foreground mb-1.5"
+              >
+                <User className="h-3.5 w-3.5" /> Profile Photo (Optional)
+              </Label>
+              <Input
+                id="photo"
+                type="file"
+                accept="image/jpeg,image/png"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    const formData = new FormData();
+                    formData.append("resume", file);
+                    const uploadUrl = `${API_BASE_URL}/candidates/upload.php`;
+                    try {
+                      const res = await fetch(uploadUrl, { method: "POST", body: formData });
+                      const data = await res.json();
+                      if (data.success) {
+                        set("photo", data.filename);
+                      } else {
+                        console.error(data.error || "Upload failed");
+                      }
+                    } catch (err) {
+                      console.error("Upload failed", err);
+                    }
+                  }
+                }}
+                className="pt-1.5 mb-4"
+              />
+              {form.photo && (
+                <div className="mt-4 flex flex-col gap-3">
+                  <div className="text-xs text-muted-foreground text-emerald-600 font-medium">
+                    Uploaded: {form.photo.split('_').slice(1).join('_') || form.photo}
+                  </div>
+                  <div className="h-24 w-24 rounded-2xl overflow-hidden border-4 border-white shadow-md">
+                    <img 
+                      src={`${API_BASE_URL}/candidates/uploads/${form.photo}`} 
+                      alt="Profile preview" 
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
             <div className="md:col-span-2">
               <Label
                 htmlFor="name"
@@ -621,18 +674,25 @@ export default function CandidateFormPage() {
                 onChange={async (e) => {
                   const file = e.target.files?.[0];
                   if (file) {
+                    if (file.size > 2 * 1024 * 1024) {
+                      toast.error("Resume file size must be less than 2 MB");
+                      e.target.value = '';
+                      return;
+                    }
                     const formData = new FormData();
                     formData.append("resume", file);
                     const uploadUrl = `${API_BASE_URL}/candidates/upload.php`;
                     try {
-                      const res = await fetch(uploadUrl, { credentials: 'include',  method: "POST", body: formData });
+                      const res = await fetch(uploadUrl, { method: "POST", body: formData });
                       const data = await res.json();
                       if (data.success) {
                         set("resume", data.filename);
                       } else {
+                        toast.error(data.error || "Upload failed");
                         console.error(data.error || "Upload failed");
                       }
                     } catch (err) {
+                      toast.error("Upload failed due to network error");
                       console.error("Upload failed", err);
                     }
                   }
@@ -688,6 +748,9 @@ export default function CandidateFormPage() {
                       {s}
                     </SelectItem>
                   ))}
+                  {form.source && !SOURCES.includes(form.source as Source) && (
+                    <SelectItem value={form.source}>{form.source}</SelectItem>
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -762,6 +825,9 @@ export default function CandidateFormPage() {
                       </SelectItem>
                     ))
                   )}
+                  {form.department && !dbDepartments.find(d => d.name === form.department) && !DEPARTMENTS.includes(form.department as Department) && (
+                    <SelectItem value={form.department}>{form.department}</SelectItem>
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -800,34 +866,74 @@ export default function CandidateFormPage() {
         </div>
       </form>
 
-      <AlertDialog open={!!dup} onOpenChange={(o) => !o && setDup(null)}>
+      <AlertDialog open={!!dup} onOpenChange={(o) => {
+        if (!o) {
+          setDup(null);
+          setDupType(null);
+        }
+      }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Existing candidate found</AlertDialogTitle>
-            <AlertDialogDescription>
-              <span className="font-medium text-foreground">{dup?.name}</span> already exists (
-              {dup?.email}). They previously applied for{" "}
-              <span className="font-medium text-foreground">{dup?.role}</span>.
+            <AlertDialogTitle className={`text-lg ${dupType === "EXACT" ? "text-destructive" : "text-amber-600"}`}>
+              {dupType === "EXACT" ? "Exact Duplicate Candidate Found" : "Possible Duplicate Candidate Found"}
+            </AlertDialogTitle>
+            
+            <div className="text-sm mt-3 space-y-3">
+              <div className="grid grid-cols-[1fr_1.5fr] gap-x-2 gap-y-2 border border-slate-100 rounded-xl p-4 bg-slate-50/50">
+                <div className="text-slate-500">Candidate Name</div>
+                <div className={`font-medium ${dup && form.name.trim().toLowerCase() === dup.name.trim().toLowerCase() ? "bg-amber-100 text-amber-900 px-2 py-0.5 rounded-md w-fit" : "text-slate-900"}`}>{dup?.name}</div>
+                
+                <div className="text-slate-500">Email</div>
+                <div className={`font-medium ${dup && form.email.trim().toLowerCase() === dup.email.trim().toLowerCase() ? "bg-red-100 text-red-900 px-2 py-0.5 rounded-md w-fit" : "text-slate-900"}`}>{dup?.email}</div>
+                
+                <div className="text-slate-500">Mobile Number</div>
+                <div className={`font-medium ${dup && form.phone.replace(/\s+/g, "") === dup.phone.replace(/\s+/g, "") ? "bg-red-100 text-red-900 px-2 py-0.5 rounded-md w-fit" : "text-slate-900"}`}>{dup?.phone}</div>
+                
+                <div className="text-slate-500">Previous Application</div>
+                <div className="font-medium text-slate-900">{dup?.appliedAt ? new Date(dup.appliedAt).toLocaleDateString() : 'N/A'}</div>
+                
+                <div className="text-slate-500">Applied Position</div>
+                <div className="font-medium text-slate-900">{dup?.role}</div>
+                
+                <div className="text-slate-500">Recruiter Name</div>
+                <div className="font-medium text-slate-900">{dup?.recruiter || 'System'}</div>
+                
+                <div className="text-slate-500">Current Status</div>
+                <div className="font-medium text-slate-900">{dup?.stage}</div>
+                
+                <div className="text-slate-500">Historical Records</div>
+                <div className="font-medium text-slate-900">{dup?.activity?.length || 0} recorded events</div>
+              </div>
+
               {dup?.isBlacklisted && (
-                <div className="mt-2 text-destructive font-semibold">
-                  ⚠️ WARNING: This candidate is blacklisted. ({dup?.blacklistReason})
+                <div className="mt-2 text-destructive font-semibold bg-destructive/10 p-3 rounded-lg border border-destructive/20">
+                  ⚠️ WARNING: This candidate is blacklisted.
+                  <div className="font-normal text-xs mt-1">Reason: {dup?.blacklistReason || 'Not specified'}</div>
                 </div>
               )}
-              Add this as a new application on their profile, or create a separate record?
-            </AlertDialogDescription>
+
+              <AlertDialogDescription className="pt-2 text-slate-600">
+                {dupType === "EXACT" 
+                  ? "This candidate already exists. Would you like to add this as a new application on their existing profile?"
+                  : "Would you like to add this as a new application on their existing profile, or create a separate record?"}
+              </AlertDialogDescription>
+            </div>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <Button
-              variant="outline"
-              onClick={() => {
-                if (!dup) return;
-                setDup(null);
-                persist();
-              }}
-            >
-              Create new record
-            </Button>
+            {dupType === "POSSIBLE" && (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  if (!dup) return;
+                  setDup(null);
+                  setDupType(null);
+                  persist();
+                }}
+              >
+                Create new record
+              </Button>
+            )}
             <AlertDialogAction
               onClick={() => {
                 if (!dup) return;
@@ -835,6 +941,7 @@ export default function CandidateFormPage() {
                 toast.success("Application added to existing candidate");
                 navigate(`/candidates/${dup.id}`);
                 setDup(null);
+                setDupType(null);
               }}
             >
               Update existing

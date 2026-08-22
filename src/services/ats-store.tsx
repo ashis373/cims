@@ -20,45 +20,15 @@ import {
   type ActivityEntry,
 } from "@/types/ats-types";
 
-import { API_BASE_URL } from "@/config/api";
+import {
+  fetchCandidatesAPI,
+  postCandidateAPI,
+  putCandidateAPI,
+  deleteCandidatesAPI,
+  bulkUndoSyncAPI,
+} from "./candidate-api";
 
-const STORAGE_KEY = "ats.candidates.v2";
-const API_URL = `${API_BASE_URL}/candidates/candidates.php`;
-
-function uid() {
-  return Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
-}
-
-function now() {
-  return new Date().toISOString();
-}
-
-function seed(): Candidate[] {
-  // ... (keep short seed for fallback)
-  const names = ["Ava Patel", "Liam Chen", "Noah Garcia"];
-  const today = new Date();
-  return names.map((name, i) => {
-    const applied = new Date(today.getTime() - (i + 1) * (12 * 3600000)).toISOString();
-    return {
-      id: uid(),
-      name,
-      email: `${name.toLowerCase().replace(" ", ".")}@example.com`,
-      phone: "+1 234 567 8900",
-      role: "Software Engineer",
-      department: "Engineering",
-      source: "Website",
-      stage: "New Applicant",
-      tags: ["React"],
-      appliedAt: applied,
-      updatedAt: applied,
-      resume: "",
-      notes: "",
-      interviews: [],
-      activity: [{ id: uid(), at: applied, kind: "created", message: "Application received" }],
-      applications: [{ appliedAt: applied, role: "Software Engineer", source: "Website" }],
-    } as Candidate;
-  });
-}
+import { uid, now, findDuplicateHelper } from "./candidate-utils";
 
 interface Ctx {
   candidates: Candidate[];
@@ -69,7 +39,7 @@ interface Ctx {
   setStage: (id: string, stage: Stage, reason?: string) => Promise<void>;
   addNote: (id: string, note: string) => Promise<void>;
   addInterview: (id: string, iv: Omit<Interview, "id">) => Promise<void>;
-  findDuplicate: (email: string, phone: string) => Candidate | undefined;
+  findDuplicate: (email: string, phone: string, name: string) => { type: "EXACT" | "POSSIBLE", candidate: Candidate } | null;
   reapply: (existingId: string, role: string, source: Source) => Promise<void>;
   undo: () => void;
   canUndo: boolean;
@@ -89,48 +59,33 @@ export function AtsProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let isMounted = true;
     
-    const fetchData = () => {
-      fetch(API_URL, { credentials: 'include' })
-        .then(async (r) => {
-          if (!r.ok) throw new Error(await r.text());
-          return r.json();
-        })
-        .then((data) => {
-          if (!isMounted) return;
-          if (Array.isArray(data)) {
-            // Only update if data changed structurally to prevent unnecessary re-renders during drag
-            setCandidates((prev) => {
-              if (JSON.stringify(prev) !== JSON.stringify(data)) {
-                return data;
-              }
-              return prev;
-            });
-          } else {
-            setCandidates([]);
+    const fetchData = async () => {
+      try {
+        const data = await fetchCandidatesAPI();
+        if (!isMounted) return;
+        setCandidates((prev) => {
+          if (JSON.stringify(prev) !== JSON.stringify(data)) {
+            return data;
           }
-        })
-        .catch((err) => {
-          console.error("DB Fetch failed:", err);
-          if (isMounted && candidates.length === 0) {
-            setError("Failed to load candidates");
-          }
-        })
-        .finally(() => {
-          if (isMounted) setIsLoading(false);
+          return prev;
         });
+      } catch (err) {
+        console.error("DB Fetch failed:", err);
+        if (isMounted && candidates.length === 0) {
+          setError("Failed to load candidates");
+        }
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
     };
 
-    // Initial fetch
+    // Initial fetch only
     fetchData();
-
-    // Real-time polling every 10 seconds
-    const interval = setInterval(fetchData, 10000);
 
     return () => {
       isMounted = false;
-      clearInterval(interval);
     };
-  }, []);
+  }, []); // Removing the setInterval for repeated polling
 
   const mutate = (updater: (prev: Candidate[]) => Candidate[]) => {
     setCandidates((prev) => {
@@ -142,15 +97,7 @@ export function AtsProvider({ children }: { children: ReactNode }) {
   };
 
   const syncPut = async (c: Candidate) => {
-    const res = await fetch(`${API_URL}?id=${c.id}`, { credentials: 'include', 
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(c),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || "Failed to update database");
-    }
+    await putCandidateAPI(c);
   };
 
   const api: Ctx = useMemo(
@@ -161,12 +108,13 @@ export function AtsProvider({ children }: { children: ReactNode }) {
         const t = now();
         const cand: Candidate = {
           id: uid(),
-          name: input.name,
-          email: input.email,
-          phone: input.phone,
-          source: input.source,
-          role: input.role,
-          department: input.department || inferDepartment(input.role),
+          name: input.name || "",
+          email: input.email || "",
+          phone: input.phone || "",
+          source: input.source || "Website",
+          role: input.role || "",
+          department: input.department || inferDepartment(input.role || ""),
+          photo: input.photo || "",
           resume: input.resume || "",
           notes: input.notes || "",
           appliedAt: input.appliedAt || t,
@@ -189,19 +137,11 @@ export function AtsProvider({ children }: { children: ReactNode }) {
           interviews: [],
           activity: [{ id: uid(), at: t, kind: "created", message: "Application received" }],
           applications: [
-            { appliedAt: input.appliedAt || t, role: input.role, source: input.source },
+            { appliedAt: input.appliedAt || t, role: input.role || "", source: input.source || "Website" },
           ],
-        };
+        } as Candidate;
         try {
-          const res = await fetch(API_URL, { credentials: 'include', 
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(cand),
-          });
-          if (!res.ok) {
-            const err = await res.json().catch(() => ({}));
-            throw new Error(err.error || "Failed to add candidate");
-          }
+          await postCandidateAPI(cand);
           mutate((prev) => [cand, ...prev]);
           return cand;
         } catch (e) {
@@ -231,12 +171,7 @@ export function AtsProvider({ children }: { children: ReactNode }) {
       },
       remove: async (ids) => {
         try {
-          const res = await fetch(API_URL, { credentials: 'include', 
-            method: "DELETE",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ ids }),
-          });
-          if (!res.ok) throw new Error("Failed to delete from database");
+          await deleteCandidatesAPI(ids);
           mutate((prev) => prev.filter((c) => !ids.includes(c.id)));
         } catch (e) {
           const error = e as Error;
@@ -264,7 +199,7 @@ export function AtsProvider({ children }: { children: ReactNode }) {
           ...(reason && (stage === "Offer Declined" || stage === "No Show")
             ? { stageReason: reason }
             : {}),
-        };
+        } as Candidate;
         try {
           await syncPut(next);
           mutate((prev) => prev.map((c) => (c.id === id ? next : c)));
@@ -281,7 +216,7 @@ export function AtsProvider({ children }: { children: ReactNode }) {
           ...target,
           updatedAt: now(),
           activity: [...target.activity, { id: uid(), at: now(), kind: "note", message: note }],
-        };
+        } as Candidate;
         try {
           await syncPut(next);
           mutate((prev) => prev.map((c) => (c.id === id ? next : c)));
@@ -324,12 +259,8 @@ export function AtsProvider({ children }: { children: ReactNode }) {
           throw error;
         }
       },
-      findDuplicate: (email, phone) => {
-        const e = email.trim().toLowerCase();
-        const p = phone.replace(/\s+/g, "");
-        return candidates.find(
-          (c) => (e && c.email.toLowerCase() === e) || (p && c.phone.replace(/\s+/g, "") === p),
-        );
+      findDuplicate: (email, phone, name) => {
+        return findDuplicateHelper(candidates, email, phone, name);
       },
       reapply: async (id, role, source) => {
         const target = candidates.find((c) => c.id === id);
@@ -372,11 +303,7 @@ export function AtsProvider({ children }: { children: ReactNode }) {
         setCanUndo(history.current.length > 0);
 
         // Push the entire 'prev' state back to the DB to sync undo
-        fetch(API_URL, { credentials: 'include', 
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ bulk: true, candidates: prev }),
-        }).catch(console.error);
+        bulkUndoSyncAPI(prev);
 
         toast.success("Undone");
       },

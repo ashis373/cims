@@ -109,6 +109,7 @@ export interface Candidate {
   linkedInProfile?: string;
   noticePeriod?: string;
   recruiter?: string;
+  photo?: string;
 }
 
 export const STAGE_COLORS: Record<Stage, string> = {

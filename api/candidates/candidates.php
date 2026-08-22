@@ -169,9 +169,9 @@ if ($method === 'GET') {
             id, name, email, phone, alternateMobile, location, preferredLocation, 
             experience, relevantExperience, currentCompany, currentDesignation, 
             currentCtc, expectedCtc, noticePeriod, skills, resume, linkedInProfile, 
-            isBlacklisted, isActive, createdAt, updatedAt
+            isBlacklisted, isActive, createdAt, updatedAt, photo
         ) VALUES (
-            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
         )");
         
         $skills = json_encode($c['skills'] ?? []);
@@ -199,7 +199,8 @@ if ($method === 'GET') {
             isset($c['isBlacklisted']) ? (int)$c['isBlacklisted'] : 0,
             isset($c['isActive']) ? (int)$c['isActive'] : 1,
             $now,
-            $now
+            $now,
+            $c['photo'] ?? ''
         ]);
         
         // 2. Insert into cims_applications table
@@ -259,7 +260,7 @@ if ($method === 'GET') {
             'name', 'email', 'phone', 'alternateMobile', 'location', 'preferredLocation', 
             'experience', 'relevantExperience', 'currentCompany', 'currentDesignation', 
             'currentCtc', 'expectedCtc', 'noticePeriod', 'resume', 'linkedInProfile', 
-            'isBlacklisted', 'isActive'
+            'isBlacklisted', 'isActive', 'photo'
         ];
         
         $updateStrs = [];

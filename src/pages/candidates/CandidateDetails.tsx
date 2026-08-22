@@ -217,9 +217,19 @@ export default function CandidateProfile() {
       <Card className="p-6 bg-white border-border/50 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] rounded-2xl">
         <div className="flex flex-wrap items-start justify-between gap-6">
           <div className="flex gap-6">
-            <div className="h-[72px] w-[72px] rounded-full bg-[#8b5cf6] text-white flex items-center justify-center text-2xl font-bold uppercase shrink-0 shadow-sm">
-              {initials}
-            </div>
+            {candidate.photo ? (
+              <div className="h-[72px] w-[72px] rounded-full overflow-hidden shrink-0 shadow-sm border-2 border-white ring-2 ring-slate-100">
+                <img 
+                  src={`${API_BASE_URL}/candidates/uploads/${candidate.photo}`} 
+                  alt={candidate.name} 
+                  className="h-full w-full object-cover"
+                />
+              </div>
+            ) : (
+              <div className="h-[72px] w-[72px] rounded-full bg-[#8b5cf6] text-white flex items-center justify-center text-2xl font-bold uppercase shrink-0 shadow-sm border-2 border-white ring-2 ring-slate-100">
+                {initials}
+              </div>
+            )}
             <div>
               <div className="flex items-center gap-3">
                 <h1 className="text-xl font-bold tracking-tight text-slate-900">

@@ -286,7 +286,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
   useEffect(() => {
     const fetchNotifications = async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/notifications/notifications.php`, { credentials: 'include' });
+        const res = await fetch(`${API_BASE_URL}/notifications/notifications.php`);
         const data = await res.json();
         const count = data.filter((a: any) => a.unread).length;
         setUnreadCount(count);

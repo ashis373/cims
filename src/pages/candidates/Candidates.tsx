@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { API_BASE_URL } from "@/config/api";
 import { useAts, PIPELINE_STAGES } from "@/services/ats-store";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -547,12 +548,24 @@ export default function CandidatesPage() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
+                          {c.photo ? (
+                            <img
+                              src={`${API_BASE_URL}/candidates/uploads/${c.photo}`}
+                              alt={c.name}
+                              className="h-8 w-8 rounded-full object-cover shadow-sm border border-slate-200 shrink-0"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).style.display = 'none';
+                                (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
+                              }}
+                            />
+                          ) : null}
                           <div
                             className={cn(
-                              "flex h-8 w-8 items-center justify-center rounded-full font-bold text-[10px]",
+                              "flex h-8 w-8 shrink-0 items-center justify-center rounded-full font-bold text-[10px]",
                               c.isBlacklisted
                                 ? "bg-red-100 text-red-600"
                                 : "bg-purple-100 text-purple-600",
+                              c.photo ? "hidden" : ""
                             )}
                           >
                             {getInitials(c.name)}
