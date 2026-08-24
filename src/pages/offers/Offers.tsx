@@ -1,31 +1,16 @@
 import { useState, useMemo } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useAts } from "@/services/ats-store";
-import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Search, ChevronRight, Briefcase, FileText, CheckCircle2, XCircle, AlertTriangle, UserCheck, Percent } from "lucide-react";
+import { Search, MoreVertical, FileText, CheckCircle2, XCircle, AlertTriangle, UserCheck, User, Calendar, Briefcase, FileCheck, Gift, ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { motion, AnimatePresence } from "framer-motion";
-
-const container = {
-  hidden: { opacity: 0 },
-  show: {
-    opacity: 1,
-    transition: { staggerChildren: 0.05 }
-  }
-};
-
-const item = {
-  hidden: { opacity: 0, y: 15 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] } }
-};
 
 const TABS = [
-  { id: "released", label: "Released", icon: FileText, stage: "Offer Released", color: "text-blue-600 bg-blue-50 border-blue-100", tone: "border-blue-500" },
-  { id: "accepted", label: "Accepted", icon: CheckCircle2, stage: "Offer Accepted", color: "text-emerald-600 bg-emerald-50 border-emerald-100", tone: "border-emerald-500" },
-  { id: "declined", label: "Declined", icon: XCircle, stage: "Offer Declined", color: "text-rose-600 bg-rose-50 border-rose-100", tone: "border-rose-500" },
-  { id: "no-join", label: "No-Show", icon: AlertTriangle, stage: "No Show", color: "text-amber-600 bg-amber-50 border-amber-100", tone: "border-amber-500" },
-  { id: "joined", label: "Joined", icon: UserCheck, stage: "Joined", color: "text-teal-600 bg-teal-50 border-teal-100", tone: "border-teal-500" },
+  { id: "released", label: "Released", icon: FileText, stage: "Offer Released", color: "text-indigo-600", activeBg: "bg-indigo-50", badgeBg: "bg-slate-100 text-slate-700", dot: "bg-indigo-500", pillBg: "bg-indigo-50 text-indigo-700" },
+  { id: "accepted", label: "Accepted", icon: CheckCircle2, stage: "Offer Accepted", color: "text-emerald-600", activeBg: "bg-emerald-50", badgeBg: "bg-slate-100 text-slate-700", dot: "bg-emerald-500", pillBg: "bg-emerald-50 text-emerald-700" },
+  { id: "declined", label: "Declined", icon: XCircle, stage: "Offer Declined", color: "text-rose-600", activeBg: "bg-rose-50", badgeBg: "bg-slate-100 text-slate-700", dot: "bg-rose-500", pillBg: "bg-rose-50 text-rose-700" },
+  { id: "no-join", label: "No-Show", icon: AlertTriangle, stage: "No Show", color: "text-amber-600", activeBg: "bg-amber-50", badgeBg: "bg-slate-100 text-slate-700", dot: "bg-amber-500", pillBg: "bg-amber-50 text-amber-700" },
+  { id: "joined", label: "Joined", icon: UserCheck, stage: "Joined", color: "text-blue-600", activeBg: "bg-blue-50", badgeBg: "bg-slate-100 text-slate-700", dot: "bg-blue-500", pillBg: "bg-blue-50 text-blue-700" },
 ];
 
 export default function Offers() {
@@ -33,26 +18,10 @@ export default function Offers() {
   const navigate = useNavigate();
   const { candidates } = useAts();
 
-  const activeTabId = tab || "released";
+  const activeTabId = tab && tab !== 'management' ? tab : "released";
   const activeTabDef = TABS.find((t) => t.id === activeTabId) || TABS[0];
 
   const [search, setSearch] = useState("");
-
-  const analytics = useMemo(() => {
-    let released = 0, accepted = 0, declined = 0, noShow = 0, joined = 0;
-    candidates.forEach(c => {
-      if (c.stage === "Offer Released") released++;
-      if (c.stage === "Offer Accepted") accepted++;
-      if (c.stage === "Offer Declined") declined++;
-      if (c.stage === "No Show") noShow++;
-      if (c.stage === "Joined") joined++;
-    });
-    const total = released + accepted + declined + noShow + joined;
-    const acceptedTotal = accepted + joined;
-    const rate = total > 0 ? Math.round((acceptedTotal / total) * 100) : 0;
-    
-    return { total, released, accepted: acceptedTotal, declined, noShow, joined, rate };
-  }, [candidates]);
 
   const filteredCandidates = useMemo(() => {
     return candidates.filter((c) => {
@@ -75,206 +44,174 @@ export default function Offers() {
   };
 
   return (
-    <motion.div initial="hidden" animate="show" variants={container} className="flex flex-col gap-8 w-full pb-10 max-w-[1600px] mx-auto">
-      {/* Header */}
-      <motion.div variants={item} className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-900 to-indigo-950 shadow-xl border border-indigo-900/50 p-8 sm:p-10 text-white">
-        <div className="absolute top-0 right-0 -mt-16 -mr-16 w-64 h-64 bg-gradient-to-br from-indigo-500/30 to-purple-500/30 rounded-full blur-3xl pointer-events-none" />
-        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-          <div className="flex items-center gap-5">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl shadow-inner border bg-white/10 border-white/20 text-white backdrop-blur-md">
-              <Briefcase className="h-6 w-6" />
-            </div>
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white drop-shadow-sm">
-                Offer Management
-              </h1>
-              <p className="text-indigo-200 text-[13px] sm:text-[14px] font-medium mt-1.5 max-w-lg leading-relaxed">
-                Track candidate offers, monitor acceptance rates, and identify potential no-shows in real-time.
-              </p>
-            </div>
+    <div className="flex flex-col gap-6 w-full pb-10 mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
+      
+      {/* Top Banner (Deep Purple) */}
+      <div className="relative overflow-hidden rounded-[28px] bg-gradient-to-r from-[#110B3A] via-[#21115A] to-[#45148C] shadow-lg border border-indigo-900/50 p-8 sm:p-10 text-white flex items-center justify-between">
+        <div className="absolute top-0 right-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 pointer-events-none mix-blend-overlay"></div>
+        
+        <div className="relative z-10 flex items-center gap-6">
+          <div className="flex h-[72px] w-[72px] items-center justify-center rounded-[20px] bg-[#6136D7]/20 border border-[#6136D7]/50 shadow-[0_0_20px_rgba(97,54,215,0.4)] backdrop-blur-md">
+            <Gift className="h-8 w-8 text-indigo-100" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-white mb-1.5">
+              Offer Management
+            </h1>
+            <p className="text-indigo-200/90 text-[15px] max-w-xl font-medium">
+              Track candidate offers, monitor acceptance rates, and identify potential no-shows in real-time.
+            </p>
           </div>
         </div>
-      </motion.div>
+      </div>
 
-      {/* Analytics Cards */}
-      <motion.div variants={item} className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-        {[
-          { label: "Total Offers", value: analytics.total, icon: FileText, tone: "bg-blue-50 text-blue-600", borderTone: "border-blue-500", trend: "Active Pipeline" },
-          { label: "Acceptance Rate", value: `${analytics.rate}%`, icon: Percent, tone: "bg-indigo-50 text-indigo-600", borderTone: "border-indigo-500", trend: "Overall Health" },
-          { label: "Accepted & Joined", value: analytics.accepted, icon: CheckCircle2, tone: "bg-emerald-50 text-emerald-600", borderTone: "border-emerald-500", trend: "Successfully Closed" },
-          { label: "Declined", value: analytics.declined, icon: XCircle, tone: "bg-rose-50 text-rose-600", borderTone: "border-rose-500", trend: "Lost Candidates" },
-          { label: "No-Shows", value: analytics.noShow, icon: AlertTriangle, tone: "bg-amber-50 text-amber-600", borderTone: "border-amber-500", trend: "Dropped Post-Offer" },
-        ].map((stat, i) => (
-          <motion.div 
-            whileHover={{ y: -5, transition: { duration: 0.2 } }}
-            key={i} 
-            className={cn("p-5 bg-white shadow-sm hover:shadow-md rounded-2xl relative overflow-hidden group border-t-4 flex-1 min-w-[160px] transition-shadow", stat.borderTone)}
-          >
-            <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-gradient-to-br from-transparent to-black/[0.03] rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500 pointer-events-none" />
-            <div className="flex items-start justify-between relative z-10">
-              <div className="flex flex-col h-full">
-                <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">{stat.label}</div>
-                <div className="text-3xl font-black tracking-tight text-slate-900 mb-2">{stat.value}</div>
-                <div className="mt-auto text-[10px] font-bold text-slate-400">{stat.trend}</div>
-              </div>
-              <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl", stat.tone)}>
-                <stat.icon className="h-5 w-5" />
-              </div>
-            </div>
-          </motion.div>
-        ))}
-      </motion.div>
-
-      {/* Filters & Tabs */}
-      <motion.div variants={item} className="flex flex-col md:flex-row items-center gap-4 bg-slate-100/50 p-2 rounded-2xl border border-slate-200/60">
-        <div className="flex overflow-x-auto hide-scrollbar gap-1 flex-1 w-full md:w-auto p-1">
-          {TABS.map((t) => {
-            const isActive = activeTabId === t.id;
-            const count = candidates.filter((c) => c.stage === t.stage).length;
-            const Icon = t.icon;
-            return (
-              <button
-                key={t.id}
-                onClick={() => {
-                  setSearch("");
-                  navigate(`/offers/${t.id}`);
-                }}
-                className={cn(
-                  "relative flex items-center gap-2 px-5 py-2.5 rounded-xl text-[13px] font-bold transition-all duration-300 whitespace-nowrap",
-                  isActive
-                    ? "text-slate-800"
-                    : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
-                )}
-              >
-                {isActive && (
-                  <motion.div
-                    layoutId="activeTabOffer"
-                    className="absolute inset-0 bg-white rounded-xl shadow-sm border border-slate-200 z-0"
-                    transition={{ type: "spring", stiffness: 300, damping: 25 }}
-                  />
-                )}
-                <span className="relative z-10 flex items-center gap-2">
-                  <Icon className={cn("h-4 w-4", isActive ? "text-slate-700" : "text-slate-400")} />
-                  {t.label}
-                </span>
-                <span
+      {/* Main Container */}
+      <div className="bg-white rounded-[24px] shadow-[0_2px_20px_rgba(0,0,0,0.03)] border border-slate-100 p-2 sm:p-4">
+        
+        {/* Top Controls Row */}
+        <div className="flex flex-col xl:flex-row items-center justify-between gap-4 p-4 border-b border-slate-100/80 mb-2">
+          
+          <div className="flex overflow-x-auto hide-scrollbar gap-2 w-full xl:w-auto">
+            {TABS.map((t) => {
+              const isActive = activeTabId === t.id;
+              const count = candidates.filter((c) => c.stage === t.stage).length;
+              const Icon = t.icon;
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => {
+                    setSearch("");
+                    navigate(`/offers/${t.id}`);
+                  }}
                   className={cn(
-                    "relative z-10 ml-1 px-2 py-0.5 rounded-md text-[11px] font-black transition-colors",
-                    isActive ? "bg-slate-100 text-slate-700" : "bg-transparent text-slate-500"
+                    "flex items-center gap-2.5 px-4 py-2.5 rounded-[14px] text-[14px] font-bold transition-all duration-200 whitespace-nowrap",
+                    isActive
+                      ? cn("text-slate-900", t.activeBg)
+                      : "text-slate-600 hover:bg-slate-50"
                   )}
                 >
-                  {count}
-                </span>
-              </button>
-            );
-          })}
+                  <Icon className={cn("h-4 w-4", t.color)} />
+                  {t.label}
+                  <span
+                    className={cn(
+                      "ml-1.5 px-2 py-0.5 rounded-md text-[12px] font-bold transition-colors",
+                      isActive ? "bg-white text-slate-800 shadow-sm" : "bg-slate-100 text-slate-500"
+                    )}
+                  >
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="relative w-full xl:w-[320px] shrink-0">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Input
+              placeholder="Search candidates by name, email..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-10 h-[42px] w-full bg-white text-[14px] font-medium rounded-full border-slate-200 hover:border-slate-300 focus-visible:ring-1 focus-visible:ring-indigo-500 transition-all placeholder:text-slate-400"
+            />
+          </div>
         </div>
 
-        {/* Search Bar */}
-        <div className="relative w-full md:w-[320px] shrink-0 p-1">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 z-10" />
-          <Input
-            placeholder="Search candidates by name, email..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-10 h-10 w-full bg-white shadow-sm text-[13px] font-medium rounded-xl border-slate-200 focus-visible:bg-white focus-visible:ring-1 focus-visible:ring-indigo-500 transition-all placeholder:text-slate-400"
-          />
+        {/* Table Header */}
+        <div className="hidden lg:grid grid-cols-[2.5fr_1.5fr_1.5fr_1.5fr_1.5fr] gap-4 px-6 py-4">
+          <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Candidate</div>
+          <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Role Offered</div>
+          <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Recruiter</div>
+          <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Offer Status</div>
+          <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Last Updated</div>
         </div>
-      </motion.div>
 
-      {/* Data List */}
-      <AnimatePresence mode="wait">
-        {filteredCandidates.length === 0 ? (
-          <motion.div
-            key="empty"
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            className="flex flex-col items-center justify-center p-20 text-center bg-white shadow-sm rounded-3xl border border-slate-100"
-          >
-            <div className={cn("h-24 w-24 rounded-3xl flex items-center justify-center mb-6 shadow-sm border", activeTabDef.color)}>
-              <activeTabDef.icon className="h-10 w-10 opacity-75" />
+        {/* Table List */}
+        <div className="flex flex-col gap-3 px-2 pb-4">
+          {filteredCandidates.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <activeTabDef.icon className={cn("h-12 w-12 mb-4 opacity-50", activeTabDef.color)} />
+              <h3 className="text-lg font-bold text-slate-800 mb-1">No Candidates Found</h3>
+              <p className="text-[14px] text-slate-500">There are no candidates in this stage.</p>
             </div>
-            <h3 className="text-xl font-black text-slate-900 mb-2">No Candidates Found</h3>
-            <p className="text-[14px] text-slate-500 max-w-sm font-medium">
-              There are currently no candidates in the "{activeTabDef.label}" stage matching your criteria.
-            </p>
-          </motion.div>
-        ) : (
-          <motion.div key="list" variants={container} className="grid gap-4">
-            {filteredCandidates.map((c) => (
-              <motion.div key={c.id} variants={item}>
-                <Card
-                  className="group relative overflow-hidden p-0 border-slate-100 shadow-sm hover:shadow-lg hover:border-slate-200 transition-all duration-300 rounded-2xl bg-white"
-                >
-              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-slate-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
-              <div className="flex flex-col md:flex-row items-start md:items-center p-6 gap-6 relative z-10">
-                <div className="flex items-center justify-between w-full md:w-auto md:min-w-[280px] lg:min-w-[320px]">
-                  <div className="flex items-center gap-4">
-                    <div
-                      className={cn(
-                        "flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-[16px] font-black uppercase shadow-sm border",
-                        activeTabDef.color
-                      )}
-                    >
-                      {c.name?.charAt(0) || "?"}
-                    </div>
-                    <div className="min-w-0">
-                      <div className="font-bold text-[16px] text-slate-900 truncate mb-1 group-hover:text-blue-600 transition-colors">
-                        {c.name}
-                      </div>
-                      <div className="text-[13px] font-medium text-slate-500 truncate">{c.email}</div>
-                    </div>
+          ) : (
+            filteredCandidates.map((c) => (
+              <div 
+                key={c.id} 
+                className="group flex flex-col lg:grid lg:grid-cols-[2.5fr_1.5fr_1.5fr_1.5fr_1.5fr] gap-4 items-start lg:items-center p-4 bg-white border border-slate-200 shadow-sm hover:shadow-md hover:border-slate-300 transition-all rounded-[16px]"
+              >
+                {/* Candidate */}
+                <div className="flex items-center gap-4 w-full">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 text-[16px] font-bold">
+                    {c.name?.charAt(0) || "?"}
                   </div>
-                  <Link
-                    to={`/candidates/${c.id}`}
-                    className="md:hidden flex shrink-0 items-center justify-center h-10 w-10 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 active:bg-slate-100 transition-all shadow-sm"
-                  >
-                    <ChevronRight className="h-5 w-5" />
-                  </Link>
+                  <div className="min-w-0">
+                    <div className="font-bold text-[15px] text-slate-900 truncate">{c.name}</div>
+                    <div className="text-[13px] text-slate-500 truncate">{c.email}</div>
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-2 md:flex flex-1 gap-6 w-full md:w-auto">
-                  <div className="flex-1 bg-slate-50/50 p-3 rounded-xl border border-slate-100/50">
-                    <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Role Offered</div>
-                    <div className="text-[13px] font-bold text-slate-700 truncate">{c.role || "N/A"}</div>
+                {/* Role Offered */}
+                <div className="flex items-center gap-2.5 w-full">
+                  <div className="lg:hidden text-[11px] font-bold text-slate-400 uppercase w-24">Role:</div>
+                  <div className="flex items-center gap-2 text-[14px] font-bold text-slate-700">
+                    <Briefcase className="h-4 w-4 text-amber-600/70" />
+                    <span className="truncate">{c.role || "N/A"}</span>
                   </div>
-
-                  <div className="flex-1 bg-slate-50/50 p-3 rounded-xl border border-slate-100/50">
-                    <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Recruiter</div>
-                    <div className="text-[13px] font-bold text-slate-700 truncate">{c.recruiter || "N/A"}</div>
-                  </div>
-
-                  <div className="flex-1 bg-slate-50/50 p-3 rounded-xl border border-slate-100/50">
-                    <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Last Updated</div>
-                    <div className="text-[13px] font-bold text-slate-700 truncate">{formatDate(c.updatedAt)}</div>
-                  </div>
-
-                  {c.stageReason && (
-                    <div className="col-span-2 md:flex-[1.5] bg-amber-50/30 p-3 rounded-xl border border-amber-100/50">
-                      <div className="text-[10px] font-bold uppercase tracking-wider text-amber-500 mb-1">Notes / Reason</div>
-                      <div className="text-[13px] font-bold text-amber-900 truncate" title={c.stageReason}>
-                        {c.stageReason}
-                      </div>
-                    </div>
-                  )}
                 </div>
 
-                <div className="hidden md:flex items-center justify-end shrink-0 pl-4">
-                  <Link
-                    to={`/candidates/${c.id}`}
-                    className="flex items-center justify-center h-12 w-12 rounded-2xl bg-slate-50 border border-slate-200 text-slate-400 hover:text-white hover:border-slate-900 hover:bg-slate-900 transition-all shadow-sm opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0"
-                  >
-                    <ChevronRight className="h-6 w-6" />
-                  </Link>
+                {/* Recruiter */}
+                <div className="flex items-center gap-2.5 w-full">
+                  <div className="lg:hidden text-[11px] font-bold text-slate-400 uppercase w-24">Recruiter:</div>
+                  <div className="flex items-center gap-2 text-[14px] font-bold text-slate-700">
+                    <User className="h-4 w-4 text-slate-400" />
+                    <span className="truncate">{c.recruiter || "Unassigned"}</span>
+                  </div>
+                </div>
+
+                {/* Offer Status */}
+                <div className="flex items-center gap-2.5 w-full">
+                  <div className="lg:hidden text-[11px] font-bold text-slate-400 uppercase w-24">Status:</div>
+                  <div className={cn("inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[13px] font-bold border border-transparent", activeTabDef.pillBg)}>
+                    <div className={cn("h-1.5 w-1.5 rounded-full", activeTabDef.dot)} />
+                    {activeTabDef.label}
+                  </div>
+                </div>
+
+                {/* Last Updated */}
+                <div className="flex items-center gap-2.5 w-full">
+                  <div className="lg:hidden text-[11px] font-bold text-slate-400 uppercase w-24">Updated:</div>
+                  <div className="flex items-center gap-2 text-[13px] font-medium text-slate-500">
+                    <Calendar className="h-4 w-4 text-slate-400" />
+                    {formatDate(c.updatedAt)}
+                  </div>
                 </div>
               </div>
-            </Card>
-            </motion.div>
-          ))}
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.div>
+            ))
+          )}
+        </div>
+
+        {/* Footer Pagination */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 border-t border-slate-100">
+          <div className="text-[13px] font-medium text-slate-500">
+            Showing 1 to {filteredCandidates.length} of {filteredCandidates.length} results
+          </div>
+          <div className="flex items-center gap-2">
+            <button className="h-8 w-8 rounded-lg border border-slate-200 flex items-center justify-center text-slate-400 hover:bg-slate-50">
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <button className="h-8 w-8 rounded-lg bg-indigo-600 text-white font-medium text-sm flex items-center justify-center shadow-sm">
+              1
+            </button>
+            <button className="h-8 w-8 rounded-lg border border-slate-200 flex items-center justify-center text-slate-400 hover:bg-slate-50">
+              <ChevronRight className="h-4 w-4" />
+            </button>
+            <button className="h-8 px-3 ml-2 rounded-lg border border-slate-200 flex items-center gap-2 text-slate-600 text-[13px] font-medium hover:bg-slate-50">
+              10 / page <ChevronDown className="h-3 w-3" />
+            </button>
+          </div>
+        </div>
+        
+      </div>
+    </div>
   );
 }

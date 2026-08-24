@@ -48,6 +48,8 @@ import {
   Share2,
   Building2,
   MessageSquare,
+  Wand2,
+  Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { API_BASE_URL } from "@/config/api";
@@ -97,6 +99,52 @@ export default function CandidateFormPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [openJobs, setOpenJobs] = useState<any[]>([]);
   const [dbDepartments, setDbDepartments] = useState<any[]>([]);
+  const [isExtracting, setIsExtracting] = useState(false);
+
+  const extractCV = async (file: File) => {
+    setIsExtracting(true);
+    const formData = new FormData();
+    formData.append("resume", file);
+    try {
+      const res = await fetch(`${API_BASE_URL}/candidates/extract_resume.php`, {
+        method: "POST",
+        body: formData,
+      });
+      const result = await res.json();
+      if (result.success) {
+        if (result.data) {
+          setForm(prev => ({
+            ...prev,
+            name: result.data.name || prev.name,
+            email: result.data.email || prev.email,
+            phone: result.data.phone || prev.phone,
+            experience: result.data.experience || prev.experience,
+            skills: result.data.skills || prev.skills,
+            currentCompany: result.data.currentCompany || prev.currentCompany,
+            currentDesignation: result.data.currentDesignation || prev.currentDesignation,
+            location: result.data.location || prev.location,
+            linkedInProfile: result.data.linkedInProfile || prev.linkedInProfile,
+            currentCtc: result.data.currentCtc || prev.currentCtc,
+            noticePeriod: result.data.noticePeriod || prev.noticePeriod,
+            resume: result.resume || prev.resume,
+          }));
+        }
+
+        if (result.rawTextLength < 50) {
+          toast.warning("Unable to extract resume information. Please enter candidate details manually.");
+        } else {
+          toast.success("Resume data extracted! Missing fields left blank for manual entry.");
+        }
+      } else {
+        toast.error(result.error || "Failed to extract data.");
+      }
+    } catch (e) {
+      toast.error("Failed to connect to extraction service.");
+      console.error(e);
+    } finally {
+      setIsExtracting(false);
+    }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -107,7 +155,7 @@ export default function CandidateFormPage() {
         ]);
         const jobsData = await jobsRes.json();
         const deptsData = await deptsRes.json();
-        
+
         if (Array.isArray(jobsData)) {
           setOpenJobs(jobsData.filter((j: any) => j.status === 'Open'));
         }
@@ -167,7 +215,7 @@ export default function CandidateFormPage() {
     const newErrors: Record<string, string> = {};
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const nameRegex = /^[a-zA-Z\s\-']+$/;
-    
+
     if (!form.name.trim()) newErrors.name = "Name is required.";
     else if (!nameRegex.test(form.name)) newErrors.name = "Name can only contain letters, spaces, and hyphens.";
     else if (form.name.trim().length > 120) newErrors.name = "Name too long.";
@@ -353,6 +401,42 @@ export default function CandidateFormPage() {
       </div>
 
       <form onSubmit={submit} className="space-y-6" noValidate>
+        {/* CV Extraction Feature - Hidden for now */}
+        {false && !candidate && (
+          <Card className="p-6 bg-gradient-to-br from-indigo-50 to-blue-50 border-indigo-100 shadow-sm rounded-3xl overflow-hidden relative">
+            <div className="absolute top-0 right-0 -mt-8 -mr-8 w-32 h-32 bg-indigo-200/50 rounded-full blur-2xl pointer-events-none" />
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 relative z-10">
+              <div>
+                <h3 className="text-[17px] font-bold text-indigo-900 tracking-tight flex items-center gap-2">
+                  <Wand2 className="h-5 w-5 text-indigo-600" /> Resume/CV Data Extraction & Auto-Fill
+                </h3>
+                <p className="text-sm text-indigo-700/80 mt-1 max-w-lg font-medium">
+                  Upload a candidate's resume to automatically extract data and fill matching fields. Missing fields (like Source or Recruiter) remain blank for manual selection.
+                </p>
+              </div>
+              <div className="flex items-center gap-3 w-full md:w-auto">
+                <Input
+                  type="file"
+                  accept=".pdf,.doc,.docx"
+                  className="bg-white border-indigo-200 cursor-pointer h-10 w-full md:w-[250px] shadow-sm text-indigo-900 font-medium"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      extractCV(file);
+                    }
+                  }}
+                  disabled={isExtracting}
+                />
+                {isExtracting && (
+                  <span className="text-sm font-bold text-indigo-600 flex items-center gap-2 shrink-0">
+                    <Loader2 className="h-4 w-4 animate-spin" /> Extracting...
+                  </span>
+                )}
+              </div>
+            </div>
+          </Card>
+        )}
+
         {/* Section 1: Basic Information */}
         <Card className="p-6 bg-white border-border/50 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] rounded-3xl">
           <div className="flex items-center gap-3 mb-6 pb-5 border-b border-slate-100">
@@ -402,9 +486,9 @@ export default function CandidateFormPage() {
                     Uploaded: {form.photo.split('_').slice(1).join('_') || form.photo}
                   </div>
                   <div className="h-24 w-24 rounded-2xl overflow-hidden border-4 border-white shadow-md">
-                    <img 
-                      src={`${API_BASE_URL}/candidates/uploads/${form.photo}`} 
-                      alt="Profile preview" 
+                    <img
+                      src={`${API_BASE_URL}/candidates/uploads/${form.photo}`}
+                      alt="Profile preview"
                       className="h-full w-full object-cover"
                     />
                   </div>
@@ -878,30 +962,30 @@ export default function CandidateFormPage() {
             <AlertDialogTitle className={`text-lg ${dupType === "EXACT" ? "text-destructive" : "text-amber-600"}`}>
               {dupType === "EXACT" ? "Exact Duplicate Candidate Found" : "Possible Duplicate Candidate Found"}
             </AlertDialogTitle>
-            
+
             <div className="text-sm mt-3 space-y-3">
               <div className="grid grid-cols-[1fr_1.5fr] gap-x-2 gap-y-2 border border-slate-100 rounded-xl p-4 bg-slate-50/50">
                 <div className="text-slate-500">Candidate Name</div>
                 <div className={`font-medium ${dup && form.name.trim().toLowerCase() === dup.name.trim().toLowerCase() ? "bg-amber-100 text-amber-900 px-2 py-0.5 rounded-md w-fit" : "text-slate-900"}`}>{dup?.name}</div>
-                
+
                 <div className="text-slate-500">Email</div>
                 <div className={`font-medium ${dup && form.email.trim().toLowerCase() === dup.email.trim().toLowerCase() ? "bg-red-100 text-red-900 px-2 py-0.5 rounded-md w-fit" : "text-slate-900"}`}>{dup?.email}</div>
-                
+
                 <div className="text-slate-500">Mobile Number</div>
                 <div className={`font-medium ${dup && form.phone.replace(/\s+/g, "") === dup.phone.replace(/\s+/g, "") ? "bg-red-100 text-red-900 px-2 py-0.5 rounded-md w-fit" : "text-slate-900"}`}>{dup?.phone}</div>
-                
+
                 <div className="text-slate-500">Previous Application</div>
                 <div className="font-medium text-slate-900">{dup?.appliedAt ? new Date(dup.appliedAt).toLocaleDateString() : 'N/A'}</div>
-                
+
                 <div className="text-slate-500">Applied Position</div>
                 <div className="font-medium text-slate-900">{dup?.role}</div>
-                
+
                 <div className="text-slate-500">Recruiter Name</div>
                 <div className="font-medium text-slate-900">{dup?.recruiter || 'System'}</div>
-                
+
                 <div className="text-slate-500">Current Status</div>
                 <div className="font-medium text-slate-900">{dup?.stage}</div>
-                
+
                 <div className="text-slate-500">Historical Records</div>
                 <div className="font-medium text-slate-900">{dup?.activity?.length || 0} recorded events</div>
               </div>
@@ -914,7 +998,7 @@ export default function CandidateFormPage() {
               )}
 
               <AlertDialogDescription className="pt-2 text-slate-600">
-                {dupType === "EXACT" 
+                {dupType === "EXACT"
                   ? "This candidate already exists. Would you like to add this as a new application on their existing profile?"
                   : "Would you like to add this as a new application on their existing profile, or create a separate record?"}
               </AlertDialogDescription>

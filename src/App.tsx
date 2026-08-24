@@ -31,9 +31,6 @@ import Notifications from "@/pages/notifications/Notifications";
 import UserProfile from "@/pages/settings/system/UserProfile";
 import UserRoles from "@/pages/settings/system/UserRoles";
 import SystemSettings from "@/pages/settings/system/SystemSettings";
-import EmailTemplates from "@/pages/settings/email/EmailTemplates";
-import EmailTriggers from "@/pages/settings/email/EmailTriggers";
-import EmailLogs from "@/pages/settings/email/EmailLogs";
 import EmailManagement from "@/pages/settings/email/EmailManagement";
 
 const queryClient = new QueryClient();
@@ -118,9 +115,6 @@ function App() {
                     <Route path="/notifications/alerts" element={<Notifications />} />
                     {/* System Settings & Email (Admin/HR only) */}
                     <Route path="/email-settings/management" element={<PrivateRoute requiredModule="Email Settings"><EmailManagement /></PrivateRoute>} />
-                    <Route path="/email-settings/templates" element={<PrivateRoute requiredModule="Email Settings"><EmailTemplates /></PrivateRoute>} />
-                    <Route path="/email-settings/triggers" element={<PrivateRoute requiredModule="Email Settings"><EmailTriggers /></PrivateRoute>} />
-                    <Route path="/email-settings/logs" element={<PrivateRoute requiredModule="Email Settings"><EmailLogs /></PrivateRoute>} />
                     <Route path="/system-settings/profile" element={<UserProfile />} />
                     <Route path="/system-settings/roles" element={<PrivateRoute allowedRoles={["Administrator"]}><UserRoles /></PrivateRoute>} />
                     <Route path="/system-settings/general" element={<PrivateRoute requiredModule="System Settings"><SystemSettings /></PrivateRoute>} />

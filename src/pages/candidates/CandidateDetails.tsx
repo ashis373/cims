@@ -102,7 +102,7 @@ export default function CandidateProfile() {
       const u = JSON.parse(userStr);
       currentUser = u.name || u.first_name || "Admin";
     }
-  } catch (e) {}
+  } catch (e) { }
 
   const [del, setDel] = useState(false);
   const [blacklistDialogOpen, setBlacklistDialogOpen] = useState(false);
@@ -115,18 +115,19 @@ export default function CandidateProfile() {
   const [noteText, setNoteText] = useState("");
   const [editingNoteId, setEditingNoteId] = useState<number | null>(null);
   const [deleteNoteId, setDeleteNoteId] = useState<number | null>(null);
-  const [deleteDoc, setDeleteDoc] = useState<{id: number, name: string} | null>(null);
+  const [deleteDoc, setDeleteDoc] = useState<{ id: number, name: string } | null>(null);
 
   const handleAddNote = async () => {
     if (!noteText.trim()) return;
     try {
       const url = `${API_BASE_URL}/candidates/notes.php`;
       const method = editingNoteId ? "PUT" : "POST";
-      const body = editingNoteId 
+      const body = editingNoteId
         ? { id: editingNoteId, text: noteText }
         : { candidate_id: candidate.id, text: noteText, createdBy: currentUser };
 
-      const res = await fetch(url, { credentials: 'include', 
+      const res = await fetch(url, {
+        credentials: 'include',
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body)
@@ -234,9 +235,9 @@ export default function CandidateProfile() {
           <ChevronRight className="h-3.5 w-3.5" />
           <span className="text-slate-900 font-bold">{candidate.name}</span>
         </div>
-        <Button 
-          asChild 
-          size="sm" 
+        <Button
+          asChild
+          size="sm"
           variant="outline"
           className="h-8 text-[11px] font-bold bg-white text-slate-700 border-slate-200 hover:bg-slate-50 shadow-sm"
         >
@@ -279,9 +280,9 @@ export default function CandidateProfile() {
           <div className="flex gap-6">
             {candidate.photo ? (
               <div className="h-[72px] w-[72px] rounded-full overflow-hidden shrink-0 shadow-sm border-2 border-white ring-2 ring-slate-100">
-                <img 
-                  src={`${API_BASE_URL}/candidates/uploads/${candidate.photo}`} 
-                  alt={candidate.name} 
+                <img
+                  src={`${API_BASE_URL}/candidates/uploads/${candidate.photo}`}
+                  alt={candidate.name}
                   className="h-full w-full object-cover"
                 />
               </div>
@@ -444,51 +445,51 @@ export default function CandidateProfile() {
                     return msg.includes('created') || msg.includes('application received') || msg.includes('status changed') || msg.includes('interview') || msg.includes('offer');
                   })
                   .slice().reverse().slice(0, 4).map((item: any, i: number) => (
-                  <div key={i} className="flex items-start gap-4">
-                    <div
-                      className={cn(
-                        "h-8 w-8 rounded-full border-2 border-white flex items-center justify-center shrink-0 z-10",
-                        i === 0 ? "bg-emerald-100 text-emerald-600" : "bg-slate-100 text-slate-500",
-                      )}
-                    >
-                      {item.message.includes('Created') || item.message.includes('Application') ? <FileText className="h-3.5 w-3.5" /> :
-                       item.message.includes('Interview') ? <Users className="h-3.5 w-3.5" /> :
-                       item.message.includes('Offer') ? <Mail className="h-3.5 w-3.5" /> :
-                       item.message.includes('Reject') || item.message.includes('Decline') ? <Trash2 className="h-3.5 w-3.5" /> :
-                       <Activity className="h-3.5 w-3.5" />}
-                    </div>
-                    <div className="flex-1 pb-1">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <div
+                    <div key={i} className="flex items-start gap-4">
+                      <div
+                        className={cn(
+                          "h-8 w-8 rounded-full border-2 border-white flex items-center justify-center shrink-0 z-10",
+                          i === 0 ? "bg-emerald-100 text-emerald-600" : "bg-slate-100 text-slate-500",
+                        )}
+                      >
+                        {item.message.includes('Created') || item.message.includes('Application') ? <FileText className="h-3.5 w-3.5" /> :
+                          item.message.includes('Interview') ? <Users className="h-3.5 w-3.5" /> :
+                            item.message.includes('Offer') ? <Mail className="h-3.5 w-3.5" /> :
+                              item.message.includes('Reject') || item.message.includes('Decline') ? <Trash2 className="h-3.5 w-3.5" /> :
+                                <Activity className="h-3.5 w-3.5" />}
+                      </div>
+                      <div className="flex-1 pb-1">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <div
+                              className={cn(
+                                "text-[11px] font-bold",
+                                i === 0 ? "text-slate-900" : "text-slate-600",
+                              )}
+                            >
+                              {item.message.split(':')[0] || "Update"}
+                            </div>
+                            <div className="text-[9px] font-bold text-slate-400 mt-0.5">
+                              {formatDateTime(item.at)}
+                            </div>
+                          </div>
+                          <Badge
                             className={cn(
-                              "text-[11px] font-bold",
-                              i === 0 ? "text-slate-900" : "text-slate-600",
+                              "text-[9px] font-bold px-1.5 py-0 rounded border-transparent uppercase tracking-wider",
+                              i === 0 ? "bg-emerald-100 text-emerald-600" : "bg-slate-100 text-slate-500",
                             )}
                           >
-                            {item.message.split(':')[0] || "Update"}
-                          </div>
-                          <div className="text-[9px] font-bold text-slate-400 mt-0.5">
-                            {formatDateTime(item.at)}
-                          </div>
+                            {i === 0 ? "Current" : "Completed"}
+                          </Badge>
                         </div>
-                        <Badge
-                          className={cn(
-                            "text-[9px] font-bold px-1.5 py-0 rounded border-transparent uppercase tracking-wider",
-                            i === 0 ? "bg-emerald-100 text-emerald-600" : "bg-slate-100 text-slate-500",
-                          )}
-                        >
-                          {i === 0 ? "Current" : "Completed"}
-                        </Badge>
+                        {item.message.includes(':') && (
+                          <div className="text-[10px] text-slate-500 mt-1 font-medium bg-slate-50 p-1.5 rounded-md border border-slate-100 inline-block">
+                            {item.message.split(':')[1].trim()}
+                          </div>
+                        )}
                       </div>
-                      {item.message.includes(':') && (
-                        <div className="text-[10px] text-slate-500 mt-1 font-medium bg-slate-50 p-1.5 rounded-md border border-slate-100 inline-block">
-                          {item.message.split(':')[1].trim()}
-                        </div>
-                      )}
                     </div>
-                  </div>
-                ))}
+                  ))}
               </div>
               <div className="mt-5 pt-3 border-t border-slate-100 text-center">
                 <Button variant="link" className="text-blue-600 text-[11px] font-bold" onClick={() => setFullTimelineOpen(true)}>
@@ -602,8 +603,8 @@ export default function CandidateProfile() {
                             <Badge className={cn(
                               "text-[9px] uppercase border-transparent",
                               interview.status === 'Completed' ? "bg-emerald-100 text-emerald-600 hover:bg-emerald-100" :
-                              interview.status === 'Scheduled' ? "bg-blue-100 text-blue-600 hover:bg-blue-100" :
-                              "bg-slate-100 text-slate-600 hover:bg-slate-100"
+                                interview.status === 'Scheduled' ? "bg-blue-100 text-blue-600 hover:bg-blue-100" :
+                                  "bg-slate-100 text-slate-600 hover:bg-slate-100"
                             )}>
                               {interview.status}
                             </Badge>
@@ -666,176 +667,177 @@ export default function CandidateProfile() {
               <Card id="documents" className={cn("col-span-1 p-5 bg-white border shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] rounded-2xl flex flex-col transition-all duration-300", activeTab === "Documents" ? "border-rose-500 ring-1 ring-rose-500 shadow-rose-100" : "border-border/50")}>
                 <div className="flex items-center justify-between mb-5">
                   <h3 className="text-[13px] font-bold text-slate-900">Documents</h3>
-                <input 
-                  type="file" 
-                  id="doc-upload" 
-                  className="hidden" 
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
-                    const formData = new FormData();
-                    formData.append("file", file);
-                    formData.append("candidate_id", candidate.id);
-                    try {
-                      const res = await fetch(`${API_BASE_URL}/candidates/documents.php`, { credentials: 'include', 
-                        method: "POST",
-                        body: formData
-                      });
-                      if (res.ok) window.location.reload();
-                    } catch (err) {
-                      toast.error("Upload failed");
-                    }
-                  }}
-                />
-                <Button
-                  variant="ghost"
-                  className="h-6 px-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 text-[11px] font-bold"
-                  onClick={() => document.getElementById("doc-upload")?.click()}
-                >
-                  <Plus className="h-3.5 w-3.5 mr-1" /> Add Document
-                </Button>
-              </div>
-              <div className="overflow-x-auto mt-2">
-                <table className="w-full text-left text-[11px]">
-                  <thead className="bg-slate-50/80 text-slate-500 font-semibold border-b border-slate-100">
-                    <tr>
-                      <th className="py-3 px-4 font-bold">Document Name</th>
-                      <th className="py-3 px-4 font-bold">Uploaded On</th>
-                      <th className="py-3 px-4 font-bold text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 font-semibold text-slate-700">
-                    {[
-                      candidate.resume ? {
-                        id: 'resume',
-                        name: candidate.resume.split('_').slice(1).join('_') || candidate.resume,
-                        rawName: candidate.resume,
-                        date: new Date(candidate.updatedAt).toLocaleDateString("en-GB", { day: '2-digit', month: 'short', year: 'numeric' }),
-                        color: "text-blue-500 bg-blue-50",
-                      } : null,
-                      ...(candidate.documentsList?.map((d: any) => ({
-                        id: d.id,
-                        name: d.name,
-                        rawName: d.filePath,
-                        date: new Date(d.uploadedAt).toLocaleDateString("en-GB", { day: '2-digit', month: 'short', year: 'numeric' }),
-                        color: "text-emerald-500 bg-emerald-50",
-                      })) || [])
-                    ].filter(Boolean).map((doc: any, i) => (
-                      <tr key={i} className="group hover:bg-slate-50 transition-colors">
-                        <td className="py-3 px-4">
-                          <div className="flex items-center gap-3">
-                            <div
-                              className={cn(
-                                "h-8 w-8 rounded-lg flex items-center justify-center shrink-0",
-                                doc.color,
-                              )}
-                            >
-                              <FileText className="h-4 w-4" />
-                            </div>
-                            <div className="text-[12px] font-bold text-slate-900 truncate" title={doc.name}>
-                              {doc.name}
-                            </div>
-                          </div>
-                        </td>
-                        <td className="py-3 px-4 text-slate-500 font-medium">
-                          {doc.date}
-                        </td>
-                        <td className="py-3 px-4 text-right">
-                          <div className="flex items-center justify-end gap-1">
-                            <a href={`${API_BASE_URL}/candidates/uploads/${doc.rawName}`} target="_blank" rel="noreferrer">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7 text-slate-400 hover:text-blue-600"
-                                title="View Document"
-                              >
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                            </a>
-                            <a href={`${API_BASE_URL}/candidates/uploads/${doc.rawName}`} download target="_blank" rel="noreferrer">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7 text-slate-400 hover:text-blue-600"
-                                title="Download Document"
-                              >
-                                <Download className="h-4 w-4" />
-                              </Button>
-                            </a>
-                            {doc.id !== 'resume' && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7 text-slate-400 hover:text-red-600"
-                                title="Permanently Delete Document"
-                                onClick={() => handleDeleteDocument(doc.id, doc.name)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                    {(!candidate.resume && (!candidate.documentsList || candidate.documentsList.length === 0)) && (
+                  <input
+                    type="file"
+                    id="doc-upload"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      const formData = new FormData();
+                      formData.append("file", file);
+                      formData.append("candidate_id", candidate.id);
+                      try {
+                        const res = await fetch(`${API_BASE_URL}/candidates/documents.php`, {
+                          credentials: 'include',
+                          method: "POST",
+                          body: formData
+                        });
+                        if (res.ok) window.location.reload();
+                      } catch (err) {
+                        toast.error("Upload failed");
+                      }
+                    }}
+                  />
+                  <Button
+                    variant="ghost"
+                    className="h-6 px-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 text-[11px] font-bold"
+                    onClick={() => document.getElementById("doc-upload")?.click()}
+                  >
+                    <Plus className="h-3.5 w-3.5 mr-1" /> Add Document
+                  </Button>
+                </div>
+                <div className="overflow-x-auto mt-2">
+                  <table className="w-full text-left text-[11px]">
+                    <thead className="bg-slate-50/80 text-slate-500 font-semibold border-b border-slate-100">
                       <tr>
-                        <td colSpan={3} className="py-8 text-center text-[12px] font-bold text-slate-400">
-                          No documents found.
-                        </td>
+                        <th className="py-3 px-4 font-bold">Document Name</th>
+                        <th className="py-3 px-4 font-bold">Uploaded On</th>
+                        <th className="py-3 px-4 font-bold text-right">Actions</th>
                       </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 font-semibold text-slate-700">
+                      {[
+                        candidate.resume ? {
+                          id: 'resume',
+                          name: candidate.resume.split('_').slice(1).join('_') || candidate.resume,
+                          rawName: candidate.resume,
+                          date: new Date(candidate.updatedAt).toLocaleDateString("en-GB", { day: '2-digit', month: 'short', year: 'numeric' }),
+                          color: "text-blue-500 bg-blue-50",
+                        } : null,
+                        ...(candidate.documentsList?.map((d: any) => ({
+                          id: d.id,
+                          name: d.name,
+                          rawName: d.filePath,
+                          date: new Date(d.uploadedAt).toLocaleDateString("en-GB", { day: '2-digit', month: 'short', year: 'numeric' }),
+                          color: "text-emerald-500 bg-emerald-50",
+                        })) || [])
+                      ].filter(Boolean).map((doc: any, i) => (
+                        <tr key={i} className="group hover:bg-slate-50 transition-colors">
+                          <td className="py-3 px-4">
+                            <div className="flex items-center gap-3">
+                              <div
+                                className={cn(
+                                  "h-8 w-8 rounded-lg flex items-center justify-center shrink-0",
+                                  doc.color,
+                                )}
+                              >
+                                <FileText className="h-4 w-4" />
+                              </div>
+                              <div className="text-[12px] font-bold text-slate-900 truncate" title={doc.name}>
+                                {doc.name}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4 text-slate-500 font-medium">
+                            {doc.date}
+                          </td>
+                          <td className="py-3 px-4 text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              <a href={`${API_BASE_URL}/candidates/uploads/${doc.rawName}`} target="_blank" rel="noreferrer">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 text-slate-400 hover:text-blue-600"
+                                  title="View Document"
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                              </a>
+                              <a href={`${API_BASE_URL}/candidates/uploads/${doc.rawName}`} download target="_blank" rel="noreferrer">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 text-slate-400 hover:text-blue-600"
+                                  title="Download Document"
+                                >
+                                  <Download className="h-4 w-4" />
+                                </Button>
+                              </a>
+                              {doc.id !== 'resume' && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 text-slate-400 hover:text-red-600"
+                                  title="Permanently Delete Document"
+                                  onClick={() => handleDeleteDocument(doc.id, doc.name)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                      {(!candidate.resume && (!candidate.documentsList || candidate.documentsList.length === 0)) && (
+                        <tr>
+                          <td colSpan={3} className="py-8 text-center text-[12px] font-bold text-slate-400">
+                            No documents found.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </Card>
 
               {/* Activity Log */}
               <Card id="activity-log" className={cn("col-span-1 p-5 bg-white border shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] rounded-2xl flex flex-col transition-all duration-300", activeTab === "Activity Log" ? "border-teal-500 ring-1 ring-teal-500 shadow-teal-100" : "border-border/50")}>
                 <h3 className="text-[13px] font-bold text-slate-900 mb-4">Activity Log</h3>
-              <div className="overflow-x-auto flex-1">
-                <table className="w-full text-left text-[11px]">
-                  <thead className="border-b border-slate-100 text-slate-400 font-bold">
-                    <tr>
-                      <th className="py-2.5 px-2">Activity</th>
-                      <th className="py-2.5 px-2">Description</th>
-                      <th className="py-2.5 px-2">By</th>
-                      <th className="py-2.5 px-2 text-right">Date & Time</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-50 font-semibold text-slate-700">
-                    {candidate.activity?.slice().reverse().slice(0, 5).map((act: any, i: number) => {
-                      const title = act.message.includes(':') ? act.message.split(':')[0] : act.message;
-                      const desc = act.message.includes(':') ? act.message.substring(act.message.indexOf(':') + 1).trim() : act.message;
-                      return (
-                        <tr key={i} className="hover:bg-slate-50 transition-colors">
-                          <td className="py-3 px-2 font-bold text-slate-900">{title}</td>
-                          <td className="py-3 px-2 text-slate-500 max-w-[200px] truncate" title={desc}>{desc}</td>
-                          <td className="py-3 px-2">
-                            <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full text-[9px] font-bold">
-                              {act.author || (act.message.toLowerCase().includes("application received") || act.message.toLowerCase().includes("created") ? "System" : currentUser)}
-                            </span>
-                          </td>
-                          <td className="py-3 px-2 text-right text-slate-400 whitespace-nowrap">
-                            {formatDateTime(act.at)}
+                <div className="overflow-x-auto flex-1">
+                  <table className="w-full text-left text-[11px]">
+                    <thead className="border-b border-slate-100 text-slate-400 font-bold">
+                      <tr>
+                        <th className="py-2.5 px-2">Activity</th>
+                        <th className="py-2.5 px-2">Description</th>
+                        <th className="py-2.5 px-2">By</th>
+                        <th className="py-2.5 px-2 text-right">Date & Time</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-50 font-semibold text-slate-700">
+                      {candidate.activity?.slice().reverse().slice(0, 5).map((act: any, i: number) => {
+                        const title = act.message.includes(':') ? act.message.split(':')[0] : act.message;
+                        const desc = act.message.includes(':') ? act.message.substring(act.message.indexOf(':') + 1).trim() : act.message;
+                        return (
+                          <tr key={i} className="hover:bg-slate-50 transition-colors">
+                            <td className="py-3 px-2 font-bold text-slate-900">{title}</td>
+                            <td className="py-3 px-2 text-slate-500 max-w-[200px] truncate" title={desc}>{desc}</td>
+                            <td className="py-3 px-2">
+                              <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full text-[9px] font-bold">
+                                {act.author || (act.message.toLowerCase().includes("application received") || act.message.toLowerCase().includes("created") ? "System" : currentUser)}
+                              </span>
+                            </td>
+                            <td className="py-3 px-2 text-right text-slate-400 whitespace-nowrap">
+                              {formatDateTime(act.at)}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                      {(!candidate.activity || candidate.activity.length === 0) && (
+                        <tr>
+                          <td colSpan={4} className="py-6 text-center text-[11px] font-bold text-slate-400">
+                            No recent activity found.
                           </td>
                         </tr>
-                      );
-                    })}
-                    {(!candidate.activity || candidate.activity.length === 0) && (
-                      <tr>
-                        <td colSpan={4} className="py-6 text-center text-[11px] font-bold text-slate-400">
-                          No recent activity found.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-              <div className="mt-2 pt-3 border-t border-slate-100 text-center">
-                <Button variant="link" className="text-blue-600 text-[11px] font-bold" onClick={() => setFullTimelineOpen(true)}>
-                  View Full Activity Log →
-                </Button>
-              </div>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="mt-2 pt-3 border-t border-slate-100 text-center">
+                  <Button variant="link" className="text-blue-600 text-[11px] font-bold" onClick={() => setFullTimelineOpen(true)}>
+                    View Full Activity Log →
+                  </Button>
+                </div>
               </Card>
             </div>
           </div>
@@ -1040,7 +1042,7 @@ export default function CandidateProfile() {
               <DetailItem label="Preferred Location" value={candidate.preferredLocation || "-"} />
               <DetailItem label="LinkedIn Profile" value={candidate.linkedInProfile || "-"} />
             </div>
-            
+
             <div className="space-y-4">
               <h4 className="text-[11px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-100 pb-2">Professional Details</h4>
               <DetailItem label="Position Applied" value={candidate.role} />
@@ -1100,10 +1102,10 @@ export default function CandidateProfile() {
                   )}
                 >
                   {item.message.includes('Created') || item.message.includes('Application') ? <FileText className="h-3.5 w-3.5" /> :
-                   item.message.includes('Interview') ? <Users className="h-3.5 w-3.5" /> :
-                   item.message.includes('Offer') ? <Mail className="h-3.5 w-3.5" /> :
-                   item.message.includes('Reject') || item.message.includes('Decline') ? <Trash2 className="h-3.5 w-3.5" /> :
-                   <Activity className="h-3.5 w-3.5" />}
+                    item.message.includes('Interview') ? <Users className="h-3.5 w-3.5" /> :
+                      item.message.includes('Offer') ? <Mail className="h-3.5 w-3.5" /> :
+                        item.message.includes('Reject') || item.message.includes('Decline') ? <Trash2 className="h-3.5 w-3.5" /> :
+                          <Activity className="h-3.5 w-3.5" />}
                 </div>
                 <div className="flex-1 pb-1">
                   <div className="flex justify-between items-start">

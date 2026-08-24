@@ -222,6 +222,12 @@ if ($method === 'GET') {
         $stmtHist = $conn->prepare("INSERT INTO cims_candidate_history (candidate_id, action, details, createdAt) VALUES (?, ?, ?, ?)");
         $stmtHist->execute([$id, 'Candidate Created', 'Application received from ' . ($c['source'] ?? 'Website'), $now]);
         
+        // 4. Save Notes
+        if (isset($c['notes']) && trim($c['notes']) !== '') {
+            $stmtNote = $conn->prepare("INSERT INTO cims_candidate_notes (candidate_id, text, createdBy, createdAt) VALUES (?, ?, ?, ?)");
+            $stmtNote->execute([$id, trim($c['notes']), 'System', $now]);
+        }
+        
         $conn->commit();
         echo json_encode(["success" => true, "message" => "Candidate added"]);
     } catch (PDOException $e) {
@@ -338,6 +344,14 @@ if ($method === 'GET') {
         } else {
             $stmtHist = $conn->prepare("INSERT INTO cims_candidate_history (candidate_id, action) VALUES (?, ?)");
             $stmtHist->execute([$id, 'Candidate Updated']);
+        }
+        
+        // 4. Update or Add Notes
+        if (isset($data['notes']) && trim($data['notes']) !== '') {
+            $now = date('Y-m-d H:i:s');
+            // If the note doesn't exist for today, create one, otherwise just append/update. Since the UI just passes 'notes', we'll append a new note.
+            $stmtNote = $conn->prepare("INSERT INTO cims_candidate_notes (candidate_id, text, createdBy, createdAt) VALUES (?, ?, ?, ?)");
+            $stmtNote->execute([$id, trim($data['notes']), 'System', $now]);
         }
         
         $conn->commit();
