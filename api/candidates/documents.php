@@ -1,7 +1,9 @@
 <?php
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: POST, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type");
+$origin = isset($_SERVER['HTTP_ORIGIN']) ? $_SERVER['HTTP_ORIGIN'] : '*';
+header("Access-Control-Allow-Origin: $origin");
+header("Access-Control-Allow-Credentials: true");
+header("Access-Control-Allow-Methods: POST, DELETE, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type, Authorization, X-User-Id");
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit(0);
@@ -56,6 +58,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         http_response_code(400);
         echo json_encode(["error" => "No file uploaded, upload error, or missing candidate_id."]);
+    }
+} elseif ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
+    $data = json_decode(file_get_contents("php://input"), true);
+    if (isset($data['id'])) {
+        $stmt = $conn->prepare("SELECT filePath FROM cims_candidate_documents WHERE id = ?");
+        $stmt->execute([$data['id']]);
+        $doc = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($doc) {
+            $filePath = 'uploads/' . $doc['filePath'];
+            if (file_exists($filePath)) {
+                unlink($filePath);
+            }
+            $delStmt = $conn->prepare("DELETE FROM cims_candidate_documents WHERE id = ?");
+            if ($delStmt->execute([$data['id']])) {
+                echo json_encode(["success" => true]);
+            } else {
+                http_response_code(500);
+                echo json_encode(["error" => "Database error deleting document."]);
+            }
+        } else {
+            http_response_code(404);
+            echo json_encode(["error" => "Document not found."]);
+        }
+    } else {
+        http_response_code(400);
+        echo json_encode(["error" => "Missing document id."]);
     }
 } else {
     http_response_code(405);

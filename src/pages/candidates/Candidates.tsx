@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { API_BASE_URL } from "@/config/api";
 import { useAts, PIPELINE_STAGES } from "@/services/ats-store";
 import { Input } from "@/components/ui/input";
@@ -24,6 +24,7 @@ import {
   Clock,
   AlertCircle,
   Trophy,
+  Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
@@ -35,6 +36,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 // Helper components for the new layout
 interface TopStatProps {
@@ -92,11 +103,13 @@ const QUICK_FILTERS = [
 export default function CandidatesPage() {
   const { candidates, remove } = useAts();
   const location = useLocation();
+  const navigate = useNavigate();
   const [q, setQ] = useState("");
   const [stageFilter, setStageFilter] = useState("All Status");
   const [positionFilter, setPositionFilter] = useState("All Positions");
   const [sourceFilter, setSourceFilter] = useState("All Sources");
   const [recruiterFilter, setRecruiterFilter] = useState("All Recruiters");
+  const [deleteCandidateId, setDeleteCandidateId] = useState<string | null>(null);
 
   const initialFilter = new URLSearchParams(location.search).get("filter") || "All";
   const [quickFilter, setQuickFilter] = useState(initialFilter);
@@ -128,7 +141,7 @@ export default function CandidatesPage() {
   }, [location.search]);
 
   const [page, setPage] = useState(1);
-  const perPage = 7;
+  const perPage = 10;
 
   // Real data calculations
   const analytics = useMemo(() => {
@@ -199,11 +212,11 @@ export default function CandidatesPage() {
       {
         name: "Offered",
         value: offers,
-        color: "#ef4444",
+        color: "#f43f5e", // Rose
         pct: ((offers / total) * 100).toFixed(1),
       },
       { name: "Joined", value: joined, color: "#10b981", pct: ((joined / total) * 100).toFixed(1) },
-      { name: "Others", value: others, color: "#e2e8f0", pct: ((others / total) * 100).toFixed(1) },
+      { name: "Others", value: others, color: "#ec4899", pct: ((others / total) * 100).toFixed(1) }, // Vibrant Pink instead of gray
     ];
 
     const sortedRecruiters = Object.entries(recruiters)
@@ -394,9 +407,9 @@ export default function CandidatesPage() {
       </div>
 
       {/* Main Content Area */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+      <div className="flex flex-col gap-6 items-start w-full">
         {/* Left Side: Filters + Table */}
-        <div className="lg:col-span-3 space-y-4">
+        <div className="w-full space-y-4">
           {/* Filter Bar */}
           <Card className="p-3 bg-white border-border/50 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] rounded-3xl">
             <div className="flex flex-wrap gap-3 items-center">
@@ -527,9 +540,6 @@ export default function CandidatesPage() {
               <table className="w-full text-left text-[11px]">
                 <thead className="bg-slate-50/80 text-slate-500 font-semibold border-b border-slate-100">
                   <tr>
-                    <th className="px-4 py-3 w-10 text-center">
-                      <input type="checkbox" className="rounded border-slate-300" />
-                    </th>
                     <th className="px-4 py-3 font-bold">Candidate</th>
                     <th className="px-4 py-3 font-bold">Position</th>
                     <th className="px-4 py-3 font-bold">Status</th>
@@ -537,15 +547,16 @@ export default function CandidatesPage() {
                     <th className="px-4 py-3 font-bold">Current Company</th>
                     <th className="px-4 py-3 font-bold">Applied On</th>
                     <th className="px-4 py-3 font-bold">Recruiter</th>
-                    <th className="px-4 py-3 font-bold text-right">Actions</th>
+                    <th className="px-4 py-3 font-bold text-center">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {paginated.map((c) => (
-                    <tr key={c.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="px-4 py-3 text-center">
-                        <input type="checkbox" className="rounded border-slate-300" />
-                      </td>
+                    <tr 
+                      key={c.id} 
+                      className="hover:bg-slate-50 transition-colors cursor-pointer"
+                      onClick={() => navigate(`/candidates/${c.id}`)}
+                    >
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
                           {c.photo ? (
@@ -614,8 +625,8 @@ export default function CandidatesPage() {
                           "—"
                         )}
                       </td>
-                      <td className="px-4 py-3 text-right">
-                        <div className="flex items-center justify-end gap-1">
+                      <td className="px-4 py-3 text-center" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-center gap-1">
                           <Button
                             variant="ghost"
                             size="icon"
@@ -658,9 +669,9 @@ export default function CandidatesPage() {
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 className="text-destructive focus:text-destructive"
-                                onClick={() => remove([c.id])}
+                                onClick={() => setDeleteCandidateId(c.id)}
                               >
-                                Remove
+                                Delete
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -670,7 +681,7 @@ export default function CandidatesPage() {
                   ))}
                   {paginated.length === 0 && (
                     <tr>
-                      <td colSpan={9} className="py-10 text-center text-slate-500 font-medium">
+                      <td colSpan={8} className="py-10 text-center text-slate-500 font-medium">
                         No candidates match your filters.
                       </td>
                     </tr>
@@ -739,155 +750,35 @@ export default function CandidatesPage() {
           </Card>
         </div>
 
-        {/* Right Sidebar */}
-        <div className="space-y-6">
-          {/* Quick Stats Donut */}
-          <Card className="p-5 bg-white border-border/50 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] rounded-3xl">
-            <h3 className="text-[13px] font-bold text-slate-900 mb-4">Quick Stats</h3>
-            <div className="flex items-center gap-4">
-              <div className="relative h-[120px] w-[120px] shrink-0">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={analytics.donutData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={40}
-                      outerRadius={55}
-                      paddingAngle={2}
-                      dataKey="value"
-                      stroke="none"
-                    >
-                      {analytics.donutData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                  </PieChart>
-                </ResponsiveContainer>
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-[16px] font-bold text-slate-900">{analytics.total}</span>
-                  <span className="text-[8px] font-bold text-slate-500 uppercase tracking-wider">
-                    Total
-                  </span>
-                </div>
-              </div>
-              <div className="flex-1 space-y-1.5">
-                {analytics.donutData.map((item) => (
-                  <div key={item.name} className="flex items-center gap-1.5 text-[9px] font-bold">
-                    <span
-                      className="h-1.5 w-1.5 rounded-full shrink-0"
-                      style={{ backgroundColor: item.color }}
-                    />
-                    <span className="text-slate-600 flex-1">{item.name}</span>
-                    <span className="text-slate-400">
-                      {item.value} ({item.pct}%)
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </Card>
 
-          {/* Alerts & Notifications */}
-          <Card className="p-5 bg-white border-border/50 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] rounded-3xl">
-            <h3 className="text-[13px] font-bold text-slate-900 mb-4">Alerts & Notifications</h3>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between p-3 bg-red-50/50 border border-red-100 rounded-xl">
-                <div className="flex items-center gap-3">
-                  <div className="bg-red-100 text-red-500 p-1.5 rounded-lg">
-                    <AlertCircle className="h-4 w-4" />
-                  </div>
-                  <div>
-                    <div className="text-[11px] font-bold text-slate-900">
-                      {analytics.blacklisted} Candidates
-                    </div>
-                    <div className="text-[10px] font-medium text-slate-500">are blacklisted</div>
-                  </div>
-                </div>
-                <ChevronRight className="h-4 w-4 text-slate-400" />
-              </div>
-
-              <div className="flex items-center justify-between p-3 bg-orange-50/50 border border-orange-100 rounded-xl">
-                <div className="flex items-center gap-3">
-                  <div className="bg-orange-100 text-orange-500 p-1.5 rounded-lg">
-                    <CalendarCheck className="h-4 w-4" />
-                  </div>
-                  <div>
-                    <div className="text-[11px] font-bold text-slate-900">
-                      {analytics.intSched} Interviews
-                    </div>
-                    <div className="text-[10px] font-medium text-slate-500">scheduled today</div>
-                  </div>
-                </div>
-                <ChevronRight className="h-4 w-4 text-slate-400" />
-              </div>
-
-              <div className="flex items-center justify-between p-3 bg-blue-50/50 border border-blue-100 rounded-xl">
-                <div className="flex items-center gap-3">
-                  <div className="bg-blue-100 text-blue-500 p-1.5 rounded-lg">
-                    <Clock className="h-4 w-4" />
-                  </div>
-                  <div>
-                    <div className="text-[11px] font-bold text-slate-900">
-                      {analytics.offers} Offers
-                    </div>
-                    <div className="text-[10px] font-medium text-slate-500">awaiting response</div>
-                  </div>
-                </div>
-                <ChevronRight className="h-4 w-4 text-slate-400" />
-              </div>
-
-              <div className="flex items-center justify-between p-3 bg-emerald-50/50 border border-emerald-100 rounded-xl">
-                <div className="flex items-center gap-3">
-                  <div className="bg-emerald-100 text-emerald-500 p-1.5 rounded-lg">
-                    <CheckCircle className="h-4 w-4" />
-                  </div>
-                  <div>
-                    <div className="text-[11px] font-bold text-slate-900">
-                      {analytics.joined} Candidates
-                    </div>
-                    <div className="text-[10px] font-medium text-slate-500">joined this month</div>
-                  </div>
-                </div>
-                <ChevronRight className="h-4 w-4 text-slate-400" />
-              </div>
-            </div>
-          </Card>
-
-          {/* Top Recruiters */}
-          <Card className="p-5 bg-white border-border/50 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] rounded-3xl">
-            <h3 className="text-[13px] font-bold text-slate-900 mb-4">Top Recruiters</h3>
-            <div className="space-y-4">
-              {analytics.sortedRecruiters.map((r, i) => (
-                <div key={r.name} className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <img
-                      src={`https://api.dicebear.com/7.x/notionists/svg?seed=${r.name}`}
-                      alt=""
-                      className="h-8 w-8 rounded-full bg-slate-100"
-                    />
-                    <div>
-                      <div className="text-[11px] font-bold text-slate-900">{r.name}</div>
-                      <div className="text-[10px] font-medium text-slate-500">
-                        {r.count} Candidates
-                      </div>
-                    </div>
-                  </div>
-                  <Trophy
-                    className={cn(
-                      "h-4 w-4",
-                      i === 0 ? "text-yellow-500" : i === 1 ? "text-slate-400" : "text-amber-700",
-                    )}
-                  />
-                </div>
-              ))}
-              {analytics.sortedRecruiters.length === 0 && (
-                <div className="text-[11px] text-slate-500">No recruiters assigned yet.</div>
-              )}
-            </div>
-          </Card>
-        </div>
       </div>
+
+      <AlertDialog open={deleteCandidateId !== null} onOpenChange={(open) => !open && setDeleteCandidateId(null)}>
+        <AlertDialogContent className="bg-white border-0 shadow-2xl rounded-2xl max-w-sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
+              <Trash2 className="h-5 w-5 text-red-500" /> Delete Candidate
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-slate-500 font-medium text-[13px] pt-2">
+              Are you sure you want to permanently delete this candidate? This action is not recoverable.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="mt-4">
+            <AlertDialogCancel className="text-[11px] font-bold border-slate-200">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700 text-white text-[11px] font-bold"
+              onClick={() => {
+                if (deleteCandidateId) {
+                  remove([deleteCandidateId]);
+                }
+                setDeleteCandidateId(null);
+              }}
+            >
+              Delete Candidate
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

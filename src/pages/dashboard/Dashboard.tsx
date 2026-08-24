@@ -52,7 +52,7 @@ function StatCard({
   value: number | string;
   icon: React.ElementType;
   trend: string;
-  theme: 'blue' | 'emerald' | 'purple' | 'amber' | 'cyan' | 'rose';
+  theme: 'blue' | 'emerald' | 'purple' | 'amber' | 'cyan' | 'rose' | 'teal' | 'zinc' | 'orange';
 }) {
   const styles = {
     blue: { cardBg: "bg-blue-50/70", text: "text-blue-700", iconBg: "bg-blue-100/80 text-blue-700", border: "border-blue-200/50" },
@@ -60,7 +60,10 @@ function StatCard({
     purple: { cardBg: "bg-purple-50/70", text: "text-purple-700", iconBg: "bg-purple-100/80 text-purple-700", border: "border-purple-200/50" },
     amber: { cardBg: "bg-amber-50/70", text: "text-amber-700", iconBg: "bg-amber-100/80 text-amber-700", border: "border-amber-200/50" },
     cyan: { cardBg: "bg-cyan-50/70", text: "text-cyan-700", iconBg: "bg-cyan-100/80 text-cyan-700", border: "border-cyan-200/50" },
-    rose: { cardBg: "bg-rose-50/70", text: "text-rose-700", iconBg: "bg-rose-100/80 text-rose-700", border: "border-rose-200/50" }
+    rose: { cardBg: "bg-rose-50/70", text: "text-rose-700", iconBg: "bg-rose-100/80 text-rose-700", border: "border-rose-200/50" },
+    teal: { cardBg: "bg-teal-50/70", text: "text-teal-700", iconBg: "bg-teal-100/80 text-teal-700", border: "border-teal-200/50" },
+    zinc: { cardBg: "bg-zinc-50/70", text: "text-zinc-700", iconBg: "bg-zinc-100/80 text-zinc-700", border: "border-zinc-200/50" },
+    orange: { cardBg: "bg-orange-50/70", text: "text-orange-700", iconBg: "bg-orange-100/80 text-orange-700", border: "border-orange-200/50" }
   }[theme];
 
   return (
@@ -176,7 +179,7 @@ function Dashboard() {
   return (
     <motion.div initial="hidden" animate="show" variants={container} className="space-y-6 max-w-[1600px] mx-auto pb-10">
 
-      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
         <StatCard
           label="Total Candidates"
           value={counts.total}
@@ -192,32 +195,60 @@ function Dashboard() {
           trend="8.2%"
         />
         <StatCard
-          label="Interviews Scheduled"
+          label="Interview Scheduled"
           value={counts.scheduled}
           icon={CalendarCheck}
           theme="purple"
           trend="15.3%"
         />
         <StatCard
-          label="Offers Released"
-          value={counts.offersReleased}
+          label="Selected Candidates"
+          value={counts.selected}
           icon={Star}
           theme="amber"
+          trend="14.2%"
+        />
+        <StatCard
+          label="Offers Released"
+          value={counts.offersReleased}
+          icon={Mail}
+          theme="teal"
           trend="11.1%"
         />
         <StatCard
-          label="Joined"
+          label="Offers Accepted"
+          value={counts.offersAccepted}
+          icon={CheckCircle}
+          theme="emerald"
+          trend="9.5%"
+        />
+        <StatCard
+          label="Joined Candidates"
           value={counts.joined}
-          icon={Users}
+          icon={UserPlus}
           theme="cyan"
           trend="7.8%"
         />
         <StatCard
-          label="Rejected"
+          label="Rejected Candidates"
           value={counts.rejected}
           icon={XCircle}
           theme="rose"
           trend="9.3%"
+        />
+        <StatCard
+          label="Blacklisted Candidates"
+          value={counts.blacklisted}
+          icon={AlertTriangle}
+          theme="zinc"
+          trend="2.1%"
+        />
+        <StatCard
+          label="No-Join Candidates"
+          value={counts.noShow}
+          icon={UserX}
+          theme="orange"
+          trend="4.5%"
         />
       </div>
 
@@ -454,184 +485,9 @@ function Dashboard() {
           </button>
         </Card>
 
-        {/* ROW 2 */}
-        <div className="xl:col-span-2">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-full items-stretch">
-            <Card className="p-5 bg-white shadow-sm rounded-2xl border border-slate-100 flex flex-col justify-between">
-              <h3 className="text-sm font-bold text-slate-800 mb-4">Candidates by Source</h3>
-              <div className="flex flex-col items-center">
-                <div className="h-40 w-40 relative">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={sourceData}
-                        innerRadius={50}
-                        outerRadius={70}
-                        paddingAngle={2}
-                        dataKey="value"
-                        stroke="none"
-                      >
-                        {sourceData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <RechartsTooltip />
-                    </PieChart>
-                  </ResponsiveContainer>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-xl font-black text-slate-800">{counts.total}</span>
-                    <span className="text-[10px] font-bold text-slate-400">Total</span>
-                  </div>
-                </div>
-                <div className="w-full mt-2 space-y-1.5">
-                  {sourceData.map(s => (
-                    <div key={s.name} className="flex items-center justify-between text-[11px]">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: s.color }}></div>
-                        <span className="font-semibold text-slate-600">{s.name}</span>
-                      </div>
-                      <span className="font-bold text-slate-900">{s.value}%</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </Card>
-
-            <Card className="p-5 bg-white shadow-sm rounded-2xl border border-slate-100 flex flex-col justify-between">
-              <div>
-                <div className="flex justify-between items-center mb-5">
-                  <h3 className="text-sm font-bold text-slate-800">Top Skills in Demand</h3>
-                  <span className="text-[10px] font-bold text-blue-600 cursor-pointer">View all</span>
-                </div>
-                <div className="space-y-4">
-                  {skillsData.map(skill => (
-                    <div key={skill.name}>
-                      <div className="flex justify-between items-center text-[11px] mb-1.5">
-                        <span className="font-bold text-slate-700">{skill.name}</span>
-                        <span className="font-bold text-slate-900">{skill.pct}%</span>
-                      </div>
-                      <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                        <div className={cn("h-full rounded-full", skill.color)} style={{ width: `${skill.pct}%` }}></div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </Card>
-
-            <Card className="p-5 bg-white shadow-sm rounded-2xl border border-slate-100 flex flex-col justify-between">
-              <h3 className="text-sm font-bold text-slate-800 mb-4">Offer Status</h3>
-              <div className="flex flex-col items-center">
-                <div className="h-32 w-32 relative mb-5">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={offerData}
-                        innerRadius={42}
-                        outerRadius={58}
-                        paddingAngle={3}
-                        dataKey="value"
-                        stroke="none"
-                        cornerRadius={4}
-                      >
-                        {offerData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <RechartsTooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px -2px rgba(0,0,0,0.1)' }} itemStyle={{ fontSize: '12px', fontWeight: 'bold' }} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-2xl font-black text-slate-800 tracking-tight">{totalOffersVal}</span>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total</span>
-                  </div>
-                </div>
-                <div className="w-full space-y-2">
-                  {offerData.map(o => {
-                    const percentage = totalOffersVal > 0 ? Math.round((o.value / totalOffersVal) * 100) : 0;
-                    return (
-                      <div key={o.name} className={cn("flex justify-between items-center p-2.5 rounded-xl border border-slate-50 transition-colors hover:border-slate-100", o.bg)}>
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-2.5 h-2.5 rounded-full shadow-sm" style={{ backgroundColor: o.color }}></div>
-                          <span className={cn("font-bold text-[12px]", o.text)}>{o.name}</span>
-                        </div>
-                        <div className="text-right flex items-center gap-3">
-                          <span className={cn("font-black text-[13px]", o.text)}>{o.value}</span>
-                          <span className={cn("text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-white/60", o.text)}>
-                            {percentage}%
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </Card>
-          </div>
-        </div>
-
-        <Card className="xl:col-span-1 p-5 bg-white shadow-sm rounded-2xl border border-slate-100 flex flex-col justify-between h-full">
-          <div className="flex justify-between items-center mb-5">
-            <h3 className="text-base font-bold text-slate-800">Alerts & Notifications</h3>
-            <span className="text-xs font-bold text-blue-600 cursor-pointer">View all</span>
-          </div>
-          <div className="space-y-4 flex-1 flex flex-col justify-center">
-            <div className="flex gap-3 items-start">
-              <div className="w-8 h-8 rounded-full bg-amber-50 text-amber-500 flex items-center justify-center shrink-0">
-                <AlertTriangle className="w-4 h-4" />
-              </div>
-              <div className="flex-1">
-                <div className="flex justify-between">
-                  <span className="text-[13px] font-bold text-slate-800">3 Offers waiting for acceptance</span>
-                  <span className="text-[10px] font-semibold text-slate-400">10m ago</span>
-                </div>
-                <div className="text-[11px] text-slate-500">Need follow-up</div>
-              </div>
-            </div>
-
-            <div className="flex gap-3 items-start">
-              <div className="w-8 h-8 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center shrink-0">
-                <CalendarCheck className="w-4 h-4" />
-              </div>
-              <div className="flex-1">
-                <div className="flex justify-between">
-                  <span className="text-[13px] font-bold text-slate-800">5 Interviews pending feedback</span>
-                  <span className="text-[10px] font-semibold text-slate-400">20m ago</span>
-                </div>
-                <div className="text-[11px] text-slate-500">From managers</div>
-              </div>
-            </div>
-
-            <div className="flex gap-3 items-start">
-              <div className="w-8 h-8 rounded-full bg-rose-50 text-rose-500 flex items-center justify-center shrink-0">
-                <Users className="w-4 h-4" />
-              </div>
-              <div className="flex-1">
-                <div className="flex justify-between">
-                  <span className="text-[13px] font-bold text-slate-800">Duplicate Candidate Detected</span>
-                  <span className="text-[10px] font-semibold text-slate-400">35m ago</span>
-                </div>
-                <div className="text-[11px] text-slate-500">2 new cases today</div>
-              </div>
-            </div>
-
-            <div className="flex gap-3 items-start">
-              <div className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-500 flex items-center justify-center shrink-0">
-                <CheckCircle className="w-4 h-4" />
-              </div>
-              <div className="flex-1">
-                <div className="flex justify-between">
-                  <span className="text-[13px] font-bold text-slate-800">8 Candidates completed assessment</span>
-                  <span className="text-[10px] font-semibold text-slate-400">1h ago</span>
-                </div>
-                <div className="text-[11px] text-slate-500">Ready for interview</div>
-              </div>
-            </div>
-          </div>
-        </Card>
 
         {/* ROW 3 */}
-        <Card className="xl:col-span-2 p-5 bg-white shadow-sm rounded-2xl border border-slate-100 flex flex-col h-full">
+        <Card className="xl:col-span-3 p-5 bg-white shadow-sm rounded-2xl border border-slate-100 flex flex-col h-full">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-base font-bold text-slate-800">Recent Candidate Activity</h3>
             <Link to="/candidates" className="text-xs font-bold text-blue-600 flex items-center hover:underline">
@@ -693,47 +549,7 @@ function Dashboard() {
           </div>
         </Card>
 
-        <Card className="xl:col-span-1 p-5 bg-white shadow-sm rounded-2xl border border-slate-100 flex flex-col justify-between h-full">
-          <h3 className="text-base font-bold text-slate-800 mb-4">Quick Actions</h3>
-          <div className="grid grid-cols-2 gap-3 flex-1">
-            <Link to="/candidates/new" className="p-3 bg-blue-50/50 hover:bg-blue-50 hover:shadow-sm rounded-xl border border-blue-100 flex flex-col items-center text-center gap-2 transition-all justify-center group">
-              <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <Plus className="w-5 h-5" />
-              </div>
-              <div>
-                <div className="text-[12px] font-bold text-slate-800 leading-tight mb-0.5">Add Candidate</div>
-                <div className="text-[10px] font-medium text-slate-500">Create profile</div>
-              </div>
-            </Link>
-            <button className="p-3 bg-cyan-50/50 hover:bg-cyan-50 hover:shadow-sm rounded-xl border border-cyan-100 flex flex-col items-center text-center gap-2 transition-all justify-center group">
-              <div className="w-10 h-10 rounded-full bg-cyan-100 text-cyan-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <Upload className="w-5 h-5" />
-              </div>
-              <div>
-                <div className="text-[12px] font-bold text-slate-800 leading-tight mb-0.5">Upload Resume</div>
-                <div className="text-[10px] font-medium text-slate-500">Bulk upload</div>
-              </div>
-            </button>
-            <Link to="/jobs/create" className="p-3 bg-amber-50/50 hover:bg-amber-50 hover:shadow-sm rounded-xl border border-amber-100 flex flex-col items-center text-center gap-2 transition-all justify-center group">
-              <div className="w-10 h-10 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <Briefcase className="w-5 h-5" />
-              </div>
-              <div>
-                <div className="text-[12px] font-bold text-slate-800 leading-tight mb-0.5">New Job</div>
-                <div className="text-[10px] font-medium text-slate-500">Post opening</div>
-              </div>
-            </Link>
-            <button className="p-3 bg-purple-50/50 hover:bg-purple-50 hover:shadow-sm rounded-xl border border-purple-100 flex flex-col items-center text-center gap-2 transition-all justify-center group">
-              <div className="w-10 h-10 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <FileText className="w-5 h-5" />
-              </div>
-              <div>
-                <div className="text-[12px] font-bold text-slate-800 leading-tight mb-0.5">Reports</div>
-                <div className="text-[10px] font-medium text-slate-500">Download data</div>
-              </div>
-            </button>
-          </div>
-        </Card>      </div>
+      </div>
 
     </motion.div>
 

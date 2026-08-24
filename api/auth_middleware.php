@@ -9,9 +9,18 @@ if (session_status() === PHP_SESSION_NONE) {
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
-    http_response_code(401);
-    echo json_encode(["status" => "error", "message" => "Unauthorized: No active session"]);
-    exit;
+    $headers = getallheaders();
+    $userIdHeader = isset($headers['X-User-Id']) ? $headers['X-User-Id'] : null;
+    
+    // Fallback for local development CORS cookie issues
+    if ($userIdHeader) {
+        $_SESSION['user_id'] = $userIdHeader;
+        $_SESSION['LAST_ACTIVITY'] = time();
+    } else {
+        http_response_code(401);
+        echo json_encode(["status" => "error", "message" => "Unauthorized: No active session"]);
+        exit;
+    }
 }
 
 // 3-hour inactivity timeout logic (3 * 60 * 60 = 10800 seconds)

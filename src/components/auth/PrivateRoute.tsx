@@ -24,7 +24,20 @@ export function PrivateRoute({ children, allowedRoles, requiredModule }: Private
   useEffect(() => {
     const verifySession = async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/auth/me.php`, { credentials: 'include', cache: 'no-store' });
+        const headers: Record<string, string> = {};
+        const userStr = localStorage.getItem("cims_user");
+        if (userStr) {
+          try {
+            const u = JSON.parse(userStr);
+            if (u.id) headers["X-User-Id"] = u.id.toString();
+          } catch(e) {}
+        }
+
+        const res = await fetch(`${API_BASE_URL}/auth/me.php`, { 
+          credentials: 'include', 
+          cache: 'no-store',
+          headers
+        });
         if (res.ok) {
           const data = await res.json();
           if (data.status === "success") {

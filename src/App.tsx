@@ -34,6 +34,7 @@ import SystemSettings from "@/pages/settings/system/SystemSettings";
 import EmailTemplates from "@/pages/settings/email/EmailTemplates";
 import EmailTriggers from "@/pages/settings/email/EmailTriggers";
 import EmailLogs from "@/pages/settings/email/EmailLogs";
+import EmailManagement from "@/pages/settings/email/EmailManagement";
 
 const queryClient = new QueryClient();
 
@@ -63,12 +64,12 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
-        <AtsProvider>
-          <BrowserRouter basename={import.meta.env.MODE === 'production' ? '/cims' : '/'}>
-            <Routes>
-              <Route path="/login" element={<Login />} />
-              <Route path="/*" element={
-                <PrivateRoute>
+        <BrowserRouter basename={import.meta.env.MODE === 'production' ? '/cims' : '/'}>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/*" element={
+              <PrivateRoute>
+                <AtsProvider>
                   <AppLayout>
                     <Routes>
                     <Route path="/" element={<Dashboard />} />
@@ -116,6 +117,7 @@ function App() {
                     {/* Others */}
                     <Route path="/notifications/alerts" element={<Notifications />} />
                     {/* System Settings & Email (Admin/HR only) */}
+                    <Route path="/email-settings/management" element={<PrivateRoute requiredModule="Email Settings"><EmailManagement /></PrivateRoute>} />
                     <Route path="/email-settings/templates" element={<PrivateRoute requiredModule="Email Settings"><EmailTemplates /></PrivateRoute>} />
                     <Route path="/email-settings/triggers" element={<PrivateRoute requiredModule="Email Settings"><EmailTriggers /></PrivateRoute>} />
                     <Route path="/email-settings/logs" element={<PrivateRoute requiredModule="Email Settings"><EmailLogs /></PrivateRoute>} />
@@ -125,12 +127,12 @@ function App() {
 
                     <Route path="*" element={<NotFound />} />
                   </Routes>
-                </AppLayout>
-                </PrivateRoute>
-              } />
-            </Routes>
-          </BrowserRouter>
-        </AtsProvider>
+                  </AppLayout>
+                </AtsProvider>
+              </PrivateRoute>
+            } />
+          </Routes>
+        </BrowserRouter>
       </ThemeProvider>
     </QueryClientProvider>
   );

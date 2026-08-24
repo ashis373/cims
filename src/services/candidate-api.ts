@@ -3,8 +3,24 @@ import { API_BASE_URL } from "@/config/api";
 
 const API_URL = `${API_BASE_URL}/candidates/candidates.php`;
 
+function getAuthHeaders(includeContentType = true) {
+  const headers: Record<string, string> = {};
+  if (includeContentType) headers["Content-Type"] = "application/json";
+  try {
+    const userStr = localStorage.getItem("cims_user");
+    if (userStr) {
+      const u = JSON.parse(userStr);
+      if (u.id) headers["X-User-Id"] = u.id.toString();
+    }
+  } catch(e) {}
+  return headers;
+}
+
 export async function fetchCandidatesAPI(): Promise<Candidate[]> {
-  const r = await fetch(API_URL, { credentials: 'include' });
+  const r = await fetch(API_URL, { 
+    credentials: 'include',
+    headers: getAuthHeaders(false)
+  });
   if (!r.ok) throw new Error(await r.text());
   const data = await r.json();
   if (Array.isArray(data)) return data;
@@ -14,7 +30,7 @@ export async function fetchCandidatesAPI(): Promise<Candidate[]> {
 export async function postCandidateAPI(cand: Candidate): Promise<void> {
   const res = await fetch(API_URL, { credentials: 'include', 
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: getAuthHeaders(),
     body: JSON.stringify(cand),
   });
   if (!res.ok) {
@@ -26,7 +42,7 @@ export async function postCandidateAPI(cand: Candidate): Promise<void> {
 export async function putCandidateAPI(c: Candidate): Promise<void> {
   const res = await fetch(`${API_URL}?id=${c.id}`, { credentials: 'include', 
     method: "PUT",
-    headers: { "Content-Type": "application/json" },
+    headers: getAuthHeaders(),
     body: JSON.stringify(c),
   });
   if (!res.ok) {
@@ -38,7 +54,7 @@ export async function putCandidateAPI(c: Candidate): Promise<void> {
 export async function deleteCandidatesAPI(ids: string[]): Promise<void> {
   const res = await fetch(API_URL, { credentials: 'include', 
     method: "DELETE",
-    headers: { "Content-Type": "application/json" },
+    headers: getAuthHeaders(),
     body: JSON.stringify({ ids }),
   });
   if (!res.ok) throw new Error("Failed to delete from database");
@@ -47,7 +63,7 @@ export async function deleteCandidatesAPI(ids: string[]): Promise<void> {
 export async function bulkUndoSyncAPI(candidates: Candidate[]): Promise<void> {
   await fetch(API_URL, { credentials: 'include', 
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: getAuthHeaders(),
     body: JSON.stringify({ bulk: true, candidates }),
   }).catch(console.error);
 }

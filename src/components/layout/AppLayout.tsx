@@ -15,6 +15,7 @@ import {
   ChevronDown,
   ChevronRight,
   LogOut,
+  Plus,
 } from "lucide-react";
 import { Toaster } from "@/components/ui/sonner";
 import { cn } from "@/lib/utils";
@@ -46,7 +47,7 @@ const nav = [
       { to: "/candidates/timeline", label: "Candidate Timeline", roles: ["Administrator", "HR Manager", "Recruiter"], module: "Candidates" },
     ],
   },
-  {
+  /* {
     to: "/interviews",
     label: "Interviews",
     icon: CalendarDays,
@@ -57,7 +58,7 @@ const nav = [
       { to: "/interviews/feedback-pending", label: "Feedback Pending", roles: ["Administrator", "HR Manager", "Recruiter", "Hiring Manager"], module: "Interviews" },
       { to: "/interviews/history", label: "Interview History", roles: ["Administrator", "HR Manager", "Recruiter", "Hiring Manager"], module: "Interviews" },
     ],
-  },
+  }, */
   {
     to: "/pipeline",
     label: "Recruitment Pipeline",
@@ -67,14 +68,13 @@ const nav = [
   },
   {
     to: "/offers",
-    label: "Offers",
+    label: "Offers & Joining",
     icon: FileText,
     roles: ["Administrator", "HR Manager"],
     module: "Offers",
     children: [
       { to: "/offers/management", label: "Offer Management", roles: ["Administrator", "HR Manager"], module: "Offers" },
       { to: "/offers/joining-tracker", label: "Joining Tracker", roles: ["Administrator", "HR Manager"], module: "Offers" },
-      { to: "/offers/no-joiners", label: "No-Joiners", roles: ["Administrator", "HR Manager"], module: "Offers" },
     ],
   },
   {
@@ -120,9 +120,7 @@ const nav = [
     roles: ["Administrator", "HR Manager"],
     module: "Email Settings",
     children: [
-      { to: "/email-settings/templates", label: "Email Templates", roles: ["Administrator", "HR Manager"], module: "Email Settings" },
-      { to: "/email-settings/triggers", label: "Auto Email Triggers", roles: ["Administrator", "HR Manager"], module: "Email Settings" },
-      { to: "/email-settings/logs", label: "Email Logs", roles: ["Administrator", "HR Manager"], module: "Email Settings" },
+      { to: "/email-settings/management", label: "Email Management", roles: ["Administrator", "HR Manager"], module: "Email Settings" },
     ],
   },
   {
@@ -134,7 +132,6 @@ const nav = [
     children: [
       { to: "/system-settings/profile", label: "User Profile", roles: ["Administrator", "HR Manager", "Recruiter", "Hiring Manager"], module: "System Settings" },
       { to: "/system-settings/roles", label: "User Roles & Permissions", roles: ["Administrator"], module: "Users & Roles" },
-      { to: "/system-settings/general", label: "System Settings", roles: ["Administrator", "HR Manager"], module: "System Settings" },
     ],
   },
 ];
@@ -151,7 +148,7 @@ const NavItem = ({
   hasAccess: (item: any) => boolean;
 }) => {
   const visibleChildren = item.children?.filter(hasAccess);
-  
+
   const isChildrenActive = visibleChildren?.some(
     (child: any) => pathname === child.to || pathname.startsWith(child.to + "?"),
   );
@@ -161,6 +158,13 @@ const NavItem = ({
   if (!hasAccess(item)) return null;
 
   const active = isDirectActive || isChildrenActive;
+  
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good morning";
+    if (hour < 18) return "Good afternoon";
+    return "Good evening";
+  };
 
   if (!visibleChildren || visibleChildren.length === 0) {
     return (
@@ -260,7 +264,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
           initial: user.full_name ? user.full_name.charAt(0) : "U",
           permissions: user.permissions
         };
-      } catch (e) {}
+      } catch (e) { }
     }
     return {
       name: "Loading...",
@@ -275,8 +279,8 @@ export function AppLayout({ children }: { children: ReactNode }) {
     if (currentUser?.role_name === 'Administrator') return true;
     if (navItem.module) {
       if (currentUser?.permissions && Array.isArray(currentUser.permissions)) {
-         const p = currentUser.permissions.find((p: any) => p.module_name === navItem.module);
-         return p ? (p.can_view === 1 || p.can_view === "1" || p.can_view === true) : false;
+        const p = currentUser.permissions.find((p: any) => p.module_name === navItem.module);
+        return p ? (p.can_view === 1 || p.can_view === "1" || p.can_view === true) : false;
       }
     }
     // Fallback to static roles if no permissions array
@@ -333,12 +337,12 @@ export function AppLayout({ children }: { children: ReactNode }) {
 
         <div className="flex-1 overflow-y-auto py-6 px-4 space-y-1 scrollbar-hide">
           {nav.filter(hasAccess).map((item) => (
-            <NavItem 
-              key={item.label} 
-              item={item as any} 
-              isActive={isActive} 
-              pathname={pathname} 
-              hasAccess={hasAccess} 
+            <NavItem
+              key={item.label}
+              item={item as any}
+              isActive={isActive}
+              pathname={pathname}
+              hasAccess={hasAccess}
             />
           ))}
         </div>
@@ -370,7 +374,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
 
           <div className="hidden md:flex flex-col">
             <h1 className="text-xl font-black tracking-tight text-slate-800">
-              Good morning, {currentUser?.name || "Super Admin"} <span className="inline-block animate-wave">👋</span>
+              {new Date().getHours() < 12 ? "Good morning" : new Date().getHours() < 18 ? "Good afternoon" : "Good evening"}, {currentUser?.name || "Super Admin"} <span className="inline-block animate-wave">👋</span>
             </h1>
             <p className="text-xs text-slate-500 font-medium mt-0.5">
               Here's what's happening with your recruitment today.
@@ -399,6 +403,13 @@ export function AppLayout({ children }: { children: ReactNode }) {
           </div>
 
           <div className="ml-auto flex items-center gap-4">
+            <Link
+              to="/candidates/add"
+              className="hidden lg:flex items-center gap-2 bg-[#1447E6] hover:bg-[#0c31a6] text-white px-4 py-2 rounded-xl text-[13px] font-bold shadow-sm transition-all border border-blue-600"
+            >
+              <Plus className="h-4 w-4" />
+              Add Candidate
+            </Link>
             <Link to="/notifications/alerts" className="relative flex items-center justify-center h-10 w-10 rounded-full bg-white border border-slate-200 hover:bg-slate-50 transition-colors shadow-sm">
               <Bell className="h-4 w-4 text-slate-600" />
               {unreadCount > 0 && (
@@ -421,7 +432,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
               <ChevronDown className="h-3.5 w-3.5 text-slate-400 ml-1 hidden sm:block" />
             </button>
             <div className="h-8 w-px bg-slate-200 hidden sm:block" />
-            <button 
+            <button
               onClick={async () => {
                 try {
                   await fetch(`${API_BASE_URL}/auth/logout.php`, { credentials: 'include' });

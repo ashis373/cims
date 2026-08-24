@@ -738,7 +738,7 @@ export default function CandidateFormPage() {
               <Label className="flex items-center gap-1.5 text-muted-foreground mb-1.5">
                 <Share2 className="h-3.5 w-3.5" /> Source
               </Label>
-              <Select value={form.source} onValueChange={(v) => set("source", v as Source)}>
+              <Select key={`source-${form.source}`} value={form.source || undefined} onValueChange={(v) => set("source", v as Source)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select source" />
                 </SelectTrigger>
@@ -762,7 +762,7 @@ export default function CandidateFormPage() {
                 <Briefcase className="h-3.5 w-3.5" /> Position Applied For{" "}
                 <span className="text-destructive">*</span>
               </Label>
-              <Select value={form.role} onValueChange={(v) => set("role", v)}>
+              <Select key={`role-${form.role}`} value={form.role || undefined} onValueChange={(v) => set("role", v)}>
                 <SelectTrigger className={errors.role ? "border-destructive focus:ring-destructive" : ""}>
                   <SelectValue placeholder="Select position" />
                 </SelectTrigger>
@@ -805,7 +805,8 @@ export default function CandidateFormPage() {
                 <Building2 className="h-3.5 w-3.5" /> Department
               </Label>
               <Select
-                value={form.department}
+                key={`department-${form.department}`}
+                value={form.department || undefined}
                 onValueChange={(v) => set("department", v as Department)}
               >
                 <SelectTrigger>
