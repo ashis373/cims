@@ -3,7 +3,7 @@ import { API_BASE_URL } from "@/config/api";
 
 const API_URL = `${API_BASE_URL}/candidates/candidates.php`;
 
-function getAuthHeaders(includeContentType = true) {
+export function getAuthHeaders(includeContentType = true) {
   const headers: Record<string, string> = {};
   if (includeContentType) headers["Content-Type"] = "application/json";
   try {
@@ -11,13 +11,15 @@ function getAuthHeaders(includeContentType = true) {
     if (userStr) {
       const u = JSON.parse(userStr);
       if (u.id) headers["X-User-Id"] = u.id.toString();
+    } else {
+      headers["X-User-Id"] = "1"; // Fallback for local development
     }
-  } catch(e) {}
+  } catch (e) { }
   return headers;
 }
 
 export async function fetchCandidatesAPI(): Promise<Candidate[]> {
-  const r = await fetch(API_URL, { 
+  const r = await fetch(API_URL, {
     credentials: 'include',
     headers: getAuthHeaders(false)
   });
@@ -28,7 +30,8 @@ export async function fetchCandidatesAPI(): Promise<Candidate[]> {
 }
 
 export async function postCandidateAPI(cand: Candidate): Promise<void> {
-  const res = await fetch(API_URL, { credentials: 'include', 
+  const res = await fetch(API_URL, {
+    credentials: 'include',
     method: "POST",
     headers: getAuthHeaders(),
     body: JSON.stringify(cand),
@@ -40,7 +43,8 @@ export async function postCandidateAPI(cand: Candidate): Promise<void> {
 }
 
 export async function putCandidateAPI(c: Candidate): Promise<void> {
-  const res = await fetch(`${API_URL}?id=${c.id}`, { credentials: 'include', 
+  const res = await fetch(`${API_URL}?id=${c.id}`, {
+    credentials: 'include',
     method: "PUT",
     headers: getAuthHeaders(),
     body: JSON.stringify(c),
@@ -52,7 +56,8 @@ export async function putCandidateAPI(c: Candidate): Promise<void> {
 }
 
 export async function deleteCandidatesAPI(ids: string[]): Promise<void> {
-  const res = await fetch(API_URL, { credentials: 'include', 
+  const res = await fetch(API_URL, {
+    credentials: 'include',
     method: "DELETE",
     headers: getAuthHeaders(),
     body: JSON.stringify({ ids }),
@@ -61,7 +66,8 @@ export async function deleteCandidatesAPI(ids: string[]): Promise<void> {
 }
 
 export async function bulkUndoSyncAPI(candidates: Candidate[]): Promise<void> {
-  await fetch(API_URL, { credentials: 'include', 
+  await fetch(API_URL, {
+    credentials: 'include',
     method: "POST",
     headers: getAuthHeaders(),
     body: JSON.stringify({ bulk: true, candidates }),

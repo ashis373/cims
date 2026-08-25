@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { getAuthHeaders } from "@/services/candidate-api";
 
 interface Recruiter {
   id: string;
@@ -39,7 +40,7 @@ export default function Recruiters() {
 
   const fetchRecruiters = async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/recruiters/recruiters.php`);
+      const res = await fetch(`${API_BASE_URL}/recruiters/recruiters.php`, { credentials: 'include', headers: getAuthHeaders(false) });
       const data = await res.json();
       if (Array.isArray(data)) {
         setRecruiters(data);
@@ -53,7 +54,7 @@ export default function Recruiters() {
 
   const fetchDepartments = async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/jobs/departments.php`);
+      const res = await fetch(`${API_BASE_URL}/jobs/departments.php`, { credentials: 'include', headers: getAuthHeaders(false) });
       const data = await res.json();
       if (Array.isArray(data)) setDepartments(data.filter((d: any) => d.status !== 'Inactive'));
     } catch (e) {
@@ -124,7 +125,7 @@ export default function Recruiters() {
       
       const res = await fetch(url, {
         method,
-        headers: { "Content-Type": "application/json" },
+        headers: getAuthHeaders(true),
         body: JSON.stringify(formData)
       });
       const data = await res.json();
@@ -146,7 +147,7 @@ export default function Recruiters() {
       const newStatus = r.status === "Active" ? "Inactive" : "Active";
       const res = await fetch(`${API_BASE_URL}/recruiters/recruiters.php?id=${r.id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: getAuthHeaders(true),
         body: JSON.stringify({ status: newStatus })
       });
       if (res.ok) {
@@ -161,7 +162,8 @@ export default function Recruiters() {
   const handleDelete = async (id: string) => {
     try {
       const res = await fetch(`${API_BASE_URL}/recruiters/recruiters.php?id=${id}`, {
-        method: "DELETE"
+        method: "DELETE",
+        headers: getAuthHeaders(false)
       });
       if (res.ok) {
         toast.success("Recruiter deleted");

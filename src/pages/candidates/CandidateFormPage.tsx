@@ -9,6 +9,7 @@ import {
   type Source,
   type Stage,
 } from "@/types/ats-types";
+import { getAuthHeaders } from "@/services/candidate-api";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -150,10 +151,11 @@ export default function CandidateFormPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        const fetchOptions = { credentials: 'include' as RequestCredentials, headers: getAuthHeaders(false) };
         const [jobsRes, deptsRes, recRes] = await Promise.all([
-          fetch(`${API_BASE_URL}/jobs/jobs.php`),
-          fetch(`${API_BASE_URL}/jobs/departments.php`),
-          fetch(`${API_BASE_URL}/recruiters/recruiters.php`)
+          fetch(`${API_BASE_URL}/jobs/jobs.php`, fetchOptions),
+          fetch(`${API_BASE_URL}/jobs/departments.php`, fetchOptions),
+          fetch(`${API_BASE_URL}/recruiters/recruiters.php`, fetchOptions)
         ]);
         const jobsData = await jobsRes.json();
         const deptsData = await deptsRes.json();
