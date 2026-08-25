@@ -40,19 +40,15 @@ export default function JoiningTracker() {
   return (
     <div className="flex flex-col gap-6 w-full pb-10 mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
       
-      {/* Top Banner (Deep Purple) */}
-      <div className="relative overflow-hidden rounded-[28px] bg-gradient-to-r from-[#110B3A] via-[#21115A] to-[#45148C] shadow-lg border border-indigo-900/50 p-8 sm:p-10 text-white flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 relative overflow-hidden rounded-[28px] bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 shadow-lg border border-indigo-900/50 p-8 sm:p-10 text-white">
         <div className="absolute top-0 right-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 pointer-events-none mix-blend-overlay"></div>
-        
         <div className="relative z-10 flex items-center gap-6">
-          <div className="flex h-[72px] w-[72px] items-center justify-center rounded-[20px] bg-[#6136D7]/20 border border-[#6136D7]/50 shadow-[0_0_20px_rgba(97,54,215,0.4)] backdrop-blur-md">
+          <div className="flex h-[72px] w-[72px] items-center justify-center rounded-[20px] bg-white/10 border border-white/20 shadow-[0_0_20px_rgba(255,255,255,0.1)] backdrop-blur-md shrink-0">
             <FileCheck className="h-8 w-8 text-indigo-100" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-white mb-1.5">
-              Joining Tracker
-            </h1>
-            <p className="text-indigo-200/90 text-[15px] max-w-xl font-medium">
+            <h1 className="text-3xl sm:text-4xl font-black tracking-tight mb-2">Joining Tracker</h1>
+            <p className="text-indigo-100/80 text-[14px] sm:text-[15px] font-medium max-w-xl leading-relaxed">
               Monitor candidates who have accepted offers and track their successful onboarding.
             </p>
           </div>
@@ -131,10 +127,10 @@ export default function JoiningTracker() {
             filteredCandidates.map((c) => (
               <div 
                 key={c.id} 
-                className="group flex flex-col lg:grid lg:grid-cols-[2.5fr_1.5fr_1.5fr_1.5fr_1.5fr] gap-4 items-start lg:items-center p-4 bg-white border border-slate-200 shadow-sm hover:shadow-md hover:border-slate-300 transition-all rounded-[16px]"
+                className="group flex flex-col lg:grid lg:grid-cols-[2.5fr_1.5fr_1.5fr_1.5fr_1.5fr] gap-y-4 lg:gap-0 lg:divide-x lg:divide-slate-200 items-start lg:items-center p-4 bg-white border border-slate-200 shadow-sm hover:shadow-md hover:border-slate-300 transition-all rounded-[16px]"
               >
                 {/* Candidate */}
-                <div className="flex items-center gap-4 w-full">
+                <div className="flex items-center gap-4 w-full lg:pr-4">
                   <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 text-[16px] font-bold">
                     {c.name?.charAt(0) || "?"}
                   </div>
@@ -145,7 +141,7 @@ export default function JoiningTracker() {
                 </div>
 
                 {/* Role Offered */}
-                <div className="flex items-center gap-2.5 w-full">
+                <div className="flex items-center gap-2.5 w-full lg:px-4">
                   <div className="lg:hidden text-[11px] font-bold text-slate-400 uppercase w-24">Role:</div>
                   <div className="flex items-center gap-2 text-[14px] font-bold text-slate-700">
                     <Briefcase className="h-4 w-4 text-amber-600/70" />
@@ -154,7 +150,7 @@ export default function JoiningTracker() {
                 </div>
 
                 {/* Recruiter */}
-                <div className="flex items-center gap-2.5 w-full">
+                <div className="flex items-center gap-2.5 w-full lg:px-4">
                   <div className="lg:hidden text-[11px] font-bold text-slate-400 uppercase w-24">Recruiter:</div>
                   <div className="flex items-center gap-2 text-[14px] font-bold text-slate-700">
                     <User className="h-4 w-4 text-slate-400" />
@@ -163,7 +159,7 @@ export default function JoiningTracker() {
                 </div>
 
                 {/* Offer Status */}
-                <div className="flex items-center gap-2.5 w-full">
+                <div className="flex items-center gap-2.5 w-full lg:px-4">
                   <div className="lg:hidden text-[11px] font-bold text-slate-400 uppercase w-24">Status:</div>
                   <div className={cn("inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[13px] font-bold border border-transparent", activeTabDef.pillBg)}>
                     <div className={cn("h-1.5 w-1.5 rounded-full", activeTabDef.dot)} />
@@ -172,7 +168,7 @@ export default function JoiningTracker() {
                 </div>
 
                 {/* Last Updated */}
-                <div className="flex items-center gap-2.5 w-full">
+                <div className="flex items-center gap-2.5 w-full lg:pl-4">
                   <div className="lg:hidden text-[11px] font-bold text-slate-400 uppercase w-24">Updated:</div>
                   <div className="flex items-center gap-2 text-[13px] font-medium text-slate-500">
                     <Calendar className="h-4 w-4 text-slate-400" />

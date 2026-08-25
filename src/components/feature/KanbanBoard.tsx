@@ -67,7 +67,8 @@ export function KanbanBoard({ candidates }: { candidates: Candidate[] }) {
                 {items.length}
               </Badge>
             </div>
-            <div className="flex flex-col gap-3 min-h-[150px]">
+            {/* //scrole bara -----------------------------------------   max-h- wii incrize --------------------------------------------------------------------------------*/}
+            <div className="flex flex-col gap-3 min-h-[150px] max-h-[410px] overflow-y-auto overflow-x-hidden pr-2 scrollbar-thin scrollbar-thumb-slate-200 hover:scrollbar-thumb-slate-300">
               <AnimatePresence mode="popLayout">
                 {items.map((c) => (
                   <motion.div
@@ -139,21 +140,7 @@ export function KanbanBoard({ candidates }: { candidates: Candidate[] }) {
               )}
             </div>
 
-            {items.length > 0 && (
-              <div className="mt-3">
-                <button
-                  className={cn(
-                    "w-full py-2 text-[10px] font-bold rounded-xl transition-colors border bg-white hover:bg-slate-50",
-                    textClass,
-                    stageColorClass
-                      .replace(/bg-[a-z]+-\d+\/\d+/, "")
-                      .match(/border-[a-z]+-\d+\/\d+/)?.[0] || "border-slate-200",
-                  )}
-                >
-                  + {Math.max(0, items.length)} more
-                </button>
-              </div>
-            )}
+
           </div>
         );
       })}

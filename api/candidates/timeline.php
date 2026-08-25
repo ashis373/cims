@@ -39,7 +39,8 @@ try {
                 h.details as description, 
                 h.createdAt as timestamp, 
                 'System' as user, 
-                c.name as candidateName 
+                c.name as candidateName,
+                c.photo as image 
             FROM cims_candidate_history h 
             JOIN cims_candidates c ON h.candidate_id = c.id 
             $whereHist
@@ -52,7 +53,8 @@ try {
                 n.text as description, 
                 n.createdAt as timestamp, 
                 n.createdBy as user, 
-                c.name as candidateName 
+                c.name as candidateName,
+                c.photo as image 
             FROM cims_candidate_notes n 
             JOIN cims_candidates c ON n.candidate_id = c.id 
             $whereNotes
@@ -65,7 +67,8 @@ try {
                 COALESCE(i.feedback, CONCAT('Scheduled on ', i.interviewDate)) as description, 
                 i.interviewDate as timestamp, 
                 'System' as user, 
-                c.name as candidateName 
+                c.name as candidateName,
+                c.photo as image 
             FROM cims_candidate_interviews i 
             JOIN cims_applications a ON i.application_id = a.id 
             JOIN cims_candidates c ON a.candidate_id = c.id 
@@ -79,7 +82,8 @@ try {
                 r.reason as description, 
                 r.recordedAt as timestamp, 
                 'System' as user, 
-                c.name as candidateName 
+                c.name as candidateName,
+                c.photo as image 
             FROM cims_candidate_rejections r 
             JOIN cims_candidates c ON r.candidate_id = c.id 
             $whereRej
@@ -92,7 +96,8 @@ try {
                 CONCAT('Applied for ', a.role_applied, ' via ', a.source) as description, 
                 a.appliedAt as timestamp, 
                 'System' as user, 
-                c.name as candidateName 
+                c.name as candidateName,
+                c.photo as image 
             FROM cims_applications a 
             JOIN cims_candidates c ON a.candidate_id = c.id 
             $whereApp

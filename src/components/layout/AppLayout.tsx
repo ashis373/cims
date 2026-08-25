@@ -374,14 +374,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
             <span className="text-base font-black tracking-tight text-slate-900">Hireflow</span>
           </div>
 
-          <div className="hidden md:flex flex-col">
-            <h1 className="text-xl font-black tracking-tight text-slate-800">
-              {new Date().getHours() < 12 ? "Good morning" : new Date().getHours() < 18 ? "Good afternoon" : "Good evening"}, {currentUser?.name || "Super Admin"} <span className="inline-block animate-wave">👋</span>
-            </h1>
-            <p className="text-xs text-slate-500 font-medium mt-0.5">
-              Here's what's happening with your recruitment today.
-            </p>
-          </div>
+
 
           <div className="flex max-w-full gap-1 overflow-x-auto rounded-xl border border-slate-200/60 bg-slate-50 p-1 scrollbar-thin md:hidden">
             {nav.filter(hasAccess).map((n) => {
