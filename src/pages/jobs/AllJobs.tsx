@@ -16,7 +16,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 import { 
   Briefcase, 
   Search, 
@@ -28,7 +35,10 @@ import {
   XCircle,
   Eye,
   Edit,
-  Power
+  Power,
+  Trash2,
+  Copy,
+  ExternalLink
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { API_BASE_URL } from "@/config/api";
@@ -90,6 +100,10 @@ const getStatusBadge = (status: string) => {
 export default function AllJobs() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [departmentFilter, setDepartmentFilter] = useState("all");
+  const [recruiterFilter, setRecruiterFilter] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
   const [jobs, setJobs] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedJob, setSelectedJob] = useState<any>(null);
@@ -168,11 +182,10 @@ export default function AllJobs() {
     });
   };
 
-  const confirmUpdateStatus = (jobId: string, currentStatus: string) => {
-    const newStatus = currentStatus === 'Open' ? 'Closed' : 'Open';
+  const confirmUpdateStatus = (jobId: string, newStatus: string) => {
     setConfirmDialog({
       isOpen: true,
-      title: "Update Job Status",
+      title: `Mark as ${newStatus}`,
       description: `Are you sure you want to change the status of this job to ${newStatus}?`,
       action: () => handleUpdateStatus(jobId, newStatus),
       actionText: "Update Status",
@@ -196,12 +209,29 @@ export default function AllJobs() {
   const filteredJobs = jobs.filter(job => {
     const matchesSearch = job.title.toLowerCase().includes(searchTerm.toLowerCase()) || job.id.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === "all" || job.status.toLowerCase() === statusFilter.toLowerCase();
-    return matchesSearch && matchesStatus;
+    const matchesDept = departmentFilter === "all" || job.department === departmentFilter;
+    const matchesRecruiter = recruiterFilter === "all" || job.recruiter_name === recruiterFilter;
+    return matchesSearch && matchesStatus && matchesDept && matchesRecruiter;
   });
+
+  const totalPages = Math.ceil(filteredJobs.length / itemsPerPage);
+  const paginatedJobs = filteredJobs.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter, departmentFilter, recruiterFilter]);
 
   // Dynamic Departments
   const departmentCounts = jobs.reduce((acc: any, job) => {
     acc[job.department] = (acc[job.department] || 0) + 1;
+    return acc;
+  }, {});
+
+  // Dynamic Recruiters
+  const recruiterCounts = jobs.reduce((acc: any, job) => {
+    if (job.recruiter_name) {
+      acc[job.recruiter_name] = (acc[job.recruiter_name] || 0) + 1;
+    }
     return acc;
   }, {});
 
@@ -213,7 +243,7 @@ export default function AllJobs() {
     color: colors[index % colors.length]
   })).sort((a, b) => b.value - a.value);
 
-  const recentJobs = [...jobs].reverse().slice(0, 3);
+  const recentJobs = [...jobs].reverse().slice(0, 4);
   
   return (
     <div className="flex flex-col gap-6 w-full pb-10">
@@ -242,11 +272,89 @@ export default function AllJobs() {
         <TopStat title="Open Jobs" value={isLoading ? "..." : openJobs} icon={CheckCircle2} tone="bg-emerald-50 text-emerald-600" borderTone="border-emerald-500" />
         <TopStat title="Closed Jobs" value={isLoading ? "..." : closedJobs} icon={XCircle} tone="bg-slate-50 text-slate-600" borderTone="border-slate-500" />
         <TopStat title="On Hold" value={isLoading ? "..." : onHoldJobs} icon={Clock} tone="bg-amber-50 text-amber-600" borderTone="border-amber-500" />
-        <TopStat title="Filled Jobs" value={isLoading ? "..." : filledJobs} icon={Briefcase} tone="bg-blue-50 text-blue-600" borderTone="border-blue-500" />
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 items-start">
-        <Card className="xl:col-span-3 rounded-3xl border-slate-100 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] overflow-hidden flex flex-col">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        <Card className="p-6 rounded-3xl border-slate-100 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] bg-white flex flex-col justify-center">
+          <h3 className="text-[15px] font-bold text-slate-900 mb-4">Jobs by Department</h3>
+          <div className="flex flex-col sm:flex-row items-center gap-6 flex-1">
+            <div className="h-[150px] w-full sm:w-1/2 relative shrink-0">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={dynamicDepartments}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={55}
+                    outerRadius={75}
+                    paddingAngle={2}
+                    dataKey="value"
+                    stroke="none"
+                  >
+                    {dynamicDepartments.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    formatter={(value: any, name: any, props: any) => [`${props.payload.count} Jobs (${value}%)`, name]}
+                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px -5px rgba(0,0,0,0.1)' }}
+                    itemStyle={{ fontWeight: 'bold' }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                <span className="text-2xl font-black text-slate-900">{totalJobs}</span>
+                <span className="text-[10px] uppercase font-bold text-slate-400">Total</span>
+              </div>
+            </div>
+            
+            <div className="w-full sm:w-1/2 flex flex-col gap-2 max-h-[150px] overflow-y-auto pr-2 custom-scrollbar">
+              {dynamicDepartments.map((dept, index) => (
+                <div key={index} className="flex items-center justify-between p-2 rounded-xl bg-slate-50 border border-slate-100/50 hover:bg-slate-100 transition-colors">
+                  <div className="flex items-center gap-2 overflow-hidden">
+                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: dept.color }} />
+                    <span className="text-[11px] font-bold text-slate-700 truncate" title={dept.name}>{dept.name}</span>
+                  </div>
+                  <span className="text-[12px] font-black text-slate-900 bg-white px-2 py-0.5 rounded-md shadow-sm border border-slate-100 shrink-0">
+                    {dept.count}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-6 rounded-3xl border-slate-100 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] bg-white lg:col-span-2 flex flex-col">
+          <div className="flex items-center justify-between mb-5">
+            <h3 className="text-[15px] font-bold text-slate-900">Recently Added Jobs</h3>
+            <Button variant="outline" size="sm" className="rounded-xl font-bold border-slate-200 text-slate-600" onClick={() => {
+              setSearchTerm('');
+              setStatusFilter('all');
+              setDepartmentFilter('all');
+              setRecruiterFilter('all');
+              window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+            }}>
+              View All
+            </Button>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {recentJobs.map((job) => (
+              <div key={job.id} onClick={() => handleView(job)} className="flex gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-100 hover:bg-white hover:border-indigo-200 hover:shadow-md transition-all cursor-pointer group">
+                <div className="h-10 w-10 shrink-0 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100 group-hover:bg-indigo-50 group-hover:text-indigo-600 group-hover:border-indigo-200 transition-colors">
+                  <Briefcase className="h-4 w-4" />
+                </div>
+                <div className="flex-1 overflow-hidden">
+                  <h4 className="text-[13px] font-bold text-slate-900 leading-tight truncate group-hover:text-indigo-700 transition-colors">{job.title}</h4>
+                  <p className="text-[11px] font-semibold text-slate-500 mt-1 truncate">{job.department} • {job.location}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      </div>
+
+      <div className="flex flex-col gap-6 items-start w-full">
+        <Card className="w-full rounded-3xl border-slate-100 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] overflow-hidden flex flex-col">
           <div className="p-5 border-b border-slate-100 bg-white flex flex-col sm:flex-row gap-4 items-center justify-between">
             <div className="relative w-full sm:max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -258,6 +366,28 @@ export default function AllJobs() {
               />
             </div>
             <div className="flex items-center gap-3 w-full sm:w-auto">
+              <Select value={recruiterFilter} onValueChange={setRecruiterFilter}>
+                <SelectTrigger className="w-full sm:w-[150px] h-10 rounded-xl bg-slate-50 border-slate-200 text-[13px] font-bold">
+                  <SelectValue placeholder="Recruiter" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl">
+                  <SelectItem value="all">All Recruiters</SelectItem>
+                  {Object.keys(recruiterCounts).sort().map((recruiter) => (
+                    <SelectItem key={recruiter} value={recruiter}>{recruiter}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+                <SelectTrigger className="w-full sm:w-[170px] h-10 rounded-xl bg-slate-50 border-slate-200 text-[13px] font-bold">
+                  <SelectValue placeholder="Department" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl">
+                  <SelectItem value="all">All Departments</SelectItem>
+                  {Object.keys(departmentCounts).map((dept) => (
+                    <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-full sm:w-[140px] h-10 rounded-xl bg-slate-50 border-slate-200 text-[13px] font-bold">
                   <SelectValue placeholder="Status" />
@@ -282,32 +412,40 @@ export default function AllJobs() {
               <thead className="bg-slate-50/50 text-slate-500 font-bold border-b border-slate-100">
                 <tr>
                   <th className="px-6 py-4">Job Title</th>
-                  <th className="px-6 py-4">Department</th>
+                  <th className="px-6 py-4">Department & Type</th>
                   <th className="px-6 py-4">Location</th>
+                  <th className="px-6 py-4">Experience & Salary</th>
                   <th className="px-6 py-4">Stats</th>
                   <th className="px-6 py-4">Status</th>
-                  <th className="px-6 py-4">Created By</th>
+                  <th className="px-6 py-4">Author & Recruiter</th>
                   <th className="px-6 py-4 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {isLoading ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-10 text-center text-slate-500 font-medium">Loading jobs...</td>
+                    <td colSpan={8} className="px-6 py-10 text-center text-slate-500 font-medium">Loading jobs...</td>
                   </tr>
                 ) : filteredJobs.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-10 text-center text-slate-500 font-medium">No jobs found.</td>
+                    <td colSpan={8} className="px-6 py-10 text-center text-slate-500 font-medium">No jobs found.</td>
                   </tr>
                 ) : (
-                  filteredJobs.map((job) => (
+                  paginatedJobs.map((job) => (
                     <tr key={job.id} className="hover:bg-slate-50/50 transition-colors group">
                     <td className="px-6 py-4">
                       <div className="font-bold text-slate-900">{job.title}</div>
                       <div className="text-slate-500 text-xs mt-0.5">{job.id}</div>
                     </td>
-                    <td className="px-6 py-4 font-medium text-slate-600">{job.department}</td>
+                    <td className="px-6 py-4">
+                      <div className="font-medium text-slate-700">{job.department}</div>
+                      <div className="text-slate-500 text-[11px] font-bold mt-0.5">{job.job_type} • {job.work_mode}</div>
+                    </td>
                     <td className="px-6 py-4 font-medium text-slate-600">{job.location}</td>
+                    <td className="px-6 py-4">
+                      <div className="font-medium text-slate-700">{job.min_exp}-{job.max_exp} Years</div>
+                      <div className="text-slate-500 text-[11px] font-bold mt-0.5">₹{job.min_salary} - ₹{job.max_salary}</div>
+                    </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <div className="text-center">
@@ -330,21 +468,56 @@ export default function AllJobs() {
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="font-bold text-slate-700">{job.author}</div>
-                      <div className="text-slate-500 text-xs mt-0.5">{job.date}</div>
+                      <div className="font-bold text-slate-700" title="Created By">👤 {job.author}</div>
+                      {job.recruiter_name && <div className="text-blue-600 text-[11px] font-bold mt-1" title="Assigned Recruiter">🎯 {job.recruiter_name}</div>}
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50" onClick={() => handleView(job)} title="View Details">
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50" onClick={() => confirmUpdateStatus(job.id, job.status)} title="Toggle Status">
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50" onClick={() => confirmDelete(job.id)} title="Delete Job">
-                          <Power className="h-4 w-4" />
-                        </Button>
-                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-8 text-[12px] font-bold text-slate-500 hover:text-indigo-600">
+                            View &middot; Edit &middot; More
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="rounded-xl border-border/40 w-48">
+                          <DropdownMenuItem onClick={() => handleView(job)} className="cursor-pointer font-medium">
+                            <Eye className="h-4 w-4 mr-2 text-slate-400" /> View Details
+                          </DropdownMenuItem>
+                          
+                          <Link to={`/jobs/edit/${job.id}`}>
+                            <DropdownMenuItem className="cursor-pointer font-medium">
+                              <Edit className="h-4 w-4 mr-2 text-slate-400" /> Edit Job
+                            </DropdownMenuItem>
+                          </Link>
+                          
+                          <DropdownMenuItem className="cursor-pointer font-medium text-slate-600">
+                            <Copy className="h-4 w-4 mr-2 text-slate-400" /> Duplicate Job
+                          </DropdownMenuItem>
+                          
+                          <DropdownMenuSeparator />
+                          
+                          {job.status !== 'Closed' && (
+                            <DropdownMenuItem onClick={() => confirmUpdateStatus(job.id, 'Closed')} className="cursor-pointer font-medium text-slate-600">
+                              <CheckCircle2 className="h-4 w-4 mr-2 text-slate-400" /> Mark as Closed
+                            </DropdownMenuItem>
+                          )}
+                          {job.status !== 'On Hold' && (
+                            <DropdownMenuItem onClick={() => confirmUpdateStatus(job.id, 'On Hold')} className="cursor-pointer font-medium text-slate-600">
+                              <Clock className="h-4 w-4 mr-2 text-slate-400" /> Mark as On Hold
+                            </DropdownMenuItem>
+                          )}
+                          {job.status !== 'Open' && (
+                            <DropdownMenuItem onClick={() => confirmUpdateStatus(job.id, 'Open')} className="cursor-pointer font-medium text-slate-600">
+                              <Briefcase className="h-4 w-4 mr-2 text-slate-400" /> Mark as Open
+                            </DropdownMenuItem>
+                          )}
+
+                          <DropdownMenuSeparator />
+                          
+                          <DropdownMenuItem onClick={() => confirmDelete(job.id)} className="cursor-pointer font-medium text-rose-600 focus:text-rose-700 focus:bg-rose-50">
+                            <Trash2 className="h-4 w-4 mr-2 text-rose-500" /> Delete Job
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </td>
                   </tr>
                 )))}
@@ -353,81 +526,47 @@ export default function AllJobs() {
           </div>
           
           <div className="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between">
-            <span className="text-[13px] font-bold text-slate-500">Showing {filteredJobs.length > 0 ? 1 : 0} to {filteredJobs.length} of {totalJobs} entries</span>
+            <span className="text-[13px] font-bold text-slate-500">
+              Showing {filteredJobs.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0} to {Math.min(currentPage * itemsPerPage, filteredJobs.length)} of {filteredJobs.length} entries
+            </span>
             <div className="flex gap-1">
-              <Button variant="outline" size="sm" className="rounded-lg h-8 text-xs font-bold" disabled>Previous</Button>
-              <Button variant="outline" size="sm" className="rounded-lg h-8 w-8 p-0 text-xs font-bold bg-indigo-600 text-white border-indigo-600 hover:bg-indigo-700 hover:text-white">1</Button>
-              <Button variant="outline" size="sm" className="rounded-lg h-8 w-8 p-0 text-xs font-bold">2</Button>
-              <Button variant="outline" size="sm" className="rounded-lg h-8 w-8 p-0 text-xs font-bold">3</Button>
-              <Button variant="outline" size="sm" className="rounded-lg h-8 text-xs font-bold">Next</Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="rounded-lg h-8 text-xs font-bold" 
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              >
+                Previous
+              </Button>
+              
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                <Button 
+                  key={page}
+                  variant="outline" 
+                  size="sm" 
+                  className={cn(
+                    "rounded-lg h-8 w-8 p-0 text-xs font-bold",
+                    currentPage === page ? "bg-indigo-600 text-white border-indigo-600 hover:bg-indigo-700 hover:text-white" : ""
+                  )}
+                  onClick={() => setCurrentPage(page)}
+                >
+                  {page}
+                </Button>
+              ))}
+
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="rounded-lg h-8 text-xs font-bold"
+                disabled={currentPage === totalPages || totalPages === 0}
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              >
+                Next
+              </Button>
             </div>
           </div>
         </Card>
-
-        <div className="xl:col-span-1 flex flex-col gap-6">
-          <Card className="p-6 rounded-3xl border-slate-100 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] bg-white">
-            <h3 className="text-[15px] font-bold text-slate-900 mb-6">Jobs by Department</h3>
-            <div className="h-[200px] w-full relative">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={dynamicDepartments}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={80}
-                    paddingAngle={2}
-                    dataKey="value"
-                    stroke="none"
-                  >
-                    {dynamicDepartments.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip 
-                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px -5px rgba(0,0,0,0.1)' }}
-                    itemStyle={{ fontWeight: 'bold' }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                <span className="text-2xl font-black text-slate-900">{totalJobs}</span>
-                <span className="text-[10px] uppercase font-bold text-slate-400">Total</span>
-              </div>
-            </div>
-            <div className="mt-6 flex flex-col gap-3">
-              {dynamicDepartments.slice(0, 4).map((dept) => (
-                <div key={dept.name} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: dept.color }} />
-                    <span className="text-[13px] font-bold text-slate-600">{dept.name}</span>
-                  </div>
-                  <span className="text-[13px] font-black text-slate-900">{dept.value}%</span>
-                </div>
-              ))}
-            </div>
-          </Card>
-
-          <Card className="p-6 rounded-3xl border-slate-100 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] bg-white">
-            <h3 className="text-[15px] font-bold text-slate-900 mb-5">Recently Added</h3>
-            <div className="flex flex-col gap-4">
-              {recentJobs.map((job) => (
-                <div key={job.id} className="flex gap-3">
-                  <div className="h-10 w-10 shrink-0 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100">
-                    <Briefcase className="h-4 w-4" />
-                  </div>
-                  <div>
-                    <h4 className="text-[13px] font-bold text-slate-900 leading-tight">{job.title}</h4>
-                    <p className="text-[11px] font-semibold text-slate-500 mt-1">{job.department} • {job.location}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <Button variant="outline" className="w-full mt-6 rounded-xl font-bold border-slate-200 text-slate-600">
-              View All Recent
-            </Button>
-          </Card>
-        </div>
       </div>
 
       <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
@@ -474,7 +613,7 @@ export default function AllJobs() {
                   </div>
                   <div>
                     <p className="text-[11px] uppercase font-bold text-slate-400 mb-1">Salary Range</p>
-                    <p className="font-semibold text-slate-700">${selectedJob.min_salary || 0} - ${selectedJob.max_salary || 0}</p>
+                    <p className="font-semibold text-slate-700">₹{selectedJob.min_salary || 0} - ₹{selectedJob.max_salary || 0}</p>
                   </div>
                   <div>
                     <p className="text-[11px] uppercase font-bold text-slate-400 mb-1">Target Date</p>
@@ -488,6 +627,12 @@ export default function AllJobs() {
                     <p className="text-[11px] uppercase font-bold text-slate-400 mb-1">Created By</p>
                     <p className="font-semibold text-slate-700">{selectedJob.author}</p>
                   </div>
+                  {selectedJob.recruiter_name && (
+                    <div>
+                      <p className="text-[11px] uppercase font-bold text-slate-400 mb-1">Assigned Recruiter</p>
+                      <p className="font-semibold text-slate-700">{selectedJob.recruiter_name}</p>
+                    </div>
+                  )}
                 </div>
 
                 {selectedJob.description && (
@@ -495,15 +640,6 @@ export default function AllJobs() {
                     <p className="text-[11px] uppercase font-bold text-slate-400 mb-2">Job Description</p>
                     <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">
                       {selectedJob.description}
-                    </div>
-                  </div>
-                )}
-
-                {selectedJob.internal_notes && (
-                  <div>
-                    <p className="text-[11px] uppercase font-bold text-slate-400 mb-2">Internal Notes</p>
-                    <div className="bg-amber-50 p-4 rounded-xl border border-amber-100 text-sm text-amber-800 whitespace-pre-wrap leading-relaxed">
-                      {selectedJob.internal_notes}
                     </div>
                   </div>
                 )}

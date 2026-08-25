@@ -1,21 +1,31 @@
 <?php
-header("Access-Control-Allow-Origin: *");
+$origin = isset($_SERVER['HTTP_ORIGIN']) ? $_SERVER['HTTP_ORIGIN'] : '*';
+header("Access-Control-Allow-Origin: $origin");
+header("Access-Control-Allow-Credentials: true");
 header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type");
+header("Access-Control-Allow-Headers: Content-Type, Authorization, X-User-Id");
 header("Content-Type: application/json");
 
-require '../db.php';
-
-$method = $_SERVER['REQUEST_METHOD'];
-
-if ($method == 'OPTIONS') {
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     exit();
 }
 
+require '../db.php';
+
+// If auth middleware is needed later, require it here.
+// require_once '../auth_middleware.php';
+
+$method = $_SERVER['REQUEST_METHOD'];
+
 try {
     if ($method == 'GET') {
-        $stmt = $conn->query("SELECT * FROM cims_jobs ORDER BY id DESC");
+        $stmt = $conn->query("
+            SELECT j.*, r.name as recruiter_name 
+            FROM cims_jobs j 
+            LEFT JOIN cims_recruiters r ON j.recruiter = r.id OR j.recruiter = r.name
+            ORDER BY j.id DESC
+        ");
         $cims_jobs = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
         $formattedJobs = array_map(function($job) {
@@ -35,6 +45,7 @@ try {
         $location = $data['location'] ?? 'Remote';
         $openings = $data['openings'] ?? 1;
         $author = $data['author'] ?? 'Admin';
+        $recruiter = $data['recruiter'] ?? '';
         
         $job_type = $data['job_type'] ?? 'Full Time';
         $work_mode = $data['work_mode'] ?? 'Hybrid';
@@ -52,9 +63,9 @@ try {
         $jobId = "JOB-" . str_pad($maxId + 1, 3, "0", STR_PAD_LEFT);
         $date = date("M d, Y");
 
-        $sql = "INSERT INTO cims_jobs (job_id, title, department, location, openings, applications, status, date, author, job_type, work_mode, min_exp, max_exp, min_salary, max_salary, description, target_date, priority, internal_notes) VALUES (?, ?, ?, ?, ?, 0, 'Open', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        $sql = "INSERT INTO cims_jobs (job_id, title, department, location, openings, applications, status, date, author, recruiter, job_type, work_mode, min_exp, max_exp, min_salary, max_salary, description, target_date, priority, internal_notes) VALUES (?, ?, ?, ?, ?, 0, 'Open', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         $stmt = $conn->prepare($sql);
-        $stmt->execute([$jobId, $title, $department, $location, $openings, $date, $author, $job_type, $work_mode, $min_exp, $max_exp, $min_salary, $max_salary, $description, $target_date, $priority, $internal_notes]);
+        $stmt->execute([$jobId, $title, $department, $location, $openings, $date, $author, $recruiter, $job_type, $work_mode, $min_exp, $max_exp, $min_salary, $max_salary, $description, $target_date, $priority, $internal_notes]);
         
         echo json_encode(["success" => true, "message" => "Job created successfully", "job_id" => $jobId]);
     }
@@ -70,16 +81,41 @@ try {
     }
     elseif ($method == 'PUT') {
         $data = json_decode(file_get_contents("php://input"), true);
-        $job_id = $data['job_id'] ?? '';
-        $status = $data['status'] ?? '';
+        $job_id = $data['job_id'] ?? $_GET['id'] ?? '';
         
-        if ($job_id && $status) {
-            $stmt = $conn->prepare("UPDATE cims_jobs SET status = ? WHERE job_id = ?");
-            $stmt->execute([$status, $job_id]);
-            echo json_encode(["success" => true, "message" => "Job status updated"]);
-        } else {
-            echo json_encode(["error" => "Missing data"]);
+        if (!$job_id) {
+            echo json_encode(["error" => "Missing job_id"]);
+            exit;
         }
+
+        $fields = [];
+        $params = [];
+        
+        // Define all possible fields that can be updated
+        $allowedFields = [
+            'title', 'department', 'location', 'openings', 'status', 'author', 'recruiter',
+            'job_type', 'work_mode', 'min_exp', 'max_exp', 'min_salary', 
+            'max_salary', 'description', 'target_date', 'priority', 'internal_notes'
+        ];
+        
+        foreach ($allowedFields as $field) {
+            if (isset($data[$field])) {
+                $fields[] = "`$field` = ?";
+                $params[] = $data[$field];
+            }
+        }
+        
+        if (empty($fields)) {
+            echo json_encode(["success" => true, "message" => "No changes provided"]);
+            exit;
+        }
+        
+        $params[] = $job_id;
+        $sql = "UPDATE cims_jobs SET " . implode(", ", $fields) . " WHERE job_id = ?";
+        
+        $stmt = $conn->prepare($sql);
+        $stmt->execute($params);
+        echo json_encode(["success" => true, "message" => "Job updated successfully"]);
     }
 } catch (PDOException $e) {
     http_response_code(500);

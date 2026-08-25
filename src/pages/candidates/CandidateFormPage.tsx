@@ -99,6 +99,7 @@ export default function CandidateFormPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [openJobs, setOpenJobs] = useState<any[]>([]);
   const [dbDepartments, setDbDepartments] = useState<any[]>([]);
+  const [recruiters, setRecruiters] = useState<any[]>([]);
   const [isExtracting, setIsExtracting] = useState(false);
 
   const extractCV = async (file: File) => {
@@ -149,18 +150,23 @@ export default function CandidateFormPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [jobsRes, deptsRes] = await Promise.all([
+        const [jobsRes, deptsRes, recRes] = await Promise.all([
           fetch(`${API_BASE_URL}/jobs/jobs.php`),
-          fetch(`${API_BASE_URL}/jobs/departments.php`)
+          fetch(`${API_BASE_URL}/jobs/departments.php`),
+          fetch(`${API_BASE_URL}/recruiters/recruiters.php`)
         ]);
         const jobsData = await jobsRes.json();
         const deptsData = await deptsRes.json();
+        const recData = await recRes.json();
 
         if (Array.isArray(jobsData)) {
           setOpenJobs(jobsData.filter((j: any) => j.status === 'Open'));
         }
         if (Array.isArray(deptsData)) {
           setDbDepartments(deptsData);
+        }
+        if (Array.isArray(recData)) {
+          setRecruiters(recData.filter((r: any) => r.status === 'Active'));
         }
       } catch (e) {
         console.error("Failed to fetch data", e);
@@ -840,6 +846,26 @@ export default function CandidateFormPage() {
             </div>
             <div>
               <Label
+                htmlFor="department"
+                className="flex items-center gap-1.5 text-muted-foreground mb-1.5"
+              >
+                <Building2 className="h-3.5 w-3.5" /> Department{" "}
+                <span className="text-destructive">*</span>
+              </Label>
+              <Select value={form.department || undefined} onValueChange={(v) => { set("department", v as Department); set("role", ""); }}>
+                <SelectTrigger className={errors.department ? "border-destructive focus:ring-destructive" : ""}>
+                  <SelectValue placeholder="Select department" />
+                </SelectTrigger>
+                <SelectContent>
+                  {dbDepartments.map(d => (
+                    <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <ErrorMsg msg={errors.department} />
+            </div>
+            <div>
+              <Label
                 htmlFor="role"
                 className="flex items-center gap-1.5 text-muted-foreground mb-1.5"
               >
@@ -851,16 +877,18 @@ export default function CandidateFormPage() {
                   <SelectValue placeholder="Select position" />
                 </SelectTrigger>
                 <SelectContent>
-                  {openJobs.length > 0 ? (
-                    openJobs.map((job) => (
+                  {openJobs.filter(j => !form.department || j.department === form.department).length > 0 ? (
+                    openJobs.filter(j => !form.department || j.department === form.department).map((job) => (
                       <SelectItem key={job.id} value={job.title}>
                         {job.title} ({job.id})
                       </SelectItem>
                     ))
                   ) : (
-                    <SelectItem value="loading" disabled>Loading jobs...</SelectItem>
+                    <SelectItem value="loading" disabled>
+                      {openJobs.length > 0 ? "No jobs found for this department" : "Loading jobs..."}
+                    </SelectItem>
                   )}
-                  {form.role && !openJobs.find(j => j.title === form.role) && form.role !== "loading" && (
+                  {form.role && !openJobs.find(j => j.title === form.role && (!form.department || j.department === form.department)) && form.role !== "loading" && (
                     <SelectItem value={form.role}>{form.role}</SelectItem>
                   )}
                 </SelectContent>
@@ -875,47 +903,34 @@ export default function CandidateFormPage() {
                 <User className="h-3.5 w-3.5" /> Recruiter{" "}
                 <span className="text-destructive">*</span>
               </Label>
-              <Input
-                id="recruiter"
-                value={form.recruiter}
-                onChange={(e) => set("recruiter", e.target.value)}
-                placeholder="Select recruiter"
-                className={errors.recruiter ? "border-destructive focus-visible:ring-destructive" : ""}
-              />
-              <ErrorMsg msg={errors.recruiter} />
-            </div>
-            <div>
-              <Label className="flex items-center gap-1.5 text-muted-foreground mb-1.5">
-                <Building2 className="h-3.5 w-3.5" /> Department
-              </Label>
               <Select
-                key={`department-${form.department}`}
-                value={form.department || undefined}
-                onValueChange={(v) => set("department", v as Department)}
+                value={form.recruiter || undefined}
+                onValueChange={(v) => set("recruiter", v)}
               >
-                <SelectTrigger>
-                  <SelectValue />
+                <SelectTrigger
+                  id="recruiter"
+                  className={cn("h-11 rounded-xl bg-slate-50 border-slate-200 font-medium", errors.recruiter && "border-destructive focus-visible:ring-destructive")}
+                >
+                  <SelectValue placeholder="Select recruiter" />
                 </SelectTrigger>
-                <SelectContent>
-                  {dbDepartments.length > 0 ? (
-                    dbDepartments.map((d) => (
-                      <SelectItem key={d.id} value={d.name}>
-                        {d.name}
-                      </SelectItem>
-                    ))
+                <SelectContent className="rounded-xl">
+                  {recruiters.length === 0 ? (
+                    <SelectItem value="loading" disabled>Loading recruiters...</SelectItem>
                   ) : (
-                    DEPARTMENTS.map((d) => (
-                      <SelectItem key={d} value={d}>
-                        {d}
+                    recruiters.map((r) => (
+                      <SelectItem key={r.id} value={String(r.name)}>
+                        {r.name}
                       </SelectItem>
                     ))
                   )}
-                  {form.department && !dbDepartments.find(d => d.name === form.department) && !DEPARTMENTS.includes(form.department as Department) && (
-                    <SelectItem value={form.department}>{form.department}</SelectItem>
+                  {form.recruiter && !recruiters.find(r => r.name === form.recruiter) && (
+                    <SelectItem value={form.recruiter}>{form.recruiter}</SelectItem>
                   )}
                 </SelectContent>
               </Select>
+              <ErrorMsg msg={errors.recruiter} />
             </div>
+
             <div className="md:col-span-2">
               <Label
                 htmlFor="notes"

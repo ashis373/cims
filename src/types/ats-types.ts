@@ -53,10 +53,23 @@ export type InterviewType = (typeof INTERVIEW_TYPES)[number];
 
 export interface Interview {
   id: string;
+  application_id?: string;
   date: string; // ISO
-  type: InterviewType;
+  type: string;
+  end_time?: string;
+  mode?: string;
+  interviewers?: string;
+  meeting_link?: string;
+  location?: string;
   notes?: string;
   outcome?: string;
+  status?: string;
+  feedback?: string;
+  rating?: number;
+  recommendation?: string;
+  comments?: string;
+  created_by?: string;
+  created_at?: string;
 }
 
 export interface ActivityEntry {

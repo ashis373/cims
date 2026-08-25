@@ -101,8 +101,9 @@ if ($method === 'GET') {
         $allInt = $stmtInt->fetchAll(PDO::FETCH_ASSOC);
         $intByCand = [];
         foreach ($allInt as $i) { 
-            if ($i['interviewDate']) $i['interviewDate'] = str_replace(' ', 'T', $i['interviewDate']);
-            if ($i['createdAt']) $i['createdAt'] = str_replace(' ', 'T', $i['createdAt']);
+            if (!empty($i['interviewDate'])) $i['interviewDate'] = str_replace(' ', 'T', $i['interviewDate']);
+            if (!empty($i['created_at'])) $i['created_at'] = str_replace(' ', 'T', $i['created_at']);
+            elseif (!empty($i['createdAt'])) $i['createdAt'] = str_replace(' ', 'T', $i['createdAt']);
             $intByCand[$i['candidate_id']][] = $i; 
         }
 

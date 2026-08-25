@@ -16,6 +16,7 @@ import { PrivateRoute } from "@/components/auth/PrivateRoute";
 // New Pages
 import AllJobs from "@/pages/jobs/AllJobs";
 import CreateJob from "@/pages/jobs/CreateJob";
+import Recruiters from "@/pages/recruiters/Recruiters";
 import DuplicateCheck from "@/pages/candidates/DuplicateCheck";
 import CandidateTimeline from "@/pages/candidates/CandidateTimeline";
 import InterviewsUpcoming from "@/pages/interviews/InterviewsUpcoming";
@@ -31,6 +32,7 @@ import Notifications from "@/pages/notifications/Notifications";
 import UserProfile from "@/pages/settings/system/UserProfile";
 import UserRoles from "@/pages/settings/system/UserRoles";
 import SystemSettings from "@/pages/settings/system/SystemSettings";
+import Departments from "@/pages/settings/system/Departments";
 import EmailManagement from "@/pages/settings/email/EmailManagement";
 
 const queryClient = new QueryClient();
@@ -77,6 +79,10 @@ function App() {
                     {/* Jobs */}
                     <Route path="/jobs/all" element={<AllJobs />} />
                     <Route path="/jobs/create" element={<CreateJob />} />
+                    <Route path="/jobs/edit/:id" element={<CreateJob />} />
+
+                    {/* Recruiters */}
+                    <Route path="/recruiters" element={<Recruiters />} />
 
                     {/* Candidates */}
                     <Route path="/candidates" element={<Candidates />} />
@@ -117,6 +123,7 @@ function App() {
                     <Route path="/email-settings/management" element={<PrivateRoute requiredModule="Email Settings"><EmailManagement /></PrivateRoute>} />
                     <Route path="/system-settings/profile" element={<UserProfile />} />
                     <Route path="/system-settings/roles" element={<PrivateRoute allowedRoles={["Administrator"]}><UserRoles /></PrivateRoute>} />
+                    <Route path="/system-settings/departments" element={<PrivateRoute requiredModule="System Settings"><Departments /></PrivateRoute>} />
                     <Route path="/system-settings/general" element={<PrivateRoute requiredModule="System Settings"><SystemSettings /></PrivateRoute>} />
 
                     <Route path="*" element={<NotFound />} />

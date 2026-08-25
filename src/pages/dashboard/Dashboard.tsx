@@ -392,7 +392,7 @@ function Dashboard() {
 
                 return (
                   <div key={stage.label} className="absolute transform -translate-x-1/2 -translate-y-1/2 z-10" style={{ left: `${p.x}%`, top: `${p.y}%` }}>
-                    <Link to="/candidates" className={cn("px-4 py-2 rounded-full text-white text-xs font-bold shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all flex items-center gap-1.5", bg)}>
+                    <Link to="/pipeline" className={cn("px-4 py-2 rounded-full text-white text-xs font-bold shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all flex items-center gap-1.5", bg)}>
                       {stage.label}
                       <span className="bg-white/30 px-1.5 py-0.5 rounded-full text-[10px] leading-none">{stage.count}</span>
                     </Link>

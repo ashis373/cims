@@ -25,6 +25,11 @@ import {
   AlertCircle,
   Trophy,
   Trash2,
+  LayoutGrid,
+  List,
+  Briefcase,
+  Mail,
+  Phone,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
@@ -109,10 +114,12 @@ export default function CandidatesPage() {
   const [positionFilter, setPositionFilter] = useState("All Positions");
   const [sourceFilter, setSourceFilter] = useState("All Sources");
   const [recruiterFilter, setRecruiterFilter] = useState("All Recruiters");
+  const [departmentFilter, setDepartmentFilter] = useState("All Departments");
   const [deleteCandidateId, setDeleteCandidateId] = useState<string | null>(null);
 
   const initialFilter = new URLSearchParams(location.search).get("filter") || "All";
   const [quickFilter, setQuickFilter] = useState(initialFilter);
+  const [viewMode, setViewMode] = useState<"table" | "card">("table");
   const [currentUser, setCurrentUser] = useState<any>(null);
 
   useEffect(() => {
@@ -141,7 +148,7 @@ export default function CandidatesPage() {
   }, [location.search]);
 
   const [page, setPage] = useState(1);
-  const perPage = 10;
+  const perPage = 12;
 
   // Real data calculations
   const analytics = useMemo(() => {
@@ -260,8 +267,10 @@ export default function CandidatesPage() {
         !sourceFilter || sourceFilter === "All Sources" || c.source === sourceFilter;
       const matchRecruiter =
         !recruiterFilter || recruiterFilter === "All Recruiters" || c.recruiter === recruiterFilter;
+      const matchDepartment =
+        !departmentFilter || departmentFilter === "All Departments" || c.department === departmentFilter;
 
-      return matchQ && matchQuick && matchStage && matchPosition && matchSource && matchRecruiter;
+      return matchQ && matchQuick && matchStage && matchPosition && matchSource && matchRecruiter && matchDepartment;
     });
 
     result.sort((a, b) => {
@@ -277,7 +286,7 @@ export default function CandidatesPage() {
     });
 
     return result;
-  }, [candidates, q, quickFilter, stageFilter, positionFilter, sourceFilter, recruiterFilter, sortOrder]);
+  }, [candidates, q, quickFilter, stageFilter, positionFilter, sourceFilter, recruiterFilter, departmentFilter, sortOrder]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
   const safePage = Math.min(page, totalPages);
@@ -289,6 +298,7 @@ export default function CandidatesPage() {
     setPositionFilter("All Positions");
     setSourceFilter("All Sources");
     setRecruiterFilter("All Recruiters");
+    setDepartmentFilter("All Departments");
     setQuickFilter("All");
   };
 
@@ -304,6 +314,7 @@ export default function CandidatesPage() {
   const uniquePositions = Array.from(new Set(candidates.map((c) => c.role))).filter(Boolean);
   const uniqueSources = Array.from(new Set(candidates.map((c) => c.source))).filter(Boolean);
   const uniqueRecruiters = Array.from(new Set(candidates.map((c) => c.recruiter))).filter(Boolean);
+  const uniqueDepartments = Array.from(new Set(candidates.map((c) => c.department))).filter(Boolean);
 
   return (
     <div className="space-y-6">
@@ -475,6 +486,19 @@ export default function CandidatesPage() {
                 ))}
               </select>
 
+              <select
+                className="h-9 w-[130px] rounded-lg border border-slate-200 bg-white px-3 text-xs shadow-sm font-semibold text-slate-700"
+                value={departmentFilter}
+                onChange={(e) => setDepartmentFilter(e.target.value)}
+              >
+                <option value="All Departments">All Departments</option>
+                {uniqueDepartments.map((d) => (
+                  <option key={d} value={d}>
+                    {d}
+                  </option>
+                ))}
+              </select>
+
               <Button
                 variant="outline"
                 className="h-9 text-xs font-semibold rounded-lg bg-white border-slate-200"
@@ -526,169 +550,244 @@ export default function CandidatesPage() {
                   <option value="oldest">Sort by: Oldest First</option>
                 </select>
                 <div className="flex bg-slate-100 rounded-lg p-0.5">
-                  <button className="p-1.5 bg-blue-600 text-white rounded shadow-sm">
-                    <Filter className="h-3.5 w-3.5" />
+                  <button 
+                    onClick={() => setViewMode("table")}
+                    className={cn("p-1.5 rounded shadow-sm transition-colors", viewMode === "table" ? "bg-white text-blue-600 shadow-sm ring-1 ring-slate-200/50" : "text-slate-500 hover:text-slate-700")}
+                    title="Table View"
+                  >
+                    <List className="h-3.5 w-3.5" />
                   </button>
-                  {/* <button className="p-1.5 text-slate-500 hover:text-slate-700 rounded">
-                    <Filter className="h-3.5 w-3.5" />
-                  </button> */}
+                  <button 
+                    onClick={() => setViewMode("card")}
+                    className={cn("p-1.5 rounded shadow-sm transition-colors", viewMode === "card" ? "bg-white text-blue-600 shadow-sm ring-1 ring-slate-200/50" : "text-slate-500 hover:text-slate-700")}
+                    title="Card View"
+                  >
+                    <LayoutGrid className="h-3.5 w-3.5" />
+                  </button>
                 </div>
               </div>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-[11px]">
-                <thead className="bg-slate-50/80 text-slate-500 font-semibold border-b border-slate-100">
-                  <tr>
-                    <th className="px-4 py-3 font-bold">Candidate</th>
-                    <th className="px-4 py-3 font-bold">Position</th>
-                    <th className="px-4 py-3 font-bold">Status</th>
-                    <th className="px-4 py-3 font-bold">Experience</th>
-                    <th className="px-4 py-3 font-bold">Current Company</th>
-                    <th className="px-4 py-3 font-bold">Applied On</th>
-                    <th className="px-4 py-3 font-bold">Recruiter</th>
-                    <th className="px-4 py-3 font-bold text-center">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {paginated.map((c) => (
-                    <tr 
-                      key={c.id} 
-                      className="hover:bg-slate-50 transition-colors cursor-pointer"
-                      onClick={() => navigate(`/candidates/${c.id}`)}
-                    >
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-3">
-                          {c.photo ? (
-                            <img
-                              src={`${API_BASE_URL}/candidates/uploads/${c.photo}`}
-                              alt={c.name}
-                              className="h-8 w-8 rounded-full object-cover shadow-sm border border-slate-200 shrink-0"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).style.display = 'none';
-                                (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
-                              }}
-                            />
-                          ) : null}
-                          <div
+            {viewMode === "table" ? (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-[11px]">
+                  <thead className="bg-slate-50/80 text-slate-500 font-semibold border-b border-slate-100">
+                    <tr>
+                      <th className="px-4 py-3 font-bold">Candidate</th>
+                      <th className="px-4 py-3 font-bold">Position</th>
+                      <th className="px-4 py-3 font-bold">Status</th>
+                      <th className="px-4 py-3 font-bold">Experience</th>
+                      <th className="px-4 py-3 font-bold">Current Company</th>
+                      <th className="px-4 py-3 font-bold">Applied On</th>
+                      <th className="px-4 py-3 font-bold">Recruiter</th>
+                      <th className="px-4 py-3 font-bold text-center">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {paginated.map((c) => (
+                      <tr 
+                        key={c.id} 
+                        className="hover:bg-slate-50 transition-colors cursor-pointer"
+                        onClick={() => navigate(`/candidates/${c.id}`)}
+                      >
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-3">
+                            {c.photo ? (
+                              <img
+                                src={`${API_BASE_URL}/candidates/uploads/${c.photo}`}
+                                alt={c.name}
+                                className="h-8 w-8 rounded-full object-cover shadow-sm border border-slate-200 shrink-0"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).style.display = 'none';
+                                  (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
+                                }}
+                              />
+                            ) : null}
+                            <div
+                              className={cn(
+                                "flex h-8 w-8 shrink-0 items-center justify-center rounded-full font-bold text-[10px]",
+                                c.isBlacklisted
+                                  ? "bg-red-100 text-red-600"
+                                  : "bg-purple-100 text-purple-600",
+                                c.photo ? "hidden" : ""
+                              )}
+                            >
+                              {getInitials(c.name)}
+                            </div>
+                            <div>
+                              <div className="font-bold text-slate-900 text-[12px] hover:text-blue-600 cursor-pointer">
+                                {c.name}
+                              </div>
+                              <div className="text-slate-500 text-[10px] mt-0.5">{c.email}</div>
+                              <div className="text-slate-500 text-[10px]">{c.phone}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="font-bold text-slate-700">{c.role}</div>
+                          <div className="text-slate-500 text-[10px]">{c.department}</div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span
                             className={cn(
-                              "flex h-8 w-8 shrink-0 items-center justify-center rounded-full font-bold text-[10px]",
-                              c.isBlacklisted
-                                ? "bg-red-100 text-red-600"
-                                : "bg-purple-100 text-purple-600",
-                              c.photo ? "hidden" : ""
+                              "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 font-bold",
+                              STAGE_COLORS[c.stage] || "bg-slate-100 text-slate-700",
                             )}
                           >
+                            <div className="h-1.5 w-1.5 rounded-full bg-current opacity-75" />
+                            {c.stage}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 font-medium text-slate-700">
+                          {c.experience || "—"}
+                        </td>
+                        <td className="px-4 py-3 font-medium text-slate-700">
+                          {c.currentCompany || "—"}
+                        </td>
+                        <td className="px-4 py-3 font-medium text-slate-700">
+                          {new Date(c.appliedAt).toLocaleDateString("en-GB", {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                          })}
+                        </td>
+                        <td className="px-4 py-3">
+                          {c.recruiter ? (
+                            <span className="font-medium text-slate-700">{c.recruiter}</span>
+                          ) : (
+                            "—"
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-center" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex items-center justify-center gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-slate-400 hover:text-blue-600"
+                              asChild
+                            >
+                              <Link to={`/candidates/${c.id}`}>
+                                <Eye className="h-3.5 w-3.5" />
+                              </Link>
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-slate-400 hover:text-blue-600"
+                              asChild
+                            >
+                              <Link to={`/candidates/${c.id}/edit`}>
+                                <Pencil className="h-3.5 w-3.5" />
+                              </Link>
+                            </Button>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 text-slate-400 hover:text-blue-600"
+                                >
+                                  <MoreHorizontal className="h-3.5 w-3.5" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent
+                                align="end"
+                                className="rounded-xl border-border/40"
+                              >
+                                <DropdownMenuItem asChild>
+                                  <Link to={`/candidates/${c.id}`}>View Details</Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem asChild>
+                                  <Link to={`/candidates/${c.id}/edit`}>Edit</Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  className="text-destructive focus:text-destructive"
+                                  onClick={() => setDeleteCandidateId(c.id)}
+                                >
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                    {paginated.length === 0 && (
+                      <tr>
+                        <td colSpan={8} className="py-10 text-center text-slate-500 font-medium">
+                          No candidates match your filters.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="p-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 bg-slate-50/50">
+                {paginated.map((c) => (
+                  <Card key={c.id} className="group relative overflow-hidden bg-white hover:shadow-[0_8px_30px_rgba(0,0,0,0.12)] transition-all duration-300 border-border/50 rounded-2xl cursor-pointer flex flex-col" onClick={() => navigate(`/candidates/${c.id}`)}>
+                    <div className="p-5 flex-1 flex flex-col">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex items-center gap-3 overflow-hidden">
+                          {c.photo ? (
+                            <img src={`${API_BASE_URL}/candidates/uploads/${c.photo}`} alt={c.name} className="h-10 w-10 rounded-full object-cover shadow-sm border border-slate-200 shrink-0" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden'); }} />
+                          ) : null}
+                          <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-bold text-[11px]", c.isBlacklisted ? "bg-red-100 text-red-600" : "bg-purple-100 text-purple-600", c.photo ? "hidden" : "")}>
                             {getInitials(c.name)}
                           </div>
-                          <div>
-                            <div className="font-bold text-slate-900 text-[12px] hover:text-blue-600 cursor-pointer">
-                              {c.name}
-                            </div>
-                            <div className="text-slate-500 text-[10px] mt-0.5">{c.email}</div>
-                            <div className="text-slate-500 text-[10px]">{c.phone}</div>
+                          <div className="overflow-hidden">
+                            <h3 className="font-bold text-slate-900 text-[14px] group-hover:text-blue-600 transition-colors truncate">{c.name}</h3>
+                            <div className="text-slate-500 text-[11px] font-medium mt-0.5 truncate">{c.role}</div>
                           </div>
                         </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="font-bold text-slate-700">{c.role}</div>
-                        <div className="text-slate-500 text-[10px]">{c.department}</div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span
-                          className={cn(
-                            "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 font-bold",
-                            STAGE_COLORS[c.stage] || "bg-slate-100 text-slate-700",
-                          )}
-                        >
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-slate-600 -mr-2 -mt-2 shrink-0" onClick={(e) => e.stopPropagation()}>
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="rounded-xl border-border/40">
+                            <DropdownMenuItem asChild><Link to={`/candidates/${c.id}`}>View Details</Link></DropdownMenuItem>
+                            <DropdownMenuItem asChild><Link to={`/candidates/${c.id}/edit`}>Edit</Link></DropdownMenuItem>
+                            <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={(e) => { e.stopPropagation(); setDeleteCandidateId(c.id); }}>Delete</DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                      
+                      <div className="space-y-2.5 mb-5 flex-1">
+                        <div className="flex items-center text-[11px] text-slate-600">
+                          <Briefcase className="h-3.5 w-3.5 mr-2.5 text-slate-400 shrink-0" />
+                          <span className="truncate font-medium">{c.currentCompany || "No Company"} <span className="text-slate-400 font-normal">({c.experience || "Fresher"})</span></span>
+                        </div>
+                        <div className="flex items-center text-[11px] text-slate-600">
+                          <Mail className="h-3.5 w-3.5 mr-2.5 text-slate-400 shrink-0" />
+                          <span className="truncate font-medium">{c.email}</span>
+                        </div>
+                        <div className="flex items-center text-[11px] text-slate-600">
+                          <Phone className="h-3.5 w-3.5 mr-2.5 text-slate-400 shrink-0" />
+                          <span className="font-medium">{c.phone || "No Phone"}</span>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center justify-between mt-auto pt-4 border-t border-slate-100/80">
+                        <span className={cn("inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 font-bold text-[9px] uppercase tracking-wider", STAGE_COLORS[c.stage] || "bg-slate-100 text-slate-700")}>
                           <div className="h-1.5 w-1.5 rounded-full bg-current opacity-75" />
                           {c.stage}
                         </span>
-                      </td>
-                      <td className="px-4 py-3 font-medium text-slate-700">
-                        {c.experience || "—"}
-                      </td>
-                      <td className="px-4 py-3 font-medium text-slate-700">
-                        {c.currentCompany || "—"}
-                      </td>
-                      <td className="px-4 py-3 font-medium text-slate-700">
-                        {new Date(c.appliedAt).toLocaleDateString("en-GB", {
-                          day: "2-digit",
-                          month: "short",
-                          year: "numeric",
-                        })}
-                      </td>
-                      <td className="px-4 py-3">
-                        {c.recruiter ? (
-                          <span className="font-medium text-slate-700">{c.recruiter}</span>
-                        ) : (
-                          "—"
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-center" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex items-center justify-center gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 text-slate-400 hover:text-blue-600"
-                            asChild
-                          >
-                            <Link to={`/candidates/${c.id}`}>
-                              <Eye className="h-3.5 w-3.5" />
-                            </Link>
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 text-slate-400 hover:text-blue-600"
-                            asChild
-                          >
-                            <Link to={`/candidates/${c.id}/edit`}>
-                              <Pencil className="h-3.5 w-3.5" />
-                            </Link>
-                          </Button>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7 text-slate-400 hover:text-blue-600"
-                              >
-                                <MoreHorizontal className="h-3.5 w-3.5" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent
-                              align="end"
-                              className="rounded-xl border-border/40"
-                            >
-                              <DropdownMenuItem asChild>
-                                <Link to={`/candidates/${c.id}`}>View Details</Link>
-                              </DropdownMenuItem>
-                              <DropdownMenuItem asChild>
-                                <Link to={`/candidates/${c.id}/edit`}>Edit</Link>
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                className="text-destructive focus:text-destructive"
-                                onClick={() => setDeleteCandidateId(c.id)}
-                              >
-                                Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                        <div className="text-[10px] font-bold text-slate-400">
+                          {new Date(c.appliedAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short" })}
                         </div>
-                      </td>
-                    </tr>
-                  ))}
-                  {paginated.length === 0 && (
-                    <tr>
-                      <td colSpan={8} className="py-10 text-center text-slate-500 font-medium">
-                        No candidates match your filters.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+                {paginated.length === 0 && (
+                  <div className="col-span-full py-12 text-center text-slate-500 font-medium bg-white rounded-2xl border border-dashed border-slate-200">
+                    No candidates match your filters.
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Pagination Footer */}
             <div className="flex items-center justify-between p-4 border-t border-slate-100 bg-white">

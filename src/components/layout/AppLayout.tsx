@@ -16,6 +16,7 @@ import {
   ChevronRight,
   LogOut,
   Plus,
+  UserCheck,
 } from "lucide-react";
 import { Toaster } from "@/components/ui/sonner";
 import { cn } from "@/lib/utils";
@@ -34,6 +35,7 @@ const nav = [
       { to: "/jobs/create", label: "Create Job", roles: ["Administrator", "HR Manager", "Recruiter"], module: "Job Openings" },
     ],
   },
+
   {
     to: "/candidates",
     label: "Candidates",
@@ -99,8 +101,6 @@ const nav = [
       { to: "/reports/recruiter-performance", label: "Recruiter Performance", roles: ["Administrator", "HR Manager"], module: "Reports" },
       { to: "/reports/hiring", label: "Hiring Report", roles: ["Administrator", "HR Manager"], module: "Reports" },
       { to: "/reports/rejection-analysis", label: "Rejection Analysis", roles: ["Administrator", "HR Manager"], module: "Reports" },
-      { to: "/reports/blacklist", label: "Blacklist Report", roles: ["Administrator", "HR Manager"], module: "Reports" },
-      { to: "/reports/no-joiners", label: "No-Joiner Report", roles: ["Administrator", "HR Manager"], module: "Reports" },
     ],
   },
   {
@@ -132,6 +132,8 @@ const nav = [
     children: [
       { to: "/system-settings/profile", label: "User Profile", roles: ["Administrator", "HR Manager", "Recruiter", "Hiring Manager"], module: "System Settings" },
       { to: "/system-settings/roles", label: "User Roles & Permissions", roles: ["Administrator"], module: "Users & Roles" },
+      { to: "/system-settings/departments", label: "Departments", roles: ["Administrator", "HR Manager"], module: "System Settings" },
+      { to: "/recruiters", label: "Recruiters", roles: ["Administrator", "HR Manager"], module: "System Settings" },
     ],
   },
 ];

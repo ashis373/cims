@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { useAts, PIPELINE_STAGES } from "@/services/ats-store";
-import { STAGE_COLORS, type Stage } from "@/types/ats-types";
+import { STAGE_COLORS, INTERVIEW_TYPES, type Stage } from "@/types/ats-types";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -73,18 +74,7 @@ function DetailItem({
   return (
     <div className="min-w-0">
       <div className="text-[10px] font-bold text-slate-500 mb-1">{label}</div>
-      {isRecruiter && value !== "-" ? (
-        <div className="flex items-center gap-2 min-w-0">
-          <img
-            src={`https://api.dicebear.com/7.x/notionists/svg?seed=${value}`}
-            alt=""
-            className="h-5 w-5 rounded-full bg-slate-100 shrink-0"
-          />
-          <span className="text-[12px] font-bold text-slate-900 truncate">{value}</span>
-        </div>
-      ) : (
-        <div className="text-[12px] font-bold text-slate-900 break-all">{value}</div>
-      )}
+      <div className="text-[12px] font-bold text-slate-900 break-all">{value}</div>
     </div>
   );
 }
@@ -92,7 +82,7 @@ function DetailItem({
 export default function CandidateProfile() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { candidates, setStage, remove, update } = useAts();
+  const { candidates, setStage, remove, update, addInterview, updateInterview } = useAts();
   const candidate = candidates.find((c) => c.id === id);
 
   let currentUser = "Admin";
@@ -144,6 +134,77 @@ export default function CandidateProfile() {
 
   const handleDeleteDocument = (id: number, name: string) => {
     setDeleteDoc({ id, name });
+  };
+
+  const [scheduleInterviewOpen, setScheduleInterviewOpen] = useState(false);
+  const [editingInterviewId, setEditingInterviewId] = useState<string | null>(null);
+  const [interviewForm, setInterviewForm] = useState({
+    type: "HR Round",
+    date: "",
+    end_time: "",
+    mode: "Online",
+    interviewers: "",
+    meeting_link: "",
+    location: "",
+    notes: "",
+    status: "Scheduled",
+    feedback: "",
+    rating: 0,
+    recommendation: "",
+    comments: "",
+  });
+
+  const handleSaveInterview = async () => {
+    if (!interviewForm.date || !interviewForm.interviewers) {
+      toast.error("Please fill in all required fields (Date, Interviewers)");
+      return;
+    }
+
+    try {
+      if (editingInterviewId) {
+        await updateInterview(candidate.id, editingInterviewId, interviewForm);
+        toast.success("Interview updated");
+      } else {
+        await addInterview(candidate.id, interviewForm);
+        toast.success("Interview scheduled");
+      }
+      setScheduleInterviewOpen(false);
+      setEditingInterviewId(null);
+      setInterviewForm({
+        type: "HR Round", date: "", end_time: "", mode: "Online", interviewers: "", meeting_link: "", location: "", notes: "", status: "Scheduled", feedback: "", rating: 0, recommendation: "", comments: ""
+      });
+      setTimeout(() => window.location.reload(), 1000);
+    } catch (e: any) {
+      toast.error(e.message || "Failed to save interview");
+    }
+  };
+
+  const openAddInterview = () => {
+    setInterviewForm({
+      type: "HR Round", date: "", end_time: "", mode: "Online", interviewers: "", meeting_link: "", location: "", notes: "", status: "Scheduled", feedback: "", rating: 0, recommendation: "", comments: ""
+    });
+    setEditingInterviewId(null);
+    setScheduleInterviewOpen(true);
+  };
+
+  const openEditInterview = (iv: any) => {
+    setInterviewForm({
+        type: iv.type || "HR Round",
+        date: iv.interviewDate ? iv.interviewDate.substring(0, 16) : "",
+        end_time: iv.end_time ? iv.end_time.substring(0, 16) : "",
+        mode: iv.mode || "Online",
+        interviewers: iv.interviewers || "",
+        meeting_link: iv.meeting_link || "",
+        location: iv.location || "",
+        notes: iv.notes || "",
+        status: iv.status || "Scheduled",
+        feedback: iv.feedback || "",
+        rating: iv.rating || 0,
+        recommendation: iv.recommendation || "",
+        comments: iv.comments || ""
+    });
+    setEditingInterviewId(iv.id);
+    setScheduleInterviewOpen(true);
   };
 
   if (!candidate) {
@@ -302,7 +363,23 @@ export default function CandidateProfile() {
                   </Badge>
                 )}
               </div>
-              <div className="text-[13px] font-medium text-slate-600 mt-1">{candidate.role}</div>
+              <div className="flex flex-wrap items-center gap-2 mt-2">
+                <span className="text-[13px] font-bold text-slate-700">{candidate.role}</span>
+                {candidate.department && (
+                  <>
+                    <span className="text-slate-300 font-black">&middot;</span>
+                    <span className="text-[12px] font-semibold text-slate-500">{candidate.department}</span>
+                  </>
+                )}
+                {candidate.recruiter && (
+                  <>
+                    <span className="text-slate-300 font-black">&middot;</span>
+                    <span className="text-[12px] font-bold text-blue-600 flex items-center gap-1.5 bg-blue-50 px-2 py-0.5 rounded-md">
+                      <User className="h-3 w-3" /> {candidate.recruiter}
+                    </span>
+                  </>
+                )}
+              </div>
               <div className="flex flex-wrap items-center gap-5 text-[11px] text-slate-500 font-bold mt-3">
                 <span className="flex items-center gap-1.5">
                   <Mail className="h-3.5 w-3.5 text-slate-400" /> {candidate.email}
@@ -409,10 +486,87 @@ export default function CandidateProfile() {
       </div>
 
       {/* Main Grid Layout */}
-      <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 items-start">
-        {/* Main Content Area (Left 75%) */}
-        <div className="xl:col-span-3">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6 items-start">
+        {/* Actions Toolbar */}
+        <div className="col-span-1">
+
+          {/* Actions */}
+          <Card className="p-5 bg-white border-border/50 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] rounded-2xl">
+            <h3 className="text-[13px] font-bold text-slate-900 mb-4">Actions</h3>
+            <div className="flex flex-wrap items-center gap-3">
+              <Select value={candidate.stage} onValueChange={handleStageSelect}>
+                <SelectTrigger className="h-9 bg-blue-50/50 border-blue-100 text-blue-700 font-bold text-[11px] rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="h-3.5 w-3.5" />{" "}
+                    <SelectValue placeholder="Update Status" />
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  {PIPELINE_STAGES.map((s) => (
+                    <SelectItem key={s} value={s} className="text-[11px] font-bold">
+                      {s}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Button
+                variant="outline"
+                className="justify-start h-9 text-[11px] font-bold text-slate-700 border-slate-200 rounded-lg"
+                onClick={openAddInterview}
+              >
+                <Calendar className="mr-2 h-3.5 w-3.5 text-slate-400" /> Schedule Interview
+              </Button>
+
+              <Button
+                variant="outline"
+                className="justify-start h-9 text-[11px] font-bold text-slate-700 border-slate-200 rounded-lg"
+                onClick={() => handleStageSelect("Offer Released")}
+              >
+                <FileText className="mr-2 h-3.5 w-3.5 text-slate-400" /> Release Offer
+              </Button>
+
+              <Button
+                variant="outline"
+                className="justify-start h-9 text-[11px] font-bold text-slate-700 border-slate-200 rounded-lg"
+              >
+                <Mail className="mr-2 h-3.5 w-3.5 text-slate-400" /> Send Email
+              </Button>
+
+              <Button
+                variant="outline"
+                className="justify-start h-9 text-[11px] font-bold text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 rounded-lg mt-2"
+                onClick={() => handleStageSelect("Rejected")}
+              >
+                <Trash2 className="mr-2 h-3.5 w-3.5" /> Reject Candidate
+              </Button>
+
+              {candidate.isBlacklisted ? (
+                <Button
+                  variant="outline"
+                  className="justify-start h-9 text-[11px] font-bold text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 rounded-lg"
+                  onClick={unblacklist}
+                >
+                  <ShieldAlert className="mr-2 h-3.5 w-3.5" /> Unblacklist Candidate
+                </Button>
+              ) : (
+                <Button
+                  variant="outline"
+                  className="justify-start h-9 text-[11px] font-bold text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 rounded-lg"
+                  onClick={() => setBlacklistDialogOpen(true)}
+                >
+                  <ShieldAlert className="mr-2 h-3.5 w-3.5" /> Blacklist Candidate
+                </Button>
+              )}
+            </div>
+          </Card>
+
+        
+        </div>
+
+        {/* Main Content Area */}
+        <div className="col-span-1">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Candidate Details */}
             <Card id="overview" className={cn("col-span-1 p-5 bg-white border shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] rounded-2xl relative flex flex-col transition-all duration-300", activeTab === "Overview" || activeTab === "Applications" ? "border-blue-500 ring-1 ring-blue-500 shadow-blue-100" : "border-border/50")}>
               <h3 className="text-[13px] font-bold text-slate-900 mb-5">Candidate Details</h3>
@@ -444,7 +598,14 @@ export default function CandidateProfile() {
                     const msg = item.message.toLowerCase();
                     return msg.includes('created') || msg.includes('application received') || msg.includes('status changed') || msg.includes('interview') || msg.includes('offer');
                   })
-                  .slice().reverse().slice(0, 4).map((item: any, i: number) => (
+                  .slice().reverse().slice(0, 4).map((item: any, i: number) => {
+                    let title = item.message.split(':')[0] || "Update";
+                    let detail = item.message.includes(':') ? item.message.substring(item.message.indexOf(':') + 1).trim() : null;
+                    if (item.message.includes('Status changed:')) {
+                      title = 'Status changed';
+                      detail = item.message.split('Status changed:')[1].trim();
+                    }
+                    return (
                     <div key={i} className="flex items-start gap-4">
                       <div
                         className={cn(
@@ -467,7 +628,7 @@ export default function CandidateProfile() {
                                 i === 0 ? "text-slate-900" : "text-slate-600",
                               )}
                             >
-                              {item.message.split(':')[0] || "Update"}
+                              {title}
                             </div>
                             <div className="text-[9px] font-bold text-slate-400 mt-0.5">
                               {formatDateTime(item.at)}
@@ -482,14 +643,14 @@ export default function CandidateProfile() {
                             {i === 0 ? "Current" : "Completed"}
                           </Badge>
                         </div>
-                        {item.message.includes(':') && (
+                        {detail && (
                           <div className="text-[10px] text-slate-500 mt-1 font-medium bg-slate-50 p-1.5 rounded-md border border-slate-100 inline-block">
-                            {item.message.split(':')[1].trim()}
+                            {detail}
                           </div>
                         )}
                       </div>
                     </div>
-                  ))}
+                  )})}
               </div>
               <div className="mt-5 pt-3 border-t border-slate-100 text-center">
                 <Button variant="link" className="text-blue-600 text-[11px] font-bold" onClick={() => setFullTimelineOpen(true)}>
@@ -517,11 +678,7 @@ export default function CandidateProfile() {
               <div className="space-y-4 flex-1">
                 {candidate.notesList?.slice(0, 3).map((note: any, i: number) => (
                   <div key={i} className="flex gap-3">
-                    <img
-                      src={`https://api.dicebear.com/7.x/notionists/svg?seed=${note.createdBy}`}
-                      alt=""
-                      className="h-7 w-7 rounded-full bg-slate-100 shrink-0"
-                    />
+                    
                     <div>
                       <div className="flex items-center justify-between gap-2">
                         <span className="text-[11px] font-bold text-slate-900">{note.createdBy}</span>
@@ -579,26 +736,28 @@ export default function CandidateProfile() {
                         <th className="py-2.5 px-2">Stage</th>
                         <th className="py-2.5 px-2">Interviewers</th>
                         <th className="py-2.5 px-2">Date</th>
+                        <th className="py-2.5 px-2">Mode</th>
+                        <th className="py-2.5 px-2">Link/Location</th>
                         <th className="py-2.5 px-2">Feedback</th>
                         <th className="py-2.5 px-2 text-right">Status</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-50 font-semibold text-slate-700">
                       {candidate.interviewsList?.map((interview: any, i: number) => (
-                        <tr key={i}>
-                          <td className="py-3 px-2">{interview.type}</td>
+                        <tr key={i} className="hover:bg-slate-50 cursor-pointer transition-colors" onClick={() => openEditInterview(interview)}>
+                          <td className="py-3 px-2 flex items-center gap-2">
+                            {interview.type}
+                            <Pencil className="h-3 w-3 text-slate-400 group-hover:text-blue-500" />
+                          </td>
                           <td className="py-3 px-2">
-                            <div className="flex -space-x-2">
-                              <img
-                                src={`https://api.dicebear.com/7.x/notionists/svg?seed=${interview.id}`}
-                                className="h-6 w-6 rounded-full border-2 border-white bg-slate-100"
-                                title="Interviewer"
-                                alt=""
-                              />
+                            <div className="flex items-center gap-2">
+                              <span className="truncate max-w-[120px]">{interview.interviewers || "-"}</span>
                             </div>
                           </td>
                           <td className="py-3 px-2 text-slate-500">{formatDateTime(interview.interviewDate)}</td>
-                          <td className="py-3 px-2">{interview.feedback || "-"}</td>
+                          <td className="py-3 px-2">{interview.mode || "-"}</td>
+                          <td className="py-3 px-2 text-blue-600 truncate max-w-[150px]">{interview.meeting_link || interview.location || "-"}</td>
+                          <td className="py-3 px-2 truncate max-w-[150px]">{interview.feedback || "-"}</td>
                           <td className="py-3 px-2 text-right">
                             <Badge className={cn(
                               "text-[9px] uppercase border-transparent",
@@ -613,7 +772,7 @@ export default function CandidateProfile() {
                       ))}
                       {(!candidate.interviewsList || candidate.interviewsList.length === 0) && (
                         <tr>
-                          <td colSpan={5} className="py-6 text-center text-[11px] font-bold text-slate-400">
+                          <td colSpan={7} className="py-6 text-center text-[11px] font-bold text-slate-400">
                             No interviews scheduled yet.
                           </td>
                         </tr>
@@ -843,135 +1002,7 @@ export default function CandidateProfile() {
           </div>
         </div>
 
-        {/* Right Sidebar (Right 25%) */}
-        <div className="xl:col-span-1 space-y-6">
-          {/* Actions */}
-          <Card className="p-5 bg-white border-border/50 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] rounded-2xl">
-            <h3 className="text-[13px] font-bold text-slate-900 mb-4">Actions</h3>
-            <div className="space-y-2">
-              <Select value={candidate.stage} onValueChange={handleStageSelect}>
-                <SelectTrigger className="w-full h-9 bg-blue-50/50 border-blue-100 text-blue-700 font-bold text-[11px] rounded-lg">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="h-3.5 w-3.5" />{" "}
-                    <SelectValue placeholder="Update Status" />
-                  </div>
-                </SelectTrigger>
-                <SelectContent>
-                  {PIPELINE_STAGES.map((s) => (
-                    <SelectItem key={s} value={s} className="text-[11px] font-bold">
-                      {s}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Button
-                variant="outline"
-                className="w-full justify-start h-9 text-[11px] font-bold text-slate-700 border-slate-200 rounded-lg"
-              >
-                <Calendar className="mr-2 h-3.5 w-3.5 text-slate-400" /> Schedule Interview
-              </Button>
-
-              <Button
-                variant="outline"
-                className="w-full justify-start h-9 text-[11px] font-bold text-slate-700 border-slate-200 rounded-lg"
-                onClick={() => handleStageSelect("Offer Released")}
-              >
-                <FileText className="mr-2 h-3.5 w-3.5 text-slate-400" /> Release Offer
-              </Button>
-
-              <Button
-                variant="outline"
-                className="w-full justify-start h-9 text-[11px] font-bold text-slate-700 border-slate-200 rounded-lg"
-              >
-                <Mail className="mr-2 h-3.5 w-3.5 text-slate-400" /> Send Email
-              </Button>
-
-              <Button
-                variant="outline"
-                className="w-full justify-start h-9 text-[11px] font-bold text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 rounded-lg mt-2"
-                onClick={() => handleStageSelect("Rejected")}
-              >
-                <Trash2 className="mr-2 h-3.5 w-3.5" /> Reject Candidate
-              </Button>
-
-              {candidate.isBlacklisted ? (
-                <Button
-                  variant="outline"
-                  className="w-full justify-start h-9 text-[11px] font-bold text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 rounded-lg"
-                  onClick={unblacklist}
-                >
-                  <ShieldAlert className="mr-2 h-3.5 w-3.5" /> Unblacklist Candidate
-                </Button>
-              ) : (
-                <Button
-                  variant="outline"
-                  className="w-full justify-start h-9 text-[11px] font-bold text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 rounded-lg"
-                  onClick={() => setBlacklistDialogOpen(true)}
-                >
-                  <ShieldAlert className="mr-2 h-3.5 w-3.5" /> Blacklist Candidate
-                </Button>
-              )}
-            </div>
-          </Card>
-
-          {/* Quick Info */}
-          <Card className="p-5 bg-white border-border/50 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] rounded-2xl">
-            <h3 className="text-[13px] font-bold text-slate-900 mb-4">Quick Info</h3>
-            <div className="space-y-3.5">
-              <div className="flex justify-between items-center pb-3.5 border-b border-slate-100 last:border-0 last:pb-0">
-                <span className="text-[11px] font-bold text-slate-500">Status</span>
-                <span className="text-[11px] font-bold text-slate-900">{candidate.stage}</span>
-              </div>
-              <div className="flex justify-between items-center pb-3.5 border-b border-slate-100 last:border-0 last:pb-0">
-                <span className="text-[11px] font-bold text-slate-500">Days in Pipeline</span>
-                <span className="text-[11px] font-bold text-slate-900">{daysInPipeline} days</span>
-              </div>
-              <div className="flex justify-between items-center pb-3.5 border-b border-slate-100 last:border-0 last:pb-0">
-                <span className="text-[11px] font-bold text-slate-500">Total Interviews</span>
-                <span className="text-[11px] font-bold text-slate-900">2</span>
-              </div>
-              <div className="flex justify-between items-center pb-3.5 border-b border-slate-100 last:border-0 last:pb-0">
-                <span className="text-[11px] font-bold text-slate-500">Applications</span>
-                <span className="text-[11px] font-bold text-slate-900">1</span>
-              </div>
-              <div className="flex justify-between items-center pb-3.5 border-b border-slate-100 last:border-0 last:pb-0">
-                <span className="text-[11px] font-bold text-slate-500">Last Activity</span>
-                <span className="text-[11px] font-bold text-slate-900">
-                  {formatDate(candidate.updatedAt)}
-                </span>
-              </div>
-            </div>
-          </Card>
-
-          {/* Alerts */}
-          <Card className="p-5 bg-white border-border/50 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] rounded-2xl">
-            <h3 className="text-[13px] font-bold text-slate-900 mb-4">Alerts</h3>
-            <div className="space-y-3">
-              <div className="bg-orange-50/80 border border-orange-100 rounded-xl p-3 flex gap-3">
-                <AlertCircle className="h-4 w-4 text-orange-500 shrink-0 mt-0.5" />
-                <div>
-                  <div className="text-[11px] font-bold text-orange-700">Previously Offered</div>
-                  <div className="text-[10px] font-semibold text-orange-600 mt-1 leading-relaxed">
-                    Offer was released on 08 Jun 2026 and declined on 09 Jun 2026.
-                  </div>
-                </div>
-              </div>
-              {candidate.isBlacklisted && (
-                <div className="bg-red-50/80 border border-red-100 rounded-xl p-3 flex gap-3">
-                  <AlertCircle className="h-4 w-4 text-red-500 shrink-0 mt-0.5" />
-                  <div>
-                    <div className="text-[11px] font-bold text-red-700">Blacklisted Candidate</div>
-                    <div className="text-[10px] font-semibold text-red-600 mt-1 leading-relaxed">
-                      Reason: {candidate.blacklistReason || "many time apply ok"}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </Card>
         </div>
-      </div>
 
       <AlertDialog open={del} onOpenChange={setDel}>
         <AlertDialogContent>
@@ -1025,7 +1056,7 @@ export default function CandidateProfile() {
       </AlertDialog>
 
       <Dialog open={fullDetailsOpen} onOpenChange={setFullDetailsOpen}>
-        <DialogContent className="max-w-2xl bg-white border-0 shadow-2xl rounded-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent aria-describedby={undefined} className="max-w-2xl bg-white border-0 shadow-2xl rounded-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-lg font-bold text-slate-900">
               Full Candidate Details
@@ -1086,14 +1117,21 @@ export default function CandidateProfile() {
       </Dialog>
 
       <Dialog open={fullTimelineOpen} onOpenChange={setFullTimelineOpen}>
-        <DialogContent className="max-w-md bg-white border-0 shadow-2xl rounded-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent aria-describedby={undefined} className="max-w-md bg-white border-0 shadow-2xl rounded-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-lg font-bold text-slate-900">
               Full Activity Timeline
             </DialogTitle>
           </DialogHeader>
           <div className="mt-6 space-y-6 relative before:absolute before:inset-0 before:ml-4 before:-translate-x-px before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-slate-100 before:to-transparent">
-            {candidate.activity.slice().reverse().map((item, i) => (
+            {candidate.activity.slice().reverse().map((item, i) => {
+              let title = item.message.split(':')[0] || "Update";
+              let detail = item.message.includes(':') ? item.message.substring(item.message.indexOf(':') + 1).trim() : null;
+              if (item.message.includes('Status changed:')) {
+                title = 'Status changed';
+                detail = item.message.split('Status changed:')[1].trim();
+              }
+              return (
               <div key={i} className="flex items-start gap-4">
                 <div
                   className={cn(
@@ -1116,7 +1154,7 @@ export default function CandidateProfile() {
                           i === 0 ? "text-slate-900" : "text-slate-600",
                         )}
                       >
-                        {item.message.split(':')[0] || "Update"}
+                        {title}
                       </div>
                       <div className="text-[9px] font-bold text-slate-400 mt-0.5">
                         {formatDateTime(item.at)}
@@ -1131,20 +1169,20 @@ export default function CandidateProfile() {
                       {i === 0 ? "Current" : "Completed"}
                     </Badge>
                   </div>
-                  {item.message.includes(':') && (
+                  {detail && (
                     <div className="text-[10px] text-slate-500 mt-1 font-medium bg-slate-50 p-1.5 rounded-md border border-slate-100 inline-block">
-                      {item.message.split(':')[1].trim()}
+                      {detail}
                     </div>
                   )}
                 </div>
               </div>
-            ))}
+            )})}
           </div>
         </DialogContent>
       </Dialog>
 
       <Dialog open={addNoteOpen} onOpenChange={setAddNoteOpen}>
-        <DialogContent className="sm:max-w-[425px] bg-white border-0 shadow-2xl rounded-2xl">
+        <DialogContent aria-describedby={undefined} className="sm:max-w-[425px] bg-white border-0 shadow-2xl rounded-2xl">
           <DialogHeader>
             <DialogTitle className="text-lg font-bold text-slate-900">
               {editingNoteId ? "Edit Note" : "Add Note"}
@@ -1184,7 +1222,7 @@ export default function CandidateProfile() {
 
       {/* All Notes Dialog */}
       <Dialog open={allNotesOpen} onOpenChange={setAllNotesOpen}>
-        <DialogContent className="max-w-xl bg-white border-0 shadow-2xl rounded-2xl max-h-[80vh] overflow-y-auto">
+        <DialogContent aria-describedby={undefined} className="max-w-xl bg-white border-0 shadow-2xl rounded-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-lg font-bold text-slate-900 flex items-center justify-between">
               <span>All Notes ({candidate.notesList?.length || 0})</span>
@@ -1206,11 +1244,7 @@ export default function CandidateProfile() {
           <div className="space-y-4 mt-4">
             {candidate.notesList?.map((note: any, i: number) => (
               <div key={i} className="flex gap-3 p-4 bg-slate-50 rounded-xl border border-slate-100">
-                <img
-                  src={`https://api.dicebear.com/7.x/notionists/svg?seed=${note.createdBy}`}
-                  alt=""
-                  className="h-8 w-8 rounded-full bg-white shrink-0 shadow-sm border border-slate-200"
-                />
+                
                 <div className="flex-1">
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-[12px] font-bold text-slate-900">{note.createdBy}</span>
@@ -1336,6 +1370,87 @@ export default function CandidateProfile() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={scheduleInterviewOpen} onOpenChange={setScheduleInterviewOpen}>
+        <DialogContent aria-describedby={undefined} className="max-w-xl bg-white border-0 shadow-2xl rounded-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold text-slate-900">
+              {editingInterviewId ? "Update Interview" : "Schedule Interview"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-4 mt-4">
+            <div className="space-y-2">
+              <Label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Interview Stage</Label>
+              <Select value={interviewForm.type} onValueChange={(v) => setInterviewForm({...interviewForm, type: v})}>
+                <SelectTrigger className="h-9 text-[12px] font-semibold"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {INTERVIEW_TYPES.map(t => <SelectItem key={t} value={t} className="text-[12px]">{t}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Status</Label>
+              <Select value={interviewForm.status} onValueChange={(v) => setInterviewForm({...interviewForm, status: v})}>
+                <SelectTrigger className="h-9 text-[12px] font-semibold"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Scheduled" className="text-[12px]">Scheduled</SelectItem>
+                  <SelectItem value="Completed" className="text-[12px]">Completed</SelectItem>
+                  <SelectItem value="Cancelled" className="text-[12px]">Cancelled</SelectItem>
+                  <SelectItem value="Rescheduled" className="text-[12px]">Rescheduled</SelectItem>
+                  <SelectItem value="No Show" className="text-[12px]">No Show</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Interview Date *</Label>
+              <Input type="date" value={interviewForm.date} onChange={e => setInterviewForm({...interviewForm, date: e.target.value})} className="h-9 text-[12px] font-semibold" />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Mode</Label>
+              <Select value={interviewForm.mode} onValueChange={(v) => setInterviewForm({...interviewForm, mode: v})}>
+                <SelectTrigger className="h-9 text-[12px] font-semibold"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Online" className="text-[12px]">Online</SelectItem>
+                  <SelectItem value="Offline" className="text-[12px]">Offline</SelectItem>
+                  <SelectItem value="Phone" className="text-[12px]">Phone</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Interviewer(s)</Label>
+              <Input value={interviewForm.interviewers} onChange={e => setInterviewForm({...interviewForm, interviewers: e.target.value})} placeholder="e.g. Rahul, Neha" className="h-9 text-[12px] font-semibold" />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Meeting Link / Location</Label>
+              <Input value={interviewForm.meeting_link} onChange={e => setInterviewForm({...interviewForm, meeting_link: e.target.value})} placeholder="Zoom link or Office room" className="h-9 text-[12px] font-semibold" />
+            </div>
+            
+            {editingInterviewId && interviewForm.status === 'Completed' && (
+              <>
+                <div className="col-span-2 space-y-2 pt-4 border-t border-slate-100">
+                  <Label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Feedback Summary</Label>
+                  <Input value={interviewForm.feedback} onChange={e => setInterviewForm({...interviewForm, feedback: e.target.value})} placeholder="Brief feedback summary" className="h-9 text-[12px] font-semibold" />
+                </div>
+                <div className="col-span-2 space-y-2">
+                  <Label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Interviewer Comments</Label>
+                  <Textarea value={interviewForm.comments} onChange={e => setInterviewForm({...interviewForm, comments: e.target.value})} placeholder="Detailed comments" className="h-20 text-[12px] font-semibold resize-none" />
+                </div>
+              </>
+            )}
+            
+            <div className="col-span-2 space-y-2 mt-2">
+              <Label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Internal Notes</Label>
+              <Textarea value={interviewForm.notes} onChange={e => setInterviewForm({...interviewForm, notes: e.target.value})} placeholder="Notes for HR..." className="h-16 text-[12px] font-semibold resize-none" />
+            </div>
+          </div>
+          <div className="flex justify-end gap-3 mt-6">
+            <Button variant="outline" onClick={() => setScheduleInterviewOpen(false)} className="text-[11px] font-bold">Cancel</Button>
+            <Button onClick={handleSaveInterview} className="bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold">
+              {editingInterviewId ? "Save Changes" : "Schedule Interview"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

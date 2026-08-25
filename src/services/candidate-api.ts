@@ -67,3 +67,29 @@ export async function bulkUndoSyncAPI(candidates: Candidate[]): Promise<void> {
     body: JSON.stringify({ bulk: true, candidates }),
   }).catch(console.error);
 }
+
+export async function postInterviewAPI(interview: any): Promise<void> {
+  const res = await fetch(`${API_BASE_URL}/candidates/interviews.php`, {
+    credentials: 'include',
+    method: "POST",
+    headers: getAuthHeaders(),
+    body: JSON.stringify(interview),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || "Failed to add interview");
+  }
+}
+
+export async function putInterviewAPI(id: string, patch: any): Promise<void> {
+  const res = await fetch(`${API_BASE_URL}/candidates/interviews.php?id=${id}`, {
+    credentials: 'include',
+    method: "PUT",
+    headers: getAuthHeaders(),
+    body: JSON.stringify(patch),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || "Failed to update interview");
+  }
+}

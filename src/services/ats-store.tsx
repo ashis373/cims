@@ -26,6 +26,8 @@ import {
   putCandidateAPI,
   deleteCandidatesAPI,
   bulkUndoSyncAPI,
+  postInterviewAPI,
+  putInterviewAPI,
 } from "./candidate-api";
 
 import { uid, now, findDuplicateHelper } from "./candidate-utils";
@@ -39,6 +41,7 @@ interface Ctx {
   setStage: (id: string, stage: Stage, reason?: string) => Promise<void>;
   addNote: (id: string, note: string) => Promise<void>;
   addInterview: (id: string, iv: Omit<Interview, "id">) => Promise<void>;
+  updateInterview: (candidateId: string, interviewId: string, patch: any) => Promise<void>;
   findDuplicate: (email: string, phone: string, name: string) => { type: "EXACT" | "POSSIBLE", candidate: Candidate } | null;
   reapply: (existingId: string, role: string, source: Source) => Promise<void>;
   undo: () => void;
@@ -229,30 +232,74 @@ export function AtsProvider({ children }: { children: ReactNode }) {
       addInterview: async (id, iv) => {
         const target = candidates.find((c) => c.id === id);
         if (!target) return;
-        const full: Interview = { ...iv, id: uid() };
-        const next = {
-          ...target,
-          updatedAt: now(),
-          interviews: [...target.interviews, full],
-          stage:
-            target.stage === "New Applicant" ||
-            target.stage === "Shortlisted" ||
-            target.stage === "HR Call Scheduled"
-              ? "Interview Scheduled"
-              : target.stage,
-          activity: [
-            ...target.activity,
-            {
-              id: uid(),
-              at: now(),
-              kind: "interview",
-              message: `${iv.type} interview on ${new Date(iv.date).toLocaleString()}`,
-            },
-          ],
-        } as Candidate;
+        
+        const appId = target.applicationsList?.[0]?.id || target.applications?.[0]?.id;
+        if (!appId) {
+          toast.error("Candidate has no active application");
+          return;
+        }
+
         try {
-          await syncPut(next);
+          const payload = {
+            ...iv,
+            candidate_id: id,
+            application_id: appId
+          };
+          
+          await postInterviewAPI(payload);
+          
+          const full: Interview = { ...iv, id: uid() }; // Fallback local ID until refresh
+          const next = {
+            ...target,
+            updatedAt: now(),
+            interviewsList: [...(target.interviewsList || []), full],
+            stage:
+              target.stage === "New Applicant" ||
+              target.stage === "Shortlisted" ||
+              target.stage === "HR Call Scheduled"
+                ? "Interview Scheduled"
+                : target.stage,
+            activity: [
+              ...target.activity,
+              {
+                id: uid(),
+                at: now(),
+                kind: "interview",
+                message: `${iv.type} scheduled for ${new Date(iv.date).toLocaleString()}`,
+              },
+            ],
+          } as Candidate;
+          
           mutate((prev) => prev.map((c) => (c.id === id ? next : c)));
+        } catch (e) {
+          const error = e as Error;
+          toast.error(error.message || "Database error");
+          throw error;
+        }
+      },
+      updateInterview: async (candidateId: string, interviewId: string, patch: any) => {
+        const target = candidates.find((c) => c.id === candidateId);
+        if (!target) return;
+
+        try {
+          await putInterviewAPI(interviewId, { ...patch, candidate_id: candidateId });
+          
+          const next = {
+            ...target,
+            updatedAt: now(),
+            interviewsList: target.interviewsList?.map((iv: any) => iv.id === interviewId ? { ...iv, ...patch } : iv),
+            activity: [
+              ...target.activity,
+              {
+                id: uid(),
+                at: now(),
+                kind: "interview",
+                message: `Interview updated: ${patch.status || "Updated"}`,
+              },
+            ],
+          } as Candidate;
+          
+          mutate((prev) => prev.map((c) => (c.id === candidateId ? next : c)));
         } catch (e) {
           const error = e as Error;
           toast.error(error.message || "Database error");
