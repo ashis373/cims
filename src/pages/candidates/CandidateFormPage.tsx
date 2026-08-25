@@ -162,13 +162,13 @@ export default function CandidateFormPage() {
         const recData = await recRes.json();
 
         if (Array.isArray(jobsData)) {
-          setOpenJobs(jobsData.filter((j: any) => j.status === 'Open'));
+          setOpenJobs(jobsData.filter((j: any) => j.status === 'Open').map((j: any) => ({...j, title: j.title.trim(), department: j.department.trim()})));
         }
         if (Array.isArray(deptsData)) {
-          setDbDepartments(deptsData);
+          setDbDepartments(deptsData.map((d: any) => ({...d, name: d.name.trim()})));
         }
         if (Array.isArray(recData)) {
-          setRecruiters(recData.filter((r: any) => r.status === 'Active'));
+          setRecruiters(recData.filter((r: any) => r.status === 'Active').map((r: any) => ({...r, name: r.name.trim()})));
         }
       } catch (e) {
         console.error("Failed to fetch data", e);
@@ -183,8 +183,8 @@ export default function CandidateFormPage() {
         name: candidate.name || "",
         email: candidate.email || "",
         phone: candidate.phone || "",
-        role: candidate.role || "",
-        department: candidate.department || "",
+        role: candidate.role ? candidate.role.trim() : "",
+        department: candidate.department ? candidate.department.trim() : "",
         source: candidate.source || "",
         stage: candidate.stage || "New Applicant",
         resume: candidate.resume || "",
@@ -202,7 +202,7 @@ export default function CandidateFormPage() {
         alternateMobile: candidate.alternateMobile || "",
         linkedInProfile: candidate.linkedInProfile || "",
         noticePeriod: candidate.noticePeriod ? String(candidate.noticePeriod).replace(/[^\d]/g, '') : "",
-        recruiter: candidate.recruiter || "",
+        recruiter: candidate.recruiter ? candidate.recruiter.trim() : "",
         appliedAt: candidate.appliedAt.slice(0, 10),
         photo: candidate.photo || "",
       });
@@ -218,6 +218,8 @@ export default function CandidateFormPage() {
       setErrors((err) => ({ ...err, [k]: "" }));
     }
   };
+
+
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
@@ -830,7 +832,7 @@ export default function CandidateFormPage() {
               <Label className="flex items-center gap-1.5 text-muted-foreground mb-1.5">
                 <Share2 className="h-3.5 w-3.5" /> Source
               </Label>
-              <Select key={`source-${form.source}`} value={form.source || undefined} onValueChange={(v) => set("source", v as Source)}>
+              <Select key={`source-${form.source}`} value={form.source || ""} onValueChange={(v) => set("source", v as Source)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select source" />
                 </SelectTrigger>
@@ -854,16 +856,28 @@ export default function CandidateFormPage() {
                 <Building2 className="h-3.5 w-3.5" /> Department{" "}
                 <span className="text-destructive">*</span>
               </Label>
-              <Select value={form.department || undefined} onValueChange={(v) => { set("department", v as Department); set("role", ""); }}>
-                <SelectTrigger className={errors.department ? "border-destructive focus:ring-destructive" : ""}>
-                  <SelectValue placeholder="Select department" />
-                </SelectTrigger>
-                <SelectContent>
-                  {dbDepartments.map(d => (
-                    <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {(() => {
+                const activeDepartment = form.department || (candidate as any)?.department?.trim() || "";
+                return (
+                  <Select 
+                    key={`dept-${activeDepartment}`}
+                    value={activeDepartment} 
+                    onValueChange={(v) => { set("department", v as Department); set("role", ""); }}
+                  >
+                    <SelectTrigger className={errors.department ? "border-destructive focus:ring-destructive" : ""}>
+                      <SelectValue placeholder="Select department" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {dbDepartments.map(d => (
+                        <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>
+                      ))}
+                      {activeDepartment && !dbDepartments.find(d => d.name === activeDepartment) && (
+                        <SelectItem value={activeDepartment}>{activeDepartment}</SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
+                );
+              })()}
               <ErrorMsg msg={errors.department} />
             </div>
             <div>
@@ -874,27 +888,33 @@ export default function CandidateFormPage() {
                 <Briefcase className="h-3.5 w-3.5" /> Position Applied For{" "}
                 <span className="text-destructive">*</span>
               </Label>
-              <Select key={`role-${form.role}`} value={form.role || undefined} onValueChange={(v) => set("role", v)}>
-                <SelectTrigger className={errors.role ? "border-destructive focus:ring-destructive" : ""}>
-                  <SelectValue placeholder="Select position" />
-                </SelectTrigger>
-                <SelectContent>
-                  {openJobs.filter(j => !form.department || j.department === form.department).length > 0 ? (
-                    openJobs.filter(j => !form.department || j.department === form.department).map((job) => (
-                      <SelectItem key={job.id} value={job.title}>
-                        {job.title} ({job.id})
-                      </SelectItem>
-                    ))
-                  ) : (
-                    <SelectItem value="loading" disabled>
-                      {openJobs.length > 0 ? "No jobs found for this department" : "Loading jobs..."}
-                    </SelectItem>
-                  )}
-                  {form.role && !openJobs.find(j => j.title === form.role && (!form.department || j.department === form.department)) && form.role !== "loading" && (
-                    <SelectItem value={form.role}>{form.role}</SelectItem>
-                  )}
-                </SelectContent>
-              </Select>
+              {(() => {
+                const activeRole = form.role || (candidate as any)?.role?.trim() || "";
+                const activeDepartment = form.department || (candidate as any)?.department?.trim() || "";
+                return (
+                  <Select key={`role-${activeRole}`} value={activeRole} onValueChange={(v) => set("role", v)}>
+                    <SelectTrigger className={errors.role ? "border-destructive focus:ring-destructive" : ""}>
+                      <SelectValue placeholder="Select position" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {openJobs.filter(j => !activeDepartment || j.department === activeDepartment).length > 0 ? (
+                        openJobs.filter(j => !activeDepartment || j.department === activeDepartment).map((job) => (
+                          <SelectItem key={job.id} value={job.title}>
+                            {job.title} ({job.id})
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="loading" disabled>
+                          {openJobs.length > 0 ? "No jobs found for this department" : "Loading jobs..."}
+                        </SelectItem>
+                      )}
+                      {activeRole && !openJobs.find(j => j.title === activeRole && (!activeDepartment || j.department === activeDepartment)) && activeRole !== "loading" && (
+                        <SelectItem value={activeRole}>{activeRole}</SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
+                );
+              })()}
               <ErrorMsg msg={errors.role} />
             </div>
             <div>
@@ -905,31 +925,37 @@ export default function CandidateFormPage() {
                 <User className="h-3.5 w-3.5" /> Recruiter{" "}
                 <span className="text-destructive">*</span>
               </Label>
-              <Select
-                value={form.recruiter || undefined}
-                onValueChange={(v) => set("recruiter", v)}
-              >
-                <SelectTrigger
-                  id="recruiter"
-                  className={cn("h-11 rounded-xl bg-slate-50 border-slate-200 font-medium", errors.recruiter && "border-destructive focus-visible:ring-destructive")}
-                >
-                  <SelectValue placeholder="Select recruiter" />
-                </SelectTrigger>
-                <SelectContent className="rounded-xl">
-                  {recruiters.length === 0 ? (
-                    <SelectItem value="loading" disabled>Loading recruiters...</SelectItem>
-                  ) : (
-                    recruiters.map((r) => (
-                      <SelectItem key={r.id} value={String(r.name)}>
-                        {r.name}
-                      </SelectItem>
-                    ))
-                  )}
-                  {form.recruiter && !recruiters.find(r => r.name === form.recruiter) && (
-                    <SelectItem value={form.recruiter}>{form.recruiter}</SelectItem>
-                  )}
-                </SelectContent>
-              </Select>
+              {(() => {
+                const activeRecruiter = form.recruiter || (candidate as any)?.recruiter?.trim() || "";
+                return (
+                  <Select
+                    key={`recruiter-${activeRecruiter}`}
+                    value={activeRecruiter}
+                    onValueChange={(v) => set("recruiter", v)}
+                  >
+                    <SelectTrigger
+                      id="recruiter"
+                      className={cn("h-11 rounded-xl bg-slate-50 border-slate-200 font-medium", errors.recruiter && "border-destructive focus-visible:ring-destructive")}
+                    >
+                      <SelectValue placeholder="Select recruiter" />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl">
+                      {recruiters.length === 0 ? (
+                        <SelectItem value="loading" disabled>Loading recruiters...</SelectItem>
+                      ) : (
+                        recruiters.map((r) => (
+                          <SelectItem key={r.id} value={String(r.name)}>
+                            {r.name}
+                          </SelectItem>
+                        ))
+                      )}
+                      {activeRecruiter && !recruiters.find(r => r.name === activeRecruiter) && (
+                        <SelectItem value={activeRecruiter}>{activeRecruiter}</SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
+                );
+              })()}
               <ErrorMsg msg={errors.recruiter} />
             </div>
 

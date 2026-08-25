@@ -110,12 +110,16 @@ export default function Recruiters() {
       toast.error("Name and Email are required");
       return;
     }
+    if (!/^[A-Za-z\s]+$/.test(formData.name)) {
+      toast.error("Name can only contain letters and spaces");
+      return;
+    }
     if (formData.name.length > 30) {
       toast.error("Name cannot exceed 30 characters");
       return;
     }
-    if (formData.mobile && !/^\+?[0-9]{10,15}$/.test(formData.mobile.replace(/\s+/g, ''))) {
-      toast.error("Please enter a valid mobile number (digits only)");
+    if (formData.mobile && !/^\d{10}$/.test(formData.mobile)) {
+      toast.error("Mobile number must be exactly 10 digits");
       return;
     }
     
@@ -305,7 +309,7 @@ export default function Recruiters() {
       </Card>
 
       <Dialog open={showAdd} onOpenChange={setShowAdd}>
-        <DialogContent className="sm:max-w-[600px] rounded-2xl bg-white border-0 shadow-2xl p-0 overflow-hidden max-h-[90vh] flex flex-col">
+        <DialogContent aria-describedby={undefined} className="sm:max-w-[600px] rounded-2xl bg-white border-0 shadow-2xl p-0 overflow-hidden max-h-[90vh] flex flex-col">
           <div className="p-6 overflow-y-auto">
             <DialogHeader className="mb-6">
               <DialogTitle className="text-lg font-black text-slate-900">
@@ -316,7 +320,7 @@ export default function Recruiters() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-[13px] font-bold text-slate-700">Full Name <span className="text-rose-500">*</span></label>
-                <Input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} maxLength={30} placeholder="e.g. Jane Doe" className="h-11 rounded-xl bg-slate-50 border-slate-200 focus-visible:ring-indigo-500 font-medium" />
+                <Input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value.replace(/[^A-Za-z\s]/g, '')})} maxLength={30} placeholder="e.g. Jane Doe" className="h-11 rounded-xl bg-slate-50 border-slate-200 focus-visible:ring-indigo-500 font-medium" />
               </div>
               <div className="space-y-2">
                 <label className="text-[13px] font-bold text-slate-700">Email Address <span className="text-rose-500">*</span></label>
@@ -325,7 +329,7 @@ export default function Recruiters() {
               
               <div className="space-y-2">
                 <label className="text-[13px] font-bold text-slate-700">Mobile Number</label>
-                <Input value={formData.mobile} onChange={e => setFormData({...formData, mobile: e.target.value.replace(/[^0-9+]/g, '')})} maxLength={15} placeholder="e.g. 9876543210" className="h-11 rounded-xl bg-slate-50 border-slate-200 focus-visible:ring-indigo-500 font-medium" />
+                <Input value={formData.mobile} onChange={e => setFormData({...formData, mobile: e.target.value.replace(/[^0-9]/g, '')})} maxLength={10} placeholder="e.g. 9876543210" className="h-11 rounded-xl bg-slate-50 border-slate-200 focus-visible:ring-indigo-500 font-medium" />
               </div>
               <div className="space-y-2">
                 <label className="text-[13px] font-bold text-slate-700">Status</label>
@@ -342,7 +346,7 @@ export default function Recruiters() {
 
               <div className="space-y-2">
                 <label className="text-[13px] font-bold text-slate-700">Department</label>
-                <Select value={formData.department || undefined} onValueChange={(v) => setFormData({...formData, department: v})}>
+                <Select value={formData.department || ""} onValueChange={(v) => setFormData({...formData, department: v})}>
                   <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-slate-200 font-medium">
                     <SelectValue placeholder="Select Department" />
                   </SelectTrigger>

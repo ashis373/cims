@@ -30,5 +30,79 @@ if ($method === 'GET') {
         http_response_code(500);
         echo json_encode(["error" => $e->getMessage()]);
     }
+} elseif ($method === 'POST') {
+    try {
+        $input = json_decode(file_get_contents('php://input'), true);
+        $name = $input['name'] ?? '';
+        $email = $input['email'] ?? '';
+        $mobile = !empty($input['mobile']) ? $input['mobile'] : null;
+        $department = !empty($input['department']) ? $input['department'] : null;
+        $designation = !empty($input['designation']) ? $input['designation'] : null;
+        
+        if (empty($name) || empty($email)) {
+            echo json_encode(["error" => "Name and Email are required"]);
+            exit;
+        }
+        
+        $stmt = $conn->prepare("INSERT INTO cims_recruiters (name, email, mobile, department, designation, status) VALUES (?, ?, ?, ?, ?, 'Active')");
+        $stmt->execute([$name, $email, $mobile, $department, $designation]);
+        
+        echo json_encode(["success" => true, "id" => $conn->lastInsertId()]);
+    } catch (PDOException $e) {
+        if ($e->getCode() == 23000) {
+            echo json_encode(["error" => "Email already exists"]);
+        } else {
+            echo json_encode(["error" => $e->getMessage()]);
+        }
+    }
+} elseif ($method === 'PUT') {
+    try {
+        $id = $_GET['id'] ?? null;
+        if (!$id) {
+            echo json_encode(["error" => "Missing ID"]);
+            exit;
+        }
+        
+        $input = json_decode(file_get_contents('php://input'), true);
+        
+        if (isset($input['status']) && count($input) === 1) {
+            // Just toggle status
+            $stmt = $conn->prepare("UPDATE cims_recruiters SET status = ? WHERE id = ?");
+            $stmt->execute([$input['status'], $id]);
+            echo json_encode(["success" => true]);
+            exit;
+        }
+        
+        $name = $input['name'] ?? '';
+        $email = $input['email'] ?? '';
+        $mobile = !empty($input['mobile']) ? $input['mobile'] : null;
+        $department = !empty($input['department']) ? $input['department'] : null;
+        $designation = !empty($input['designation']) ? $input['designation'] : null;
+        $status = $input['status'] ?? 'Active';
+        
+        $stmt = $conn->prepare("UPDATE cims_recruiters SET name = ?, email = ?, mobile = ?, department = ?, designation = ?, status = ? WHERE id = ?");
+        $stmt->execute([$name, $email, $mobile, $department, $designation, $status, $id]);
+        
+        echo json_encode(["success" => true]);
+    } catch (PDOException $e) {
+        if ($e->getCode() == 23000) {
+            echo json_encode(["error" => "Email already exists"]);
+        } else {
+            echo json_encode(["error" => $e->getMessage()]);
+        }
+    }
+} elseif ($method === 'DELETE') {
+    try {
+        $id = $_GET['id'] ?? null;
+        if (!$id) {
+            echo json_encode(["error" => "Missing ID"]);
+            exit;
+        }
+        $stmt = $conn->prepare("DELETE FROM cims_recruiters WHERE id = ?");
+        $stmt->execute([$id]);
+        echo json_encode(["success" => true]);
+    } catch (PDOException $e) {
+        echo json_encode(["error" => $e->getMessage()]);
+    }
 }
 ?>
