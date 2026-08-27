@@ -8,6 +8,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 include '../../db.php';
+require '../../vendor/autoload.php';
+
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $data = json_decode(file_get_contents("php://input"), true);
@@ -20,7 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     try {
-        // Fetch SMTP config to prove we are using it
+        // Fetch SMTP config
         $stmt = $conn->query("SELECT * FROM cims_smtp_config LIMIT 1");
         $smtp = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -37,22 +41,61 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                  <p><strong>Port:</strong> {$smtp['port']}</p>
                  <p><strong>Username:</strong> {$smtp['username']}</p>";
 
-        $headers = "MIME-Version: 1.0" . "\r\n";
-        $headers .= "Content-type:text/html;charset=UTF-8" . "\r\n";
-        $headers .= "From: {$smtp['from_name']} <{$smtp['from_email']}>" . "\r\n";
+        $mail = new PHPMailer(true);
 
-        // MOCK SEND: Simulate sending using mail() or success
-        // mail($recipient, $subject, $body, $headers);
-        $mailSent = true;
+        $mailSent = false;
+        $errorMsg = '';
 
-        if ($mailSent) {
+        try {
+            // Server settings
+            $mail->isSMTP();
+            $mail->Host       = $smtp['host'];
+            $mail->SMTPAuth   = true;
+            $mail->Username   = $smtp['username'];
+            $mail->Password   = $smtp['password'];
+            
+            if ($smtp['encryption'] === 'tls') {
+                $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+            } elseif ($smtp['encryption'] === 'ssl') {
+                $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
+            }
+
+            $mail->Port       = $smtp['port'];
+
+            // Recipients
+            $mail->setFrom($smtp['from_email'], $smtp['from_name']);
+            $mail->addAddress($recipient);
+
+            // Content
+            $mail->isHTML(true);
+            $mail->Subject = $subject;
+            $mail->Body    = $body;
+
+            $mail->send();
+            $mailSent = true;
             echo json_encode(["success" => true, "message" => "Test email successfully sent to {$recipient}."]);
-        } else {
-            echo json_encode(["success" => false, "message" => "Failed to send test email. Please check server logs."]);
+        } catch (Exception $e) {
+            $errorMsg = $mail->ErrorInfo ?: $e->getMessage();
+            echo json_encode(["success" => false, "message" => "SMTP Error: " . $errorMsg]);
         }
+
+        // Log Test Email
+        $logStmt = $conn->prepare("
+            INSERT INTO cims_email_logs (recipient_email, subject, body, status, error_message, unique_hash)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ");
+        $logStmt->execute([
+            $recipient,
+            $subject,
+            $body,
+            $mailSent ? 'Delivered' : 'Failed',
+            $errorMsg,
+            md5('test_' . time() . '_' . $recipient)
+        ]);
+
     } catch (Exception $e) {
         http_response_code(500);
-        echo json_encode(["success" => false, "message" => $e->getMessage()]);
+        echo json_encode(["success" => false, "message" => "Server Error: " . $e->getMessage()]);
     }
 }
 ?>

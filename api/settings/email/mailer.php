@@ -41,27 +41,45 @@ function sendEventEmail($conn, $trigger_event, $candidateData, $attachments = []
         }
 
         // 4. Get SMTP Config
-        $smtpStmt = $conn->query("SELECT from_name, from_email FROM cims_smtp_config LIMIT 1");
+        $smtpStmt = $conn->query("SELECT * FROM cims_smtp_config LIMIT 1");
         $smtp = $smtpStmt->fetch(PDO::FETCH_ASSOC);
-        $fromName = $smtp['from_name'] ?? "ATS System";
-        $fromEmail = $smtp['from_email'] ?? "no-reply@ats.local";
 
-        // 5. Send Email (Mocking PHPMailer for local environment)
-        $headers = "MIME-Version: 1.0" . "\r\n";
-        $headers .= "Content-type:text/html;charset=UTF-8" . "\r\n";
-        $headers .= "From: {$fromName} <{$fromEmail}>" . "\r\n";
+        $mailSent = false;
+        $status = 'Failed';
+        $errorMsg = '';
 
-        // Since this is localhost without an SMTP server configured, we simulate success
-        // In production, you would uncomment mail() or include PHPMailer here.
-        // $mailSent = mail($recipient_email, $subject, $body, $headers);
-        $mailSent = true; 
+        if ($smtp && $smtp['host']) {
+            $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
+            try {
+                $mail->isSMTP();
+                $mail->Host       = $smtp['host'];
+                $mail->SMTPAuth   = true;
+                $mail->Username   = $smtp['username'];
+                $mail->Password   = $smtp['password'];
+                if ($smtp['encryption'] === 'tls') $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
+                elseif ($smtp['encryption'] === 'ssl') $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS;
+                $mail->Port       = $smtp['port'];
 
-        $status = $mailSent ? 'Delivered' : 'Failed';
+                $mail->setFrom($smtp['from_email'], $smtp['from_name']);
+                $mail->addAddress($recipient_email);
+                $mail->isHTML(true);
+                $mail->Subject = $subject;
+                $mail->Body    = $body;
+
+                $mail->send();
+                $mailSent = true;
+                $status = 'Delivered';
+            } catch (\Exception $e) {
+                $errorMsg = $mail->ErrorInfo;
+            }
+        } else {
+            $errorMsg = "SMTP config incomplete.";
+        }
 
         // 6. Log Delivery
         $logStmt = $conn->prepare("
-            INSERT INTO cims_email_logs (recipient_email, subject, body, template_id, candidate_id, status, unique_hash)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO cims_email_logs (recipient_email, subject, body, template_id, candidate_id, status, error_message, unique_hash)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         ");
         $logStmt->execute([
             $recipient_email,
@@ -70,12 +88,13 @@ function sendEventEmail($conn, $trigger_event, $candidateData, $attachments = []
             $template['id'],
             $candidate_id,
             $status,
+            $errorMsg,
             $unique_hash
         ]);
 
-        return ["success" => $mailSent, "message" => "Email processed successfully."];
+        return ["success" => $mailSent, "message" => $mailSent ? "Email processed successfully." : $errorMsg];
 
-    } catch (Exception $e) {
+    } catch (\Exception $e) {
         return ["success" => false, "message" => "Email sending error: " . $e->getMessage()];
     }
 }

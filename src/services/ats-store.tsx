@@ -206,6 +206,24 @@ export function AtsProvider({ children }: { children: ReactNode }) {
         try {
           await syncPut(next);
           mutate((prev) => prev.map((c) => (c.id === id ? next : c)));
+          
+          try {
+            const triggerRes = await fetch(`http://localhost/full-cims/api/settings/email/trigger.php`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ candidate_id: id, stage })
+            }).then(r => r.json());
+            
+            if (triggerRes.success) {
+              if (triggerRes.method === 'Automatic') {
+                toast.success(`Automated email sent for ${stage}`);
+              } else if (triggerRes.method === 'Manual' && triggerRes.draft) {
+                window.dispatchEvent(new CustomEvent('EMAIL_DRAFT', { detail: triggerRes.draft }));
+              }
+            }
+          } catch(e) {
+            console.error("Failed to trigger email", e);
+          }
         } catch (e) {
           const error = e as Error;
           toast.error(error.message || "Database error");

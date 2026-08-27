@@ -15,7 +15,9 @@ try {
             id, 
             recipient_email as recipient, 
             subject, 
+            body,
             status, 
+            error_message,
             DATE_FORMAT(sent_at, '%Y-%m-%d %h:%i %p') as date 
         FROM cims_email_logs 
         ORDER BY sent_at DESC 

@@ -136,6 +136,72 @@ export default function CandidateProfile() {
     setDeleteDoc({ id, name });
   };
 
+  const [sendEmailOpen, setSendEmailOpen] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState("");
+  const [emailTemplates, setEmailTemplates] = useState<any[]>([]);
+  const [emailLoading, setEmailLoading] = useState(false);
+  const [previewData, setPreviewData] = useState<{subject: string, body: string} | null>(null);
+
+  const fetchEmailTemplates = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/settings/email/templates.php`);
+      if (res.ok) {
+        const data = await res.json();
+        setEmailTemplates(data || []);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleOpenSendEmail = () => {
+    fetchEmailTemplates();
+    setSelectedTemplate("");
+    setPreviewData(null);
+    setSendEmailOpen(true);
+  };
+
+  const handlePreviewEmail = () => {
+    if (!selectedTemplate) return;
+    const template = emailTemplates.find(t => t.id.toString() === selectedTemplate);
+    if (template) {
+      const parsedSubject = template.subject.replace('{CandidateName}', candidate.name).replace('{Role}', candidate.role);
+      const parsedBody = template.body.replace('{CandidateName}', candidate.name).replace('{Role}', candidate.role).replace('{Date}', new Date().toLocaleDateString());
+      setPreviewData({ subject: parsedSubject, body: parsedBody });
+    }
+  };
+
+  const handleSendEmail = async () => {
+    if (!selectedTemplate || !previewData) return;
+    setEmailLoading(true);
+    try {
+      const payload = {
+        to: candidate.email,
+        subject: previewData.subject,
+        body: previewData.body,
+        template_id: parseInt(selectedTemplate),
+        candidate_id: candidate.id,
+        unique_hash: `${candidate.id}-${Date.now()}`
+      };
+      const res = await fetch(`${API_BASE_URL}/settings/email/send_manual.php`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success("Email sent successfully!");
+        setSendEmailOpen(false);
+      } else {
+        toast.error(data.message || "Failed to send email");
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error("An error occurred while sending email.");
+    }
+    setEmailLoading(false);
+  };
+
   const [scheduleInterviewOpen, setScheduleInterviewOpen] = useState(false);
   const [editingInterviewId, setEditingInterviewId] = useState<string | null>(null);
   const [interviewForm, setInterviewForm] = useState({
@@ -529,6 +595,7 @@ export default function CandidateProfile() {
               <Button
                 variant="outline"
                 className="justify-start h-9 text-[11px] font-bold text-slate-700 border-slate-200 rounded-lg"
+                onClick={handleOpenSendEmail}
               >
                 <Mail className="mr-2 h-3.5 w-3.5 text-slate-400" /> Send Email
               </Button>
@@ -1448,6 +1515,76 @@ export default function CandidateProfile() {
             <Button onClick={handleSaveInterview} className="bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold">
               {editingInterviewId ? "Save Changes" : "Schedule Interview"}
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={sendEmailOpen} onOpenChange={setSendEmailOpen}>
+        <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden bg-white rounded-2xl border-0 shadow-2xl">
+          <DialogHeader className="p-6 pb-4 border-b border-slate-100 bg-slate-50/50">
+            <DialogTitle className="text-xl font-bold text-slate-900 tracking-tight">Send Email</DialogTitle>
+          </DialogHeader>
+          <div className="p-6 space-y-4">
+            {!previewData ? (
+              <>
+                <div className="space-y-2">
+                  <Label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Select Template</Label>
+                  <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
+                    <SelectTrigger className="w-full text-[13px] font-bold">
+                      <SelectValue placeholder="Choose a template..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {emailTemplates.map((t: any) => (
+                        <SelectItem key={t.id} value={t.id.toString()} className="text-[12px] font-bold">
+                          {t.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="bg-blue-50/50 rounded-xl p-4 text-[12px] text-slate-600 font-medium">
+                  Select a template and preview it. The actual sending and placeholder replacements will be available in the preview window.
+                </div>
+              </>
+            ) : (
+              <div className="space-y-4">
+                <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                  <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">To</div>
+                  <div className="text-[12px] font-bold text-slate-900">{candidate.email}</div>
+                </div>
+                <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                  <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Subject</div>
+                  <div className="text-[12px] font-bold text-slate-900">{previewData.subject}</div>
+                </div>
+                <div className="border border-slate-200 rounded-lg overflow-hidden">
+                  <div className="bg-slate-50 border-b border-slate-200 px-3 py-1.5 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                    Message Body
+                  </div>
+                  <div className="p-3 bg-white text-[12px] text-slate-800 whitespace-pre-wrap min-h-[120px] max-h-[250px] overflow-y-auto">
+                    {previewData.body}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+          <div className="flex justify-between gap-3 p-6 pt-4 bg-slate-50/50 border-t border-slate-100">
+            {previewData ? (
+              <Button variant="outline" onClick={() => setPreviewData(null)} className="text-[11px] font-bold">Back to Templates</Button>
+            ) : (
+              <div></div>
+            )}
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setSendEmailOpen(false)} className="text-[11px] font-bold">Cancel</Button>
+              {!previewData ? (
+                <Button onClick={handlePreviewEmail} disabled={!selectedTemplate} className="bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold">
+                  Preview Email
+                </Button>
+              ) : (
+                <Button onClick={handleSendEmail} disabled={emailLoading} className="bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold">
+                  {emailLoading ? "Sending..." : "Send Email"}
+                </Button>
+              )}
+            </div>
           </div>
         </DialogContent>
       </Dialog>

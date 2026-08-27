@@ -22,6 +22,79 @@ import { Toaster } from "@/components/ui/sonner";
 import { cn } from "@/lib/utils";
 import { API_BASE_URL } from "@/config/api";
 
+function ManualEmailDraftModal() {
+  const [draft, setDraft] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const handleDraft = (e: any) => {
+      setDraft(e.detail);
+    };
+    window.addEventListener('EMAIL_DRAFT', handleDraft);
+    return () => window.removeEventListener('EMAIL_DRAFT', handleDraft);
+  }, []);
+
+  if (!draft) return null;
+
+  const sendEmail = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`http://localhost/full-cims/api/settings/email/send_manual.php`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(draft)
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(data.message);
+        setDraft(null);
+      } else {
+        toast.error(data.message || "Failed to send email");
+      }
+    } catch (e) {
+      toast.error("Failed to send email");
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+          <div>
+            <h2 className="text-lg font-bold text-slate-900 tracking-tight">Manual Email Trigger</h2>
+            <p className="text-xs text-slate-500 mt-1">Review the automated draft before sending.</p>
+          </div>
+          <button onClick={() => setDraft(null)} className="h-8 w-8 flex items-center justify-center rounded-full hover:bg-slate-200 text-slate-500 transition-colors">
+            <span className="sr-only">Close</span>
+            <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12.8536 2.85355C13.0488 2.65829 13.0488 2.34171 12.8536 2.14645C12.6583 1.95118 12.3417 1.95118 12.1464 2.14645L7.5 6.79289L2.85355 2.14645C2.65829 1.95118 2.34171 1.95118 2.14645 2.14645C1.95118 2.34171 1.95118 2.65829 2.14645 2.85355L6.79289 7.5L2.14645 12.1464C1.95118 12.3417 1.95118 12.6583 2.14645 12.8536C2.34171 13.0488 2.65829 13.0488 2.85355 12.8536L7.5 8.20711L12.1464 12.8536C12.3417 13.0488 12.6583 13.0488 12.8536 12.8536C13.0488 12.6583 13.0488 12.3417 12.8536 12.1464L8.20711 7.5L12.8536 2.85355Z" fill="currentColor" fillRule="evenodd" clipRule="evenodd"></path></svg>
+          </button>
+        </div>
+        <div className="p-5 overflow-y-auto space-y-4">
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">To</label>
+            <input value={draft.to} readOnly className="w-full text-sm bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-700 outline-none" />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Subject</label>
+            <input value={draft.subject} onChange={e => setDraft({...draft, subject: e.target.value})} className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 text-slate-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all" />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Message Body</label>
+            <textarea value={draft.body} onChange={e => setDraft({...draft, body: e.target.value})} rows={10} className="w-full text-sm border border-slate-200 rounded-lg px-3 py-3 text-slate-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all font-mono"></textarea>
+          </div>
+        </div>
+        <div className="p-5 border-t border-slate-100 flex items-center justify-end gap-3 bg-slate-50/50">
+          <button onClick={() => setDraft(null)} className="px-4 py-2 text-sm font-bold text-slate-600 hover:text-slate-900 transition-colors">Cancel</button>
+          <button onClick={sendEmail} disabled={loading} className="px-5 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-sm transition-colors flex items-center gap-2">
+            {loading ? "Sending..." : "Send Email"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const nav = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, roles: ["Administrator", "HR Manager", "Recruiter", "Hiring Manager"], module: "Dashboard" },
   {
@@ -120,7 +193,9 @@ const nav = [
     roles: ["Administrator", "HR Manager"],
     module: "Email Settings",
     children: [
-      { to: "/email-settings/management", label: "Email Management", roles: ["Administrator", "HR Manager"], module: "Email Settings" },
+      { to: "/email-settings/templates", label: "Templates", roles: ["Administrator", "HR Manager"], module: "Email Settings" },
+      { to: "/email-settings/smtp", label: "SMTP Settings", roles: ["Administrator", "HR Manager"], module: "Email Settings" },
+      { to: "/email-settings/logs", label: "Delivery Logs", roles: ["Administrator", "HR Manager"], module: "Email Settings" },
     ],
   },
   {
@@ -447,6 +522,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
         </header>
         <main className="flex-1 px-4 py-6 md:px-10 md:py-8 overflow-x-hidden">{children}</main>
       </div>
+      <ManualEmailDraftModal />
       <Toaster position="bottom-right" richColors closeButton />
     </div>
   );
