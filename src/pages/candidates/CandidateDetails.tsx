@@ -508,6 +508,7 @@ export default function CandidateProfile() {
             { name: "Documents", color: "text-rose-600", border: "bg-rose-600" },
             { name: "Notes", color: "text-amber-600", border: "bg-amber-600" },
             { name: "Activity Log", color: "text-teal-600", border: "bg-teal-600" },
+            { name: "Emails", color: "text-indigo-600", border: "bg-indigo-600" },
           ].map((tab) => (
             <button
               key={tab.name}
@@ -1063,6 +1064,56 @@ export default function CandidateProfile() {
                   <Button variant="link" className="text-blue-600 text-[11px] font-bold" onClick={() => setFullTimelineOpen(true)}>
                     View Full Activity Log →
                   </Button>
+                </div>
+              </Card>
+              {/* Emails */}
+              <Card id="emails" className={cn("col-span-1 md:col-span-2 p-5 bg-white border shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] rounded-2xl flex flex-col transition-all duration-300", activeTab === "Emails" ? "border-indigo-500 ring-1 ring-indigo-500 shadow-indigo-100" : "border-border/50")}>
+                <h3 className="text-[13px] font-bold text-slate-900 mb-4">Emails</h3>
+                <div className="overflow-x-auto flex-1">
+                  <table className="w-full text-left text-[11px]">
+                    <thead className="border-b border-slate-100 text-slate-400 font-bold">
+                      <tr>
+                        <th className="py-2.5 px-2">Template / Subject</th>
+                        <th className="py-2.5 px-2">Sending Method</th>
+                        <th className="py-2.5 px-2 text-right">Status</th>
+                        <th className="py-2.5 px-2 text-right">Sent On</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-50 font-semibold text-slate-700">
+                      {candidate.emailLogs?.map((log: any, i: number) => {
+                        const isAuto = log.unique_hash?.startsWith('auto-');
+                        return (
+                          <tr key={i} className="hover:bg-slate-50 transition-colors">
+                            <td className="py-3 px-2">
+                              <div className="font-bold text-slate-900">{log.template_name || "Email Log"}</div>
+                              <div className="text-slate-500 truncate max-w-[200px] mt-0.5" title={log.subject}>{log.subject}</div>
+                            </td>
+                            <td className="py-3 px-2">
+                              <Badge className={cn("text-[9px] uppercase border-transparent", isAuto ? "bg-purple-50 text-purple-600" : "bg-slate-100 text-slate-600")}>
+                                {isAuto ? "Automatic" : "Manual"}
+                              </Badge>
+                            </td>
+                            <td className="py-3 px-2 text-right">
+                              <Badge className={cn("text-[9px] uppercase border-transparent inline-flex items-center gap-1", log.status === 'Delivered' ? "bg-emerald-100 text-emerald-600" : "bg-red-100 text-red-600")}>
+                                {log.status === 'Delivered' && <CheckCircle2 className="h-3 w-3" />}
+                                {log.status}
+                              </Badge>
+                            </td>
+                            <td className="py-3 px-2 text-right text-slate-400 whitespace-nowrap">
+                              {formatDateTime(log.sent_at)}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                      {(!candidate.emailLogs || candidate.emailLogs.length === 0) && (
+                        <tr>
+                          <td colSpan={4} className="py-6 text-center text-[11px] font-bold text-slate-400">
+                            No emails sent to this candidate yet.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
                 </div>
               </Card>
             </div>

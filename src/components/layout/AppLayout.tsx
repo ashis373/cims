@@ -194,6 +194,7 @@ const nav = [
     module: "Email Settings",
     children: [
       { to: "/email-settings/templates", label: "Templates", roles: ["Administrator", "HR Manager"], module: "Email Settings" },
+      { to: "/email-settings/send", label: "Send Email", roles: ["Administrator", "HR Manager"], module: "Email Settings" },
       { to: "/email-settings/smtp", label: "SMTP Settings", roles: ["Administrator", "HR Manager"], module: "Email Settings" },
       { to: "/email-settings/logs", label: "Delivery Logs", roles: ["Administrator", "HR Manager"], module: "Email Settings" },
     ],

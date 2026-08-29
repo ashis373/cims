@@ -64,8 +64,11 @@ export default function DeliveryLogs() {
           <table className="w-full text-left text-[12px]">
             <thead className="bg-slate-50/80 text-slate-500 font-semibold border-b border-slate-100">
               <tr>
-                <th className="px-5 py-3 font-bold">Recipient</th>
+                <th className="px-5 py-3 font-bold">Candidate Name</th>
+                <th className="px-5 py-3 font-bold">Recipient Email</th>
+                <th className="px-5 py-3 font-bold">Template</th>
                 <th className="px-5 py-3 font-bold">Subject</th>
+                <th className="px-5 py-3 font-bold">Sending Method</th>
                 <th className="px-5 py-3 font-bold">Status</th>
                 <th className="px-5 py-3 font-bold">Date & Time</th>
                 <th className="px-5 py-3 font-bold text-center">Details</th>
@@ -73,13 +76,27 @@ export default function DeliveryLogs() {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {loading ? (
-                <tr><td colSpan={5} className="p-4 text-center text-slate-500">Loading logs...</td></tr>
+                <tr><td colSpan={8} className="p-4 text-center text-slate-500">Loading logs...</td></tr>
               ) : logs.length === 0 ? (
-                <tr><td colSpan={5} className="p-8 text-center text-slate-500">No email logs found.</td></tr>
+                <tr><td colSpan={8} className="p-8 text-center text-slate-500">No email logs found.</td></tr>
               ) : logs.filter(l => l.recipient.toLowerCase().includes(searchQuery.toLowerCase()) || l.subject.toLowerCase().includes(searchQuery.toLowerCase())).map((log) => (
                 <tr key={log.id} className="hover:bg-slate-50/60 transition-colors">
-                  <td className="px-5 py-3.5 font-semibold text-slate-800">{log.recipient}</td>
-                  <td className="px-5 py-3.5 text-slate-600 truncate max-w-[200px]">{log.subject}</td>
+                  <td className="px-5 py-3.5 font-bold text-slate-800">{log.candidate_name || "Unknown"}</td>
+                  <td className="px-5 py-3.5 font-medium text-slate-600">{log.recipient}</td>
+                  <td className="px-5 py-3.5">
+                    <span className="px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-700 border border-slate-200">
+                      {log.template_name || "Unknown"}
+                    </span>
+                  </td>
+                  <td className="px-5 py-3.5 text-slate-600 truncate max-w-[200px] font-medium">{log.subject}</td>
+                  <td className="px-5 py-3.5">
+                    <span className={cn(
+                      "px-2.5 py-1 rounded-full text-[10px] font-bold",
+                      log.unique_hash?.startsWith('auto-') ? "bg-purple-50 text-purple-600" : "bg-blue-50 text-blue-600"
+                    )}>
+                      {log.unique_hash?.startsWith('auto-') ? "Automatic" : "Manual"}
+                    </span>
+                  </td>
                   <td className="px-5 py-3.5">
                     <span className={cn(
                       "px-2.5 py-1 rounded-full text-[10px] font-bold flex items-center w-fit gap-1.5",
@@ -95,10 +112,10 @@ export default function DeliveryLogs() {
                       {log.status}
                     </span>
                   </td>
-                  <td className="px-5 py-3.5 text-slate-500">{log.date}</td>
+                  <td className="px-5 py-3.5 text-slate-500 font-semibold">{log.date}</td>
                   <td className="px-5 py-3.5 text-center">
-                    <Button onClick={() => { setSelectedLog(log); setDetailsOpen(true); }} variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-slate-700">
-                      <MoreHorizontal className="h-4 w-4" />
+                    <Button onClick={() => { setSelectedLog(log); setDetailsOpen(true); }} variant="outline" size="sm" className="h-7 text-[10px] font-bold px-3 hover:text-blue-600">
+                      View
                     </Button>
                   </td>
                 </tr>
@@ -118,8 +135,16 @@ export default function DeliveryLogs() {
           <div className="p-6 space-y-6">
             <div className="grid grid-cols-2 gap-6">
               <div>
-                <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Recipient</div>
+                <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Candidate Name</div>
+                <div className="text-[13px] font-bold text-slate-900">{selectedLog?.candidate_name || "Unknown"}</div>
+              </div>
+              <div>
+                <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Recipient Email</div>
                 <div className="text-[13px] font-bold text-slate-900">{selectedLog?.recipient}</div>
+              </div>
+              <div>
+                <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Template</div>
+                <div className="text-[13px] font-semibold text-slate-700">{selectedLog?.template_name || "Unknown"}</div>
               </div>
               <div>
                 <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Date & Time</div>

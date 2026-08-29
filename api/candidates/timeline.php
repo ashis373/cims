@@ -24,8 +24,9 @@ if ($id) {
     $whereInt = "WHERE a.candidate_id = ?";
     $whereRej = "WHERE r.candidate_id = ?";
     $whereApp = "WHERE a.candidate_id = ?";
-    // Since there are 5 union queries, we need the ID 5 times
-    $params = [$id, $id, $id, $id, $id];
+    $whereEmail = "WHERE e.candidate_id = ?";
+    // Since there are 6 union queries, we need the ID 6 times
+    $params = [$id, $id, $id, $id, $id, $id];
 }
 
 try {
@@ -101,6 +102,20 @@ try {
             FROM cims_applications a 
             JOIN cims_candidates c ON a.candidate_id = c.id 
             $whereApp
+        )
+        UNION ALL
+        (
+            SELECT 
+                'Email' as type, 
+                CONCAT('Email Sent: ', e.subject) as action, 
+                CONCAT('Status: ', e.status) as description, 
+                e.sent_at as timestamp, 
+                'System' as user, 
+                c.name as candidateName,
+                c.photo as image 
+            FROM cims_email_logs e 
+            JOIN cims_candidates c ON e.candidate_id = c.id 
+            $whereEmail
         )
         ORDER BY timestamp DESC
     ";

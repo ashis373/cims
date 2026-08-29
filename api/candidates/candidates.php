@@ -14,6 +14,10 @@ include '../db.php';
 $required_module = 'Candidates';
 require_once '../auth_middleware.php';
 
+require '../vendor/autoload.php';
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+
 $method = $_SERVER['REQUEST_METHOD'];
 
 // Helper function to extract date
@@ -107,6 +111,16 @@ if ($method === 'GET') {
             $intByCand[$i['candidate_id']][] = $i; 
         }
 
+        // 7. Batch fetch email logs
+        $stmtEmail = $conn->prepare("SELECT * FROM cims_email_logs WHERE candidate_id IN ($inQuery) ORDER BY sent_at DESC");
+        $stmtEmail->execute($candidateIds);
+        $allEmails = $stmtEmail->fetchAll(PDO::FETCH_ASSOC);
+        $emailsByCand = [];
+        foreach ($allEmails as $e) {
+            if (!empty($e['sent_at'])) $e['sent_at'] = str_replace(' ', 'T', $e['sent_at']);
+            $emailsByCand[$e['candidate_id']][] = $e;
+        }
+
         // Hydrate results
         foreach ($results as &$row) {
             $cid = $row['id'];
@@ -129,6 +143,7 @@ if ($method === 'GET') {
             $row['alerts'] = $rejByCand[$cid] ?? [];
             $row['applicationsList'] = $appsByCand[$cid] ?? [];
             $row['interviewsList'] = $intByCand[$cid] ?? [];
+            $row['emailLogs'] = $emailsByCand[$cid] ?? [];
             
             if ($row['appliedAt']) $row['appliedAt'] = str_replace(' ', 'T', $row['appliedAt']);
             if ($row['updatedAt']) $row['updatedAt'] = str_replace(' ', 'T', $row['updatedAt']);
@@ -261,6 +276,12 @@ if ($method === 'GET') {
             echo json_encode(["error" => "Candidate not found"]);
             exit;
         }
+
+        // Fetch old application stage
+        $stmtAppOld = $conn->prepare("SELECT role_applied as role, stage FROM cims_applications WHERE candidate_id = ?");
+        $stmtAppOld->execute([$id]);
+        $oldApp = $stmtAppOld->fetch(PDO::FETCH_ASSOC);
+        $oldStage = $oldApp ? $oldApp['stage'] : null;
         
         // 1. Update cims_candidates table
         $candFields = [
@@ -315,6 +336,76 @@ if ($method === 'GET') {
             $appSql = "UPDATE cims_applications SET " . implode(", ", $appUpdateStrs) . " WHERE candidate_id = ?";
             $stmt = $conn->prepare($appSql);
             $stmt->execute($appParams);
+        }
+        
+        // Handle Automatic Email Dispatch
+        if (isset($data['stage']) && $data['stage'] !== $oldStage) {
+            $newStage = $data['stage'];
+            $stageMap = [
+                'Interview Scheduled' => 'Interview',
+                'Offer Released' => 'Offer',
+                'Rejected' => 'Rejection'
+            ];
+            
+            if (isset($stageMap[$newStage])) {
+                $type = $stageMap[$newStage];
+                $tplStmt = $conn->prepare("SELECT * FROM cims_email_templates WHERE category = ? AND (sending_method = 'Automatic' OR LOWER(sending_method) = 'automatic') AND (is_active = 1 OR is_active = '1') LIMIT 1");
+                $tplStmt->execute([$type]);
+                $tpl = $tplStmt->fetch(PDO::FETCH_ASSOC);
+                
+                if ($tpl) {
+                    $tplId = $tpl['id'];
+                    // Prevent duplicate *automatic* emails only (by checking unique_hash prefix)
+                    $logCheck = $conn->prepare("SELECT COUNT(*) FROM cims_email_logs WHERE candidate_id = ? AND template_id = ? AND unique_hash LIKE 'auto-%'");
+                    $logCheck->execute([$id, $tplId]);
+                    if ($logCheck->fetchColumn() == 0) {
+                        // Personalize
+                        $candName = isset($data['name']) ? $data['name'] : $existing['name'];
+                        $candEmail = isset($data['email']) ? $data['email'] : $existing['email'];
+                        $candRole = isset($data['role']) ? $data['role'] : ($oldApp ? $oldApp['role'] : 'the position');
+                        
+                        $body = str_replace(['{CandidateName}', '{Role}', '{Date}'], [$candName, $candRole, date('m/d/Y')], $tpl['body']);
+                        $subject = str_replace(['{CandidateName}', '{Role}', '{Date}'], [$candName, $candRole, date('m/d/Y')], $tpl['subject']);
+                        
+                        $smtpStmt = $conn->query("SELECT * FROM cims_smtp_config LIMIT 1");
+                        $smtp = $smtpStmt->fetch(PDO::FETCH_ASSOC);
+                        
+                        $status = 'Failed';
+                        $errorMsg = '';
+                        
+                        if ($smtp && $smtp['host']) {
+                            $mail = new PHPMailer(true);
+                            try {
+                                $mail->isSMTP();
+                                $mail->Host = $smtp['host'];
+                                $mail->SMTPAuth = true;
+                                $mail->Username = $smtp['username'];
+                                $mail->Password = $smtp['password'];
+                                if ($smtp['encryption'] === 'tls') $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+                                elseif ($smtp['encryption'] === 'ssl') $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
+                                $mail->Port = $smtp['port'];
+                                
+                                $mail->setFrom($smtp['from_email'], $smtp['from_name']);
+                                $mail->addAddress($candEmail);
+                                $mail->isHTML(true);
+                                $mail->Subject = $subject;
+                                $mail->Body = $body;
+                                
+                                $mail->send();
+                                $status = 'Delivered';
+                            } catch (Exception $e) {
+                                $errorMsg = $mail->ErrorInfo;
+                            }
+                        } else {
+                            $errorMsg = 'SMTP not configured';
+                        }
+                        
+                        // Log (mark as 'auto-' to distinguish from manual)
+                        $logInsert = $conn->prepare("INSERT INTO cims_email_logs (recipient_email, subject, body, template_id, candidate_id, status, error_message, unique_hash) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+                        $logInsert->execute([$candEmail, $subject, $body, $tplId, $id, $status, $errorMsg, "auto-$id-$tplId-" . time()]);
+                    }
+                }
+            }
         }
         
         // Handle Rejections / Alerts logging

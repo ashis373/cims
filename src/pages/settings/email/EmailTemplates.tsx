@@ -2,8 +2,9 @@ import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Mail, Search, Edit2, Trash2, Eye, CheckCircle2, XCircle, Plus } from "lucide-react";
+import { Mail, Search, Edit2, Trash2, Eye, CheckCircle2, XCircle, Plus, Send } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Checkbox } from "@/components/ui/checkbox";
 import { API_BASE_URL } from "@/config/api";
 import {
   Dialog,
@@ -12,8 +13,10 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { useNavigate } from "react-router-dom";
 
 export default function EmailTemplates() {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [templates, setTemplates] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -221,6 +224,9 @@ export default function EmailTemplates() {
                <><CheckCircle2 className="mr-1.5 h-4 w-4" /> Enable All</>
             )}
           </Button>
+          <Button onClick={() => navigate("/email-settings/send")} className="h-10 text-sm bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm font-semibold rounded-xl">
+            <Send className="mr-1.5 h-4 w-4" /> Send Email
+          </Button>
           <Button onClick={openCreateDialog} className="h-10 text-sm bg-blue-600 hover:bg-blue-700 text-white shadow-sm font-semibold rounded-xl">
             <Plus className="mr-1.5 h-4 w-4" /> Create Template
           </Button>
@@ -286,9 +292,6 @@ export default function EmailTemplates() {
                       </Button>
                       <Button onClick={() => { setPreviewTemplate(template); setPreviewOpen(true); }} variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-blue-600">
                         <Eye className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button onClick={() => { setTemplateToDelete(template.id); setDeleteOpen(true); }} variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-red-600">
-                        <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </div>
                   </td>

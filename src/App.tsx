@@ -34,6 +34,7 @@ import UserRoles from "@/pages/settings/system/UserRoles";
 import SystemSettings from "@/pages/settings/system/SystemSettings";
 import Departments from "@/pages/settings/system/Departments";
 import EmailTemplates from "@/pages/settings/email/EmailTemplates";
+import SendTemplate from "@/pages/settings/email/SendTemplate";
 import SmtpSettings from "@/pages/settings/email/SmtpSettings";
 import DeliveryLogs from "@/pages/settings/email/DeliveryLogs";
 
@@ -123,6 +124,7 @@ function App() {
                     <Route path="/notifications/alerts" element={<Notifications />} />
                     {/* System Settings & Email (Admin/HR only) */}
                     <Route path="/email-settings/templates" element={<PrivateRoute requiredModule="Email Settings"><EmailTemplates /></PrivateRoute>} />
+                    <Route path="/email-settings/send" element={<PrivateRoute requiredModule="Email Settings"><SendTemplate /></PrivateRoute>} />
                     <Route path="/email-settings/smtp" element={<PrivateRoute requiredModule="Email Settings"><SmtpSettings /></PrivateRoute>} />
                     <Route path="/email-settings/logs" element={<PrivateRoute requiredModule="Email Settings"><DeliveryLogs /></PrivateRoute>} />
                     <Route path="/system-settings/profile" element={<UserProfile />} />

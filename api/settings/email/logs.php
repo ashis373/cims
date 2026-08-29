@@ -12,15 +12,20 @@ include '../../db.php';
 try {
     $stmt = $conn->query("
         SELECT 
-            id, 
-            recipient_email as recipient, 
-            subject, 
-            body,
-            status, 
-            error_message,
-            DATE_FORMAT(sent_at, '%Y-%m-%d %h:%i %p') as date 
-        FROM cims_email_logs 
-        ORDER BY sent_at DESC 
+            l.id, 
+            l.recipient_email as recipient, 
+            l.subject, 
+            l.body,
+            l.status, 
+            l.error_message,
+            l.unique_hash,
+            c.name as candidate_name,
+            t.name as template_name,
+            DATE_FORMAT(l.sent_at, '%b %d, %Y, %h:%i %p') as date 
+        FROM cims_email_logs l
+        LEFT JOIN cims_candidates c ON l.candidate_id = c.id
+        LEFT JOIN cims_email_templates t ON l.template_id = t.id
+        ORDER BY l.sent_at DESC 
         LIMIT 100
     ");
     $logs = $stmt->fetchAll(PDO::FETCH_ASSOC);
