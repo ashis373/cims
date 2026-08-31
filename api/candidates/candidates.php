@@ -359,7 +359,6 @@ if ($method === 'GET') {
                     $logCheck = $conn->prepare("SELECT COUNT(*) FROM cims_email_logs WHERE candidate_id = ? AND template_id = ? AND unique_hash LIKE 'auto-%'");
                     $logCheck->execute([$id, $tplId]);
                     if ($logCheck->fetchColumn() == 0) {
-                        // Personalize
                         $candName = isset($data['name']) ? $data['name'] : $existing['name'];
                         $candEmail = isset($data['email']) ? $data['email'] : $existing['email'];
                         $candRole = isset($data['role']) ? $data['role'] : ($oldApp ? $oldApp['role'] : 'the position');
@@ -367,42 +366,13 @@ if ($method === 'GET') {
                         $body = str_replace(['{CandidateName}', '{Role}', '{Date}'], [$candName, $candRole, date('m/d/Y')], $tpl['body']);
                         $subject = str_replace(['{CandidateName}', '{Role}', '{Date}'], [$candName, $candRole, date('m/d/Y')], $tpl['subject']);
                         
-                        $smtpStmt = $conn->query("SELECT * FROM cims_smtp_config LIMIT 1");
-                        $smtp = $smtpStmt->fetch(PDO::FETCH_ASSOC);
+                        $unique_hash = "auto-$id-$tplId-" . time();
                         
-                        $status = 'Failed';
-                        $errorMsg = '';
-                        
-                        if ($smtp && $smtp['host']) {
-                            $mail = new PHPMailer(true);
-                            try {
-                                $mail->isSMTP();
-                                $mail->Host = $smtp['host'];
-                                $mail->SMTPAuth = true;
-                                $mail->Username = $smtp['username'];
-                                $mail->Password = $smtp['password'];
-                                if ($smtp['encryption'] === 'tls') $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-                                elseif ($smtp['encryption'] === 'ssl') $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
-                                $mail->Port = $smtp['port'];
-                                
-                                $mail->setFrom($smtp['from_email'], $smtp['from_name']);
-                                $mail->addAddress($candEmail);
-                                $mail->isHTML(true);
-                                $mail->Subject = $subject;
-                                $mail->Body = $body;
-                                
-                                $mail->send();
-                                $status = 'Delivered';
-                            } catch (Exception $e) {
-                                $errorMsg = $mail->ErrorInfo;
-                            }
-                        } else {
-                            $errorMsg = 'SMTP not configured';
-                        }
-                        
-                        // Log (mark as 'auto-' to distinguish from manual)
-                        $logInsert = $conn->prepare("INSERT INTO cims_email_logs (recipient_email, subject, body, template_id, candidate_id, status, error_message, unique_hash) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-                        $logInsert->execute([$candEmail, $subject, $body, $tplId, $id, $status, $errorMsg, "auto-$id-$tplId-" . time()]);
+                        $queueInsert = $conn->prepare("
+                            INSERT INTO cims_email_queue (candidate_id, recipient_email, template_id, subject, body, sending_method, unique_hash, status) 
+                            VALUES (?, ?, ?, ?, ?, 'Automatic', ?, 'Pending')
+                        ");
+                        $queueInsert->execute([$id, $candEmail, $tplId, $subject, $body, $unique_hash]);
                     }
                 }
             }

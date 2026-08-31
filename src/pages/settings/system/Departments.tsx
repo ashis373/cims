@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { Plus, Trash2, Building2, MoreHorizontal, Pencil, PowerOff, LayoutGrid, List } from "lucide-react";
+import { Plus, Building2, MoreHorizontal, Pencil, PowerOff, LayoutGrid, List } from "lucide-react";
 import { API_BASE_URL } from "@/config/api";
 import {
   DropdownMenu,
@@ -12,22 +12,11 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 
 export default function Departments() {
   const [departments, setDepartments] = useState<any[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingDept, setEditingDept] = useState<any>(null);
-  const [departmentToDelete, setDepartmentToDelete] = useState<any>(null);
   const [view, setView] = useState<'grid' | 'table'>('table');
   
   const [formData, setFormData] = useState({ name: '', status: 'Active' });
@@ -101,30 +90,6 @@ export default function Departments() {
       }
     } catch (err) {
       toast.error("An error occurred");
-    }
-  };
-
-  const handleDelete = async (dept: any) => {
-    if (dept.jobs_count > 0 || dept.candidates_count > 0) {
-      toast.error("Cannot delete department with active jobs or candidates.");
-      return;
-    }
-    
-    try {
-      const res = await fetch(`${API_BASE_URL}/jobs/departments.php?id=${dept.id}`, {
-        method: 'DELETE'
-      }).then(r => r.json());
-
-      if (res.success) {
-        toast.success("Department deleted");
-        fetchDepartments();
-      } else {
-        toast.error(res.error || "Failed to delete department");
-      }
-    } catch (err) {
-      toast.error("An error occurred");
-    } finally {
-      setDepartmentToDelete(null);
     }
   };
 
@@ -225,15 +190,6 @@ export default function Departments() {
                     {dept.status === 'Active' ? 'Deactivate' : 'Activate'}
                   </DropdownMenuItem>
                   
-                  <DropdownMenuSeparator />
-                  
-                  <DropdownMenuItem 
-                    onClick={() => setDepartmentToDelete(dept)} 
-                    disabled={dept.jobs_count > 0 || dept.candidates_count > 0}
-                    className="cursor-pointer font-medium text-rose-600 focus:text-rose-700 focus:bg-rose-50"
-                  >
-                    <Trash2 className="h-4 w-4 mr-2 text-rose-500" /> Delete Department
-                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -304,16 +260,7 @@ export default function Departments() {
                             {dept.status === 'Active' ? 'Deactivate' : 'Activate'}
                           </DropdownMenuItem>
                           
-                          <DropdownMenuSeparator />
-                          
-                          <DropdownMenuItem 
-                            onClick={() => setDepartmentToDelete(dept)} 
-                            disabled={dept.jobs_count > 0 || dept.candidates_count > 0}
-                            className="cursor-pointer font-medium text-rose-600 focus:text-rose-700 focus:bg-rose-50"
-                          >
-                            <Trash2 className="h-4 w-4 mr-2 text-rose-500" /> Delete Department
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
+                          </DropdownMenuContent>
                       </DropdownMenu>
                     </td>
                   </tr>
@@ -379,26 +326,7 @@ export default function Departments() {
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
-      <AlertDialog open={!!departmentToDelete} onOpenChange={(open) => !open && setDepartmentToDelete(null)}>
-        <AlertDialogContent className="rounded-3xl border-0 shadow-2xl p-6">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-xl font-black text-slate-900">Are you absolutely sure?</AlertDialogTitle>
-            <AlertDialogDescription className="text-slate-500 font-medium mt-3">
-              This action cannot be undone. This will permanently delete the <strong className="text-slate-900">{departmentToDelete?.name}</strong> department from our servers.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="mt-6 gap-3 sm:gap-0">
-            <AlertDialogCancel className="rounded-xl font-bold border-slate-200 text-slate-600 hover:bg-slate-50 h-11 px-6 mt-0">Cancel</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={() => handleDelete(departmentToDelete)}
-              className="bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold shadow-md shadow-rose-600/20 h-11 px-6"
-            >
-              Yes, delete department
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+
     </div>
   );
 }

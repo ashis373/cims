@@ -395,6 +395,25 @@ export function AppLayout({ children }: { children: ReactNode }) {
       }
     }
   }, [pathname]);
+  // poor man's cron job for email worker - trigger email worker every 5 minutes while dashboard is open
+  useEffect(() => {
+    // Poor Man's Cron: Trigger email worker every 5 minutes while dashboard is open
+    // This is useful for local XAMPP environments or shared hosting without Cron access.
+    const triggerWorker = () => {
+      fetch(`${API_BASE_URL}/settings/email/worker.php`).catch(() => {});
+    };
+    
+    // Run once shortly after login/load
+    const initialTimer = setTimeout(triggerWorker, 5000);
+    
+    // Run continuously every 5 minutes
+    const intervalTimer = setInterval(triggerWorker, 5 * 60 * 1000);
+    
+    return () => {
+      clearTimeout(initialTimer);
+      clearInterval(intervalTimer);
+    };
+  }, []);
 
   const isActive = (to: string) => (to === "/" ? pathname === "/" : pathname === to);
 

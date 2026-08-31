@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowLeft, Search, AlertCircle, Mail, MailPlus, Send, Users, CheckCircle2, UserCircle2, AlertTriangle, Info } from "lucide-react";
+import { ArrowLeft, Search, AlertCircle, Mail, MailPlus, Send, Users, CheckCircle2, UserCircle2, AlertTriangle, Info, Eye, RefreshCw, FileText, Settings, CheckCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { API_BASE_URL } from "@/config/api";
 import {
@@ -142,7 +142,7 @@ export default function SendTemplate() {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                recipient_email: candidate.email,
+                to: candidate.email,
                 subject: parsedSubject,
                 body: parsedBody,
                 template_id: template.id,
@@ -157,7 +157,7 @@ export default function SendTemplate() {
 
         setSending(false);
         setSelectedCandidates([]);
-        showAlert("Success", `Successfully sent ${sentCount} email(s)!`);
+        showAlert("Success", `${sentCount} emails queued successfully!`);
         // Refresh data to show updated email logs
         const res = await fetch(`${API_BASE_URL}/candidates/candidates.php`);
         setCandidates(await res.json());
@@ -182,56 +182,72 @@ export default function SendTemplate() {
         <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-blue-500/20 blur-3xl"></div>
         <div className="absolute -left-20 -bottom-20 h-64 w-64 rounded-full bg-indigo-500/20 blur-3xl"></div>
 
-        <div className="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex flex-col items-start">
-            <Button
-              variant="ghost"
-              onClick={() => navigate("/email-settings/templates")}
-              className="text-blue-200 hover:text-white hover:bg-white/10 -ml-4 mb-4 rounded-xl transition-all"
-            >
-              <ArrowLeft className="mr-2 h-4 w-4" /> Back to Templates
-            </Button>
             <div className="flex items-center gap-4">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 shadow-inner backdrop-blur-md ring-1 ring-white/20">
-                <Send className="h-6 w-6 text-blue-100" />
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 shadow-inner backdrop-blur-md ring-1 ring-white/20">
+                <Send className="h-5 w-5 text-blue-100 -rotate-45 ml-1" />
               </div>
               <div>
-                <h1 className="text-3xl font-black tracking-tight text-white drop-shadow-sm">Dispatch Email</h1>
-                <p className="mt-1.5 text-sm font-medium text-blue-200/90 max-w-md">
-                  Select a template and choose eligible candidates to dispatch personalized communications seamlessly.
+                <h1 className="text-2xl font-black tracking-tight text-white drop-shadow-sm">Dispatch Email</h1>
+                <p className="mt-1 text-[13px] font-medium text-blue-200/90 max-w-md">
+                  Select a template and choose eligible candidates to send personalized emails.
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-4 bg-black/20 p-4 rounded-2xl backdrop-blur-md border border-white/10 shrink-0">
-            <div className="flex flex-col items-end mr-2">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-blue-300 mb-1">Selected Targets</span>
-              <div className="flex items-baseline gap-1">
-                <span className="text-2xl font-black text-white leading-none">{selectedCandidates.length}</span>
-                <span className="text-sm font-bold text-blue-300/60 leading-none">/ {eligibleCandidates.length}</span>
+          <div className="flex items-center gap-4 shrink-0">
+            <div className="flex items-center gap-4 bg-black/20 p-2.5 rounded-2xl backdrop-blur-md border border-white/10">
+              <div className="flex items-center gap-3 px-3 py-1">
+                <Users className="h-5 w-5 text-blue-300" />
+                <div className="flex flex-col text-left">
+                  <span className="text-xl font-black text-white leading-none">{eligibleCandidates.length}</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-blue-300/80">Eligible</span>
+                </div>
+              </div>
+              <div className="w-px h-8 bg-white/10" />
+              <div className="flex items-center gap-3 px-3 py-1">
+                <CheckCircle2 className="h-5 w-5 text-orange-400" />
+                <div className="flex flex-col text-left">
+                  <span className="text-xl font-black text-white leading-none">{selectedCandidates.length}</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-blue-300/80">Selected</span>
+                </div>
+              </div>
+              <div className="w-px h-8 bg-white/10" />
+              <div className="flex items-center gap-3 px-3 py-1">
+                <Mail className="h-5 w-5 text-yellow-400" />
+                <div className="flex flex-col text-left">
+                  <span className="text-xl font-black text-white leading-none">{eligibleCandidates.length - selectableCandidates.length}</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-blue-300/80">Already Sent</span>
+                </div>
               </div>
             </div>
-            <div className="h-10 w-px bg-white/10"></div>
-            <Button
-              onClick={handleSendEmails}
-              disabled={sending || selectedCandidates.length === 0 || !template}
-              className={cn(
-                "h-12 px-6 rounded-xl font-bold shadow-lg transition-all duration-300 text-sm flex items-center gap-2",
-                sending || selectedCandidates.length === 0 || !template
-                  ? "bg-white/10 text-white/40 cursor-not-allowed"
-                  : "bg-white text-blue-900 hover:bg-blue-50 hover:scale-[1.02] hover:shadow-white/20 ring-4 ring-white/20"
+            <div className="flex items-center gap-3">
+              {selectedCandidates.length > 0 && (
+                <Button
+                  variant="outline"
+                  onClick={() => setSelectedCandidates([])}
+                  className="h-12 px-5 rounded-xl font-bold bg-white/10 text-white border-white/20 hover:bg-white/20 transition-all text-[12px]"
+                >
+                  Clear
+                </Button>
               )}
-            >
-              {sending ? (
-                <>Sending...</>
-              ) : (
-                <>
-                  <Send className="h-4 w-4" />
-                  Preview & Send
-                </>
-              )}
-            </Button>
+              <Button
+                onClick={handleSendEmails}
+                disabled={sending || selectedCandidates.length === 0 || !template}
+                className="h-12 px-6 rounded-xl font-bold bg-white text-blue-900 border-none hover:bg-blue-50 hover:scale-[1.02] transition-all text-sm flex items-center gap-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+              >
+                {sending ? (
+                  <>Sending...</>
+                ) : (
+                  <>
+                    <Send className="h-4 w-4" />
+                    Preview & Send Email
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -240,96 +256,82 @@ export default function SendTemplate() {
 
         {/* Left Sidebar - Controls */}
         <div className="col-span-1 space-y-6">
-          <Card className="p-5 rounded-3xl border-border/50 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] bg-white sticky top-24">
-            <div className="space-y-5">
-
-              <div className="space-y-2.5">
-                <label className="text-[11px] font-black text-slate-400 uppercase tracking-wider ml-1">1. Select Template</label>
-                <div className="relative">
-                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-                  <select
-                    value={selectedTemplateId}
-                    onChange={(e) => setSelectedTemplateId(e.target.value)}
-                    className="w-full h-11 pl-10 pr-10 text-sm font-bold bg-slate-50 border border-slate-200 rounded-xl outline-none transition-all focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:bg-white appearance-none cursor-pointer text-slate-700"
-                  >
-                    <option value="" className="text-slate-400">[ Select Email Template ▼ ]</option>
-                    {templates.map(t => (
-                      <option key={t.id} value={t.id} className="font-semibold text-slate-900">
-                        {t.name}
-                      </option>
-                    ))}
-                  </select>
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 text-[10px]">
-                    ▼
-                  </div>
+          <Card className="p-5 rounded-3xl border-border/50 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] bg-white">
+            <div className="space-y-4">
+              <label className="text-[14px] font-bold text-slate-900 tracking-tight">1. Select Template</label>
+              
+              <div className="relative">
+                <div className="absolute left-3.5 top-1/2 -translate-y-1/2 flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100/80 pointer-events-none">
+                  <FileText className="h-4 w-4 text-slate-500" />
                 </div>
+                <select
+                  value={selectedTemplateId}
+                  onChange={(e) => setSelectedTemplateId(e.target.value)}
+                  className="w-full h-[60px] pl-[52px] pr-10 text-sm font-bold bg-white border border-slate-200 rounded-xl outline-none transition-all focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 appearance-none cursor-pointer text-slate-700 shadow-sm"
+                >
+                  <option value="" className="text-slate-400">Select Template</option>
+                  {templates.map(t => (
+                    <option key={t.id} value={t.id} className="font-semibold text-slate-900">
+                      {t.name}
+                    </option>
+                  ))}
+                </select>
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 text-[10px]">
+                  ▼
+                </div>
+                {template && (
+                  <div className="absolute left-[52px] top-[32px] text-[10px] font-medium text-slate-500 pointer-events-none">
+                    {template.subject.length > 25 ? template.subject.substring(0, 25) + '...' : template.subject}
+                  </div>
+                )}
               </div>
 
               {template && (
-                <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
-                  <div className="flex items-center gap-2 text-emerald-700 font-black text-xs uppercase tracking-wider mb-2">
-                    <CheckCircle2 className="h-4 w-4" /> Selected
-                  </div>
-                  <div className="text-[13px] font-bold text-emerald-900 mb-1">{template.name}</div>
-                  <div className="text-[11px] font-semibold text-emerald-700/80 leading-relaxed">
-                    Targets candidates in <span className="px-1.5 py-0.5 rounded bg-emerald-200/50 text-emerald-800">{template.type}</span> stage.
-                  </div>
-                </div>
+                <button className="flex items-center gap-1.5 text-blue-600 font-bold text-[12px] hover:text-blue-700 hover:underline px-1">
+                  <Eye className="h-3.5 w-3.5" /> Preview Template
+                </button>
               )}
-
-              <div className="h-px w-full bg-slate-100"></div>
-
-              <div className="space-y-2.5">
-                <label className="text-[11px] font-black text-slate-400 uppercase tracking-wider ml-1">2. Filter Candidates</label>
-                <div className="relative">
-                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-                  <Input
-                    placeholder="Search name or email..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10 h-11 w-full text-sm font-semibold bg-slate-50 border border-slate-200 rounded-xl outline-none transition-all focus:bg-white placeholder:font-medium placeholder:text-slate-400"
-                  />
-                </div>
-              </div>
-
             </div>
           </Card>
+
+
+
         </div>
 
         {/* Right Content - Table */}
         <div className="col-span-1 lg:col-span-3 space-y-4">
-          <div className="flex items-center justify-between px-2">
-            <h2 className="text-lg font-black text-slate-900 flex items-center gap-2">
-              <Users className="h-5 w-5 text-blue-600" />
-              Eligible Candidates
+          <div className="flex items-center justify-between px-2 mb-2">
+            <h2 className="text-[16px] font-black text-slate-900 tracking-tight">
+              Eligible Candidates ({eligibleCandidates.length})
             </h2>
             {selectableCandidates.length > 0 && (
-              <div className="flex items-center gap-2.5 bg-white px-3 py-1.5 rounded-xl border border-slate-200 shadow-sm hover:border-blue-300 transition-colors cursor-pointer group" onClick={() => handleSelectAll(selectedCandidates.length !== selectableCandidates.length)}>
+              <div className="flex items-center gap-2 cursor-pointer group" onClick={() => handleSelectAll(selectedCandidates.length !== selectableCandidates.length)}>
                 <Checkbox
                   id="select-all-top"
                   checked={selectedCandidates.length === selectableCandidates.length && selectableCandidates.length > 0}
                   onCheckedChange={handleSelectAll}
-                  className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600 pointer-events-none"
+                  className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600 pointer-events-none rounded"
                 />
-                <label className="text-[12px] font-bold text-slate-700 cursor-pointer group-hover:text-blue-700 transition-colors">
-                  Select All
+                <label className="text-[13px] font-bold text-blue-600 cursor-pointer group-hover:text-blue-700 transition-colors select-none">
+                  Select All Eligible ({selectableCandidates.length})
                 </label>
               </div>
             )}
           </div>
 
-          <Card className="bg-white border-border/50 shadow-[0_8px_30px_-12px_rgba(0,0,0,0.06)] rounded-3xl overflow-hidden">
+          <Card className="bg-white border-border/50 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] rounded-3xl overflow-hidden mb-24">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-[13px]">
-                <thead className="bg-slate-50/80 border-b border-slate-100/80">
+                <thead className="bg-white border-b border-slate-100">
                   <tr>
-                    <th className="px-5 py-4 w-[60px] text-center">
+                    <th className="px-6 py-4 w-[60px] text-center">
                       <span className="sr-only">Select</span>
                     </th>
-                    <th className="px-4 py-4 font-black text-slate-500 uppercase tracking-wider text-[10px]">Candidate Profile</th>
-                    <th className="px-4 py-4 font-black text-slate-500 uppercase tracking-wider text-[10px]">Role / Dept</th>
-                    <th className="px-4 py-4 font-black text-slate-500 uppercase tracking-wider text-[10px]">Stage</th>
-                    <th className="px-4 py-4 font-black text-slate-500 uppercase tracking-wider text-[10px]">Delivery Status</th>
+                    <th className="px-4 py-4 font-bold text-slate-500 text-[11px]">Candidate</th>
+                    <th className="px-4 py-4 font-bold text-slate-500 text-[11px]">Role / Department</th>
+                    <th className="px-4 py-4 font-bold text-slate-500 text-[11px]">Stage</th>
+                    <th className="px-4 py-4 font-bold text-slate-500 text-[11px]">Delivery Status</th>
+                    <th className="px-4 py-4 font-bold text-slate-500 text-[11px]">Last Email Sent</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -452,37 +454,36 @@ export default function SendTemplate() {
                           <td className="px-4 py-4">
                             {isSent ? (
                               <div className="flex flex-col gap-1 items-start">
-                                <div className="flex items-center gap-1.5 text-emerald-600 font-bold text-[11px]">
+                                <div className="flex items-center gap-1.5 text-emerald-600 bg-emerald-50 px-2 py-1 rounded font-bold text-[11px]">
                                   <CheckCircle2 className="w-3.5 h-3.5" /> Already Sent
                                 </div>
-                                <div className="text-slate-400 text-[9px] font-bold uppercase tracking-wider">
+                                <div className="text-emerald-700/80 text-[10px] font-bold">
                                   {new Date(deliveryLog.sent_at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
                                 </div>
-                                {!isSelected && (
-                                  <Button 
-                                    variant="outline" 
-                                    size="sm" 
-                                    className="h-6 mt-1 text-[9px] px-2.5 rounded shadow-sm font-bold text-slate-500 hover:text-blue-600"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      showConfirm(
-                                        "Resend Email",
-                                        "Are you sure you want to resend this email? It has already been delivered to this candidate.",
-                                        () => {
-                                          setSelectedCandidates(prev => [...prev, candidate.id]);
-                                          setDialogState(prev => ({ ...prev, isOpen: false }));
-                                        }
-                                      );
-                                    }}
-                                  >
-                                    Resend
-                                  </Button>
-                                )}
+                              </div>
+                            ) : candidate.emailLogs?.some((log: any) => log.template_id === template?.id && log.status === 'Failed') ? (
+                              <div className="flex flex-col gap-1 items-start">
+                                <div className="flex items-center gap-1.5 text-red-600 bg-red-50 px-2 py-1 rounded font-bold text-[11px]">
+                                  ✕ Failed
+                                </div>
+                                <div className="text-red-700/80 text-[10px] font-bold">
+                                  {new Date(candidate.emailLogs.find((log: any) => log.template_id === template?.id && log.status === 'Failed').sent_at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
+                                </div>
                               </div>
                             ) : (
-                              <div className="flex items-center gap-1.5 text-slate-400 font-bold text-[11px]">
-                                <Mail className="w-3.5 h-3.5 opacity-50" /> Not Sent
+                              <div className="flex items-center gap-1.5 text-amber-600 bg-amber-50 px-2 py-1 rounded font-bold text-[11px]">
+                                Not Sent
                               </div>
+                            )}
+                          </td>
+                          <td className="px-4 py-4">
+                            {isSent || candidate.emailLogs?.some((log: any) => log.template_id === template?.id) ? (
+                              <div className="flex flex-col">
+                                <span className="font-bold text-slate-900 text-[12px]">{template?.name}</span>
+                                <span className="text-slate-500 text-[11px] font-medium mt-0.5">{deliveryLog?.unique_hash?.startsWith('auto-') ? 'Automatic' : 'Manual'}</span>
+                              </div>
+                            ) : (
+                              <span className="text-slate-400 font-bold">—</span>
                             )}
                           </td>
                         </tr>
