@@ -64,6 +64,9 @@ export default function UserRoles() {
   const [formData, setFormData] = useState({
     full_name: '',
     email: '',
+    mobile: '',
+    designation: '',
+    department: '',
     password: '',
     role_id: '',
     is_active: true
@@ -341,8 +344,19 @@ export default function UserRoles() {
                 {activeUsers.map((user, idx) => (
                   <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
                     <td className="px-6 py-4">
-                      <div className="font-bold text-slate-900">{user.full_name || user.name}</div>
-                      <div className="text-xs text-slate-500 font-medium">{user.designation}</div>
+                      <div className="flex items-center gap-3">
+                        {user.profile_photo ? (
+                          <img src={user.profile_photo} alt={user.full_name || user.name} className="h-9 w-9 rounded-full object-cover border border-slate-200 shadow-sm" />
+                        ) : (
+                          <div className="h-9 w-9 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-xs shrink-0 border border-indigo-200">
+                            {(user.full_name || user.name || 'U').charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                        <div>
+                          <div className="font-bold text-slate-900">{user.full_name || user.name}</div>
+                          <div className="text-xs text-slate-500 font-medium">{user.designation || 'No designation'}</div>
+                        </div>
+                      </div>
                     </td>
                     <td className="px-6 py-4 text-slate-600 font-medium">{user.email}</td>
                     <td className="px-6 py-4 text-slate-600 font-medium">{user.department || "N/A"}</td>
@@ -373,6 +387,9 @@ export default function UserRoles() {
                             setFormData({
                               full_name: user.full_name || user.name || '',
                               email: user.email || '',
+                              mobile: user.mobile || '',
+                              designation: user.designation || '',
+                              department: user.department || '',
                               password: '',
                               role_id: user.role_id ? String(user.role_id) : '',
                               is_active: user.is_active === 1 || user.is_active === true || user.is_active === undefined
@@ -396,25 +413,29 @@ export default function UserRoles() {
                         >
                           <RefreshCw className="h-4 w-4" />
                         </Button>
-                        <Button 
-                          onClick={() => toggleUserStatus(user)}
-                          variant="ghost" 
-                          size="icon" 
-                          className={cn(
-                            "h-8 w-8 rounded-lg",
-                            user.is_active ? "text-slate-400 hover:text-rose-600 hover:bg-rose-50" : "text-slate-400 hover:text-emerald-600 hover:bg-emerald-50"
-                          )}
-                        >
-                          <PowerOff className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          onClick={() => deleteUser(user)}
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-8 w-8 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        {(user.id != 1 && user.email !== 'ashiskrout1@gmail.com') && (
+                          <>
+                            <Button 
+                              onClick={() => toggleUserStatus(user)}
+                              variant="ghost" 
+                              size="icon" 
+                              className={cn(
+                                "h-8 w-8 rounded-lg",
+                                user.is_active ? "text-slate-400 hover:text-rose-600 hover:bg-rose-50" : "text-slate-400 hover:text-emerald-600 hover:bg-emerald-50"
+                              )}
+                            >
+                              <PowerOff className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              onClick={() => deleteUser(user)}
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -444,20 +465,17 @@ export default function UserRoles() {
                   {role.description || "No description provided."}
                 </p>
                 
-                <div className="mb-6">
-                  <div className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-2">Permissions</div>
-                  <div className="text-xs font-bold text-slate-700 truncate">
-                    {mockModules.slice(0, 3).map(m => moduleDescriptions[m]).join(', ')}...
-                  </div>
-                </div>
 
-                <Button 
-                  onClick={() => openRoleModal(role)}
-                  variant="outline"
-                  className="w-full h-10 rounded-xl font-bold border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900"
-                >
-                  Manage Role
-                </Button>
+
+                {role.role_name !== 'Administrator' && (
+                  <Button 
+                    onClick={() => openRoleModal(role)}
+                    variant="outline"
+                    className="w-full h-10 rounded-xl font-bold border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900"
+                  >
+                    Manage Role
+                  </Button>
+                )}
               </Card>
             );
           })}
@@ -605,6 +623,35 @@ export default function UserRoles() {
                   onChange={e => setFormData({...formData, email: e.target.value})}
                   className="w-full h-11 px-4 rounded-xl border border-slate-200 focus:border-[#1447E6] focus:ring-2 focus:ring-[#1447E6]/10 text-sm font-medium"
                 />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">Mobile Number</label>
+                <input 
+                  type="text" 
+                  value={formData.mobile}
+                  onChange={e => setFormData({...formData, mobile: e.target.value})}
+                  className="w-full h-11 px-4 rounded-xl border border-slate-200 focus:border-[#1447E6] focus:ring-2 focus:ring-[#1447E6]/10 text-sm font-medium"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">Designation</label>
+                  <input 
+                    type="text" 
+                    value={formData.designation}
+                    onChange={e => setFormData({...formData, designation: e.target.value})}
+                    className="w-full h-11 px-4 rounded-xl border border-slate-200 focus:border-[#1447E6] focus:ring-2 focus:ring-[#1447E6]/10 text-sm font-medium"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">Department</label>
+                  <input 
+                    type="text" 
+                    value={formData.department}
+                    onChange={e => setFormData({...formData, department: e.target.value})}
+                    className="w-full h-11 px-4 rounded-xl border border-slate-200 focus:border-[#1447E6] focus:ring-2 focus:ring-[#1447E6]/10 text-sm font-medium"
+                  />
+                </div>
               </div>
               {!editingUser && (
                 <div>

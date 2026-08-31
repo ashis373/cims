@@ -9,7 +9,6 @@ header('Content-Type: application/json');
 require '../db.php';
 $allowed_roles = ['Administrator'];
 require_once '../auth_middleware.php';
-if (session_status() === PHP_SESSION_NONE) { session_start(); }
 
 $method = $_SERVER['REQUEST_METHOD'];
 $role_id = $_GET['role_id'] ?? null;

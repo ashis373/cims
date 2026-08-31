@@ -34,3 +34,4 @@ dist-ssr
 
 # PHP / Composer
 api/vendor/
+.env

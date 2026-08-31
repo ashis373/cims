@@ -8,7 +8,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { exit(0); }
 header('Content-Type: application/json');
 require '../db.php';
 require_once '../auth_middleware.php';
-session_start();
 
 $method = $_SERVER['REQUEST_METHOD'];
 $type = $_GET['type'] ?? ''; // 'rejection' or 'blacklist'

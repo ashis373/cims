@@ -6,13 +6,7 @@ header('Access-Control-Allow-Headers: Content-Type, Authorization');
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { exit(0); }
 
 require '../db.php';
-
-if (session_status() === PHP_SESSION_NONE) {
-    ini_set('session.cookie_httponly', 1);
-    ini_set('session.use_only_cookies', 1);
-    ini_set('session.cookie_samesite', 'Lax');
-    session_start();
-}
+require '../jwt_utils.php';
 
 $data = json_decode(file_get_contents("php://input"), true);
 $email = $data['email'] ?? '';
@@ -34,11 +28,6 @@ try {
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($user && password_verify($password, $user['password_hashed'])) {
-        // Prevent session fixation
-        session_regenerate_id(true);
-
-        $_SESSION['user_id'] = $user['id'];
-        $_SESSION['LAST_ACTIVITY'] = time();
         
         $logStmt = $conn->prepare("INSERT INTO cims_audit_logs (user_id, action, module, details) VALUES (?, 'Login', 'Authentication', ?)");
         $logStmt->execute([$user['id'], json_encode(['ip' => $_SERVER['REMOTE_ADDR'] ?? ''])]);
@@ -50,14 +39,27 @@ try {
         $permStmt->execute([$user['role_id']]);
         $user['permissions'] = $permStmt->fetchAll(PDO::FETCH_ASSOC);
         
+        // Generate JWT Token
+        $payload = [
+            'user_id' => $user['id'],
+            'role_id' => $user['role_id'],
+            'iat' => time(),
+            'exp' => time() + (3 * 60 * 60) // 3 hours expiration
+        ];
+        $jwt = generate_jwt($payload);
+        
+        // Set HTTP-only cookie for secure local storage, also return in JSON
+        setcookie("auth_token", $jwt, time() + (3 * 60 * 60), "/", "", false, true); // secure=false for local dev, httponly=true
+        
         echo json_encode([
             "status" => "success", 
             "message" => "Login successful", 
+            "token" => $jwt,
             "data" => $user
         ]);
     } else {
         http_response_code(401);
-        echo json_encode(["status" => "error", "message" => "Invalid email or password"]);
+        echo json_encode(["status" => "error", "message" => "Invalid email or password / Inactive account"]);
     }
 } catch (PDOException $e) {
     http_response_code(500);

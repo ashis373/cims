@@ -1,56 +1,60 @@
 <?php
-if (session_status() === PHP_SESSION_NONE) {
-    // Basic session config for cookies
-    ini_set('session.cookie_httponly', 1);
-    ini_set('session.use_only_cookies', 1);
-    ini_set('session.cookie_samesite', 'Lax');
-    session_start();
+require_once __DIR__ . '/jwt_utils.php';
+
+// Try to get token from Authorization header or cookie
+$jwt = null;
+$headers = array_change_key_case(getallheaders(), CASE_LOWER);
+if (isset($headers['authorization']) && strpos($headers['authorization'], 'Bearer ') === 0) {
+    $jwt = substr($headers['authorization'], 7);
+} elseif (isset($_COOKIE['auth_token'])) {
+    $jwt = $_COOKIE['auth_token'];
 }
 
-// Check if user is logged in
-if (!isset($_SESSION['user_id'])) {
-    $headers = array_change_key_case(getallheaders(), CASE_LOWER);
-    $userIdHeader = isset($headers['x-user-id']) ? $headers['x-user-id'] : null;
-    
-    // Fallback for local development CORS cookie issues
-    if ($userIdHeader) {
-        $_SESSION['user_id'] = $userIdHeader;
-        $_SESSION['LAST_ACTIVITY'] = time();
-    } elseif (isset($_SERVER['HTTP_ORIGIN']) && strpos($_SERVER['HTTP_ORIGIN'], 'localhost') !== false) {
-        // ALWAYS fallback to Super Admin (ID 1) during local development to prevent 401s across the app
-        $_SESSION['user_id'] = 1;
-        $_SESSION['LAST_ACTIVITY'] = time();
-    } else {
-        http_response_code(401);
-        echo json_encode(["status" => "error", "message" => "Unauthorized: No active session"]);
-        exit;
-    }
+$payload = false;
+if ($jwt) {
+    $payload = validate_jwt($jwt);
 }
 
-// 3-hour inactivity timeout logic (3 * 60 * 60 = 10800 seconds)
-$timeout_duration = 10800;
+// Fallback for local development CORS cookie issues
+if (!$payload && isset($_SERVER['HTTP_ORIGIN']) && strpos($_SERVER['HTTP_ORIGIN'], 'localhost') !== false && !isset($headers['authorization'])) {
+    // ALWAYS fallback to Super Admin (ID 1) during local development to prevent 401s across the app
+    // Only if they aren't explicitly providing an invalid token in Auth header
+    $payload = [
+        'user_id' => 1,
+        'role_id' => 1,
+        'iat' => time(),
+        'exp' => time() + 3600
+    ];
+}
 
-if (isset($_SESSION['LAST_ACTIVITY']) && (time() - $_SESSION['LAST_ACTIVITY']) > $timeout_duration) {
-    // Session expired
-    session_unset();
-    session_destroy();
+if (!$payload || !isset($payload['user_id'])) {
     http_response_code(401);
-    echo json_encode(["status" => "error", "message" => "Session expired"]);
+    echo json_encode(["status" => "error", "message" => "Unauthorized: Invalid or expired token"]);
     exit;
 }
 
-// Update last activity time stamp
-$_SESSION['LAST_ACTIVITY'] = time();
+global $conn;
+if (!isset($conn)) {
+    require_once __DIR__ . '/db.php';
+}
+
+// Check if user is still active in database
+$stmt = $conn->prepare("SELECT is_active FROM cims_users WHERE id = ?");
+$stmt->execute([$payload['user_id']]);
+$isActive = $stmt->fetchColumn();
+
+if (!$isActive) {
+    http_response_code(401);
+    echo json_encode(["status" => "error", "message" => "Unauthorized: Account deactivated"]);
+    exit;
+}
+
+$currentUser = $payload['user_id'];
 
 // Optional RBAC check
 if (isset($allowed_roles) && is_array($allowed_roles) && count($allowed_roles) > 0) {
-    global $conn;
-    if (!isset($conn)) {
-        require_once dirname(__DIR__) . '/db.php';
-    }
-    
     $stmt = $conn->prepare("SELECT r.role_name FROM cims_users u JOIN cims_roles r ON u.role_id = r.id WHERE u.id = ?");
-    $stmt->execute([$_SESSION['user_id']]);
+    $stmt->execute([$currentUser]);
     $userRole = $stmt->fetchColumn();
     
     if (!$userRole || !in_array($userRole, $allowed_roles)) {
@@ -62,14 +66,9 @@ if (isset($allowed_roles) && is_array($allowed_roles) && count($allowed_roles) >
 
 // Optional Module Permission Check
 if (isset($required_module)) {
-    global $conn;
-    if (!isset($conn)) {
-        require_once dirname(__DIR__) . '/db.php';
-    }
-    
     // Admins always bypass module checks
     $stmt = $conn->prepare("SELECT r.role_name, r.id as role_id FROM cims_users u JOIN cims_roles r ON u.role_id = r.id WHERE u.id = ?");
-    $stmt->execute([$_SESSION['user_id']]);
+    $stmt->execute([$currentUser]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
     
     if ($user && $user['role_name'] !== 'Administrator') {
@@ -86,4 +85,8 @@ if (isset($required_module)) {
         }
     }
 }
+
+// To maintain compatibility with older scripts that might use $_SESSION
+$_SESSION = $_SESSION ?? [];
+$_SESSION['user_id'] = $currentUser;
 ?>

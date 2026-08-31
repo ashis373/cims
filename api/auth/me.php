@@ -15,7 +15,7 @@ try {
         SELECT u.id, u.full_name, u.email, u.designation, u.department, u.profile_photo, u.role_id, r.role_name 
         FROM cims_users u 
         LEFT JOIN cims_roles r ON u.role_id = r.id 
-        WHERE u.id = ? AND u.is_active = 1
+        WHERE u.id = ? AND u.is_active = 1 
     ");
     $stmt->execute([$user_id]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
