@@ -17,7 +17,7 @@ $action = $_GET['action'] ?? '';
 
 try {
     if ($method === 'GET') {
-        $stmt = $conn->prepare("SELECT id, full_name, email, mobile, designation, department, profile_photo, notification_preferences FROM system_users WHERE id = ?");
+        $stmt = $conn->prepare("SELECT id, full_name, email, mobile, designation, department, profile_photo, notification_preferences FROM cims_users WHERE id = ?");
         $stmt->execute([$user_id]);
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
         
@@ -33,20 +33,20 @@ try {
         $data = json_decode(file_get_contents('php://input'), true);
         
         if ($action === 'profile') {
-            $stmt = $conn->prepare("UPDATE system_users SET full_name=?, email=?, mobile=?, designation=?, department=? WHERE id=?");
+            $stmt = $conn->prepare("UPDATE cims_users SET full_name=?, email=?, mobile=?, designation=?, department=? WHERE id=?");
             $stmt->execute([$data['full_name'], $data['email'], $data['mobile'], $data['designation'], $data['department'], $user_id]);
             echo json_encode(["status" => "success", "message" => "Profile updated"]);
         } 
         elseif ($action === 'password') {
             // In a real app, verify current password first
             $hashed = password_hash($data['new_password'], PASSWORD_BCRYPT);
-            $stmt = $conn->prepare("UPDATE system_users SET password_hashed=? WHERE id=?");
+            $stmt = $conn->prepare("UPDATE cims_users SET password_hashed=? WHERE id=?");
             $stmt->execute([$hashed, $user_id]);
             echo json_encode(["status" => "success", "message" => "Password updated"]);
         } 
         elseif ($action === 'notifications') {
             $prefs = json_encode($data['preferences']);
-            $stmt = $conn->prepare("UPDATE system_users SET notification_preferences=? WHERE id=?");
+            $stmt = $conn->prepare("UPDATE cims_users SET notification_preferences=? WHERE id=?");
             $stmt->execute([$prefs, $user_id]);
             echo json_encode(["status" => "success", "message" => "Preferences updated"]);
         } else {

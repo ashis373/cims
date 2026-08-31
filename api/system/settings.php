@@ -16,10 +16,10 @@ $type = $_GET['type'] ?? '';
 try {
     if ($method === 'GET') {
         if ($type === 'company') {
-            $stmt = $conn->query("SELECT * FROM system_company_settings ORDER BY id DESC LIMIT 1");
+            $stmt = $conn->query("SELECT * FROM cims_company_settings ORDER BY id DESC LIMIT 1");
             echo json_encode(["status" => "success", "data" => $stmt->fetch(PDO::FETCH_ASSOC)]);
         } elseif ($type === 'recruitment') {
-            $stmt = $conn->query("SELECT * FROM system_recruitment_settings ORDER BY id DESC LIMIT 1");
+            $stmt = $conn->query("SELECT * FROM cims_recruitment_settings ORDER BY id DESC LIMIT 1");
             echo json_encode(["status" => "success", "data" => $stmt->fetch(PDO::FETCH_ASSOC)]);
         } else {
             http_response_code(400);
@@ -30,7 +30,7 @@ try {
         $data = json_decode(file_get_contents('php://input'), true);
         
         if ($type === 'company') {
-            $stmt = $conn->prepare("UPDATE system_company_settings SET company_name=?, logo=?, website=?, timezone=?, date_format=? WHERE id=?");
+            $stmt = $conn->prepare("UPDATE cims_company_settings SET company_name=?, logo=?, website=?, timezone=?, date_format=? WHERE id=?");
             $stmt->execute([
                 $data['company_name'], 
                 $data['logo'] ?? null, 
@@ -42,7 +42,7 @@ try {
             echo json_encode(["status" => "success", "message" => "Company settings updated"]);
         } 
         elseif ($type === 'recruitment') {
-            $stmt = $conn->prepare("UPDATE system_recruitment_settings SET notice_period=?, max_rounds=?, auto_duplicate_check=?, blacklist_approval=?, offer_expiry_days=? WHERE id=?");
+            $stmt = $conn->prepare("UPDATE cims_recruitment_settings SET notice_period=?, max_rounds=?, auto_duplicate_check=?, blacklist_approval=?, offer_expiry_days=? WHERE id=?");
             $stmt->execute([
                 $data['notice_period'], 
                 $data['max_rounds'], 

@@ -10,11 +10,11 @@ require_once '../auth_middleware.php';
 
 try {
     $conn->exec("SET FOREIGN_KEY_CHECKS = 0;");
-    $conn->exec("DROP TABLE IF EXISTS system_users, system_roles, system_permissions, system_company_settings, system_recruitment_settings, system_rejection_reasons, system_blacklist_reasons;");
+    $conn->exec("DROP TABLE IF EXISTS cims_users, cims_roles, cims_permissions, cims_company_settings, cims_recruitment_settings, cims_rejection_reasons, cims_blacklist_reasons;");
     $conn->exec("SET FOREIGN_KEY_CHECKS = 1;");
 
     // Users
-    $conn->exec("CREATE TABLE IF NOT EXISTS system_users (
+    $conn->exec("CREATE TABLE IF NOT EXISTS cims_users (
         id INT AUTO_INCREMENT PRIMARY KEY,
         full_name VARCHAR(100) NOT NULL,
         email VARCHAR(100) UNIQUE NOT NULL,
@@ -29,7 +29,7 @@ try {
     )");
 
     // Roles
-    $conn->exec("CREATE TABLE IF NOT EXISTS system_roles (
+    $conn->exec("CREATE TABLE IF NOT EXISTS cims_roles (
         id INT AUTO_INCREMENT PRIMARY KEY,
         role_name VARCHAR(50) UNIQUE NOT NULL,
         description TEXT,
@@ -37,7 +37,7 @@ try {
     )");
 
     // Permissions
-    $conn->exec("CREATE TABLE IF NOT EXISTS system_permissions (
+    $conn->exec("CREATE TABLE IF NOT EXISTS cims_permissions (
         id INT AUTO_INCREMENT PRIMARY KEY,
         role_id INT NOT NULL,
         module_name VARCHAR(50) NOT NULL,
@@ -49,7 +49,7 @@ try {
     )");
 
     // Company Settings
-    $conn->exec("CREATE TABLE IF NOT EXISTS system_company_settings (
+    $conn->exec("CREATE TABLE IF NOT EXISTS cims_company_settings (
         id INT AUTO_INCREMENT PRIMARY KEY,
         company_name VARCHAR(100) NOT NULL,
         logo VARCHAR(255),
@@ -59,7 +59,7 @@ try {
     )");
 
     // Recruitment Settings
-    $conn->exec("CREATE TABLE IF NOT EXISTS system_recruitment_settings (
+    $conn->exec("CREATE TABLE IF NOT EXISTS cims_recruitment_settings (
         id INT AUTO_INCREMENT PRIMARY KEY,
         notice_period INT DEFAULT 30,
         max_rounds INT DEFAULT 4,
@@ -69,21 +69,21 @@ try {
     )");
 
     // Rejection Reasons
-    $conn->exec("CREATE TABLE IF NOT EXISTS system_rejection_reasons (
+    $conn->exec("CREATE TABLE IF NOT EXISTS cims_rejection_reasons (
         id INT AUTO_INCREMENT PRIMARY KEY,
         reason_text VARCHAR(255) NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )");
 
     // Blacklist Reasons
-    $conn->exec("CREATE TABLE IF NOT EXISTS system_blacklist_reasons (
+    $conn->exec("CREATE TABLE IF NOT EXISTS cims_blacklist_reasons (
         id INT AUTO_INCREMENT PRIMARY KEY,
         reason_text VARCHAR(255) NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )");
 
     // Insert Default Data
-    $conn->exec("INSERT INTO system_roles (role_name, description) VALUES 
+    $conn->exec("INSERT INTO cims_roles (role_name, description) VALUES 
         ('Administrator', 'Full access to all system modules and settings'),
         ('HR Manager', 'Can manage candidates, jobs, and approve offers'),
         ('Recruiter', 'Can view and manage candidate pipelines'),
@@ -93,26 +93,26 @@ try {
     $adminId = $conn->lastInsertId() - 3;
     
     $modules = ['Dashboard', 'Candidates', 'Interviews', 'Pipeline', 'Offers', 'Risk Management', 'Reports', 'Alerts', 'Email Settings', 'System Settings'];
-    $stmt = $conn->prepare("INSERT INTO system_permissions (role_id, module_name, can_view, can_add, can_edit, can_delete) VALUES (?, ?, 1, 1, 1, 1)");
+    $stmt = $conn->prepare("INSERT INTO cims_permissions (role_id, module_name, can_view, can_add, can_edit, can_delete) VALUES (?, ?, 1, 1, 1, 1)");
     foreach($modules as $mod) {
         $stmt->execute([$adminId, $mod]);
     }
 
     $hashed = password_hash('password123', PASSWORD_BCRYPT);
     $notifs = json_encode(['email' => true, 'interviews' => true, 'offers' => true, 'candidates' => false, 'system' => true]);
-    $conn->exec("INSERT INTO system_users (full_name, email, mobile, designation, department, password_hashed, notification_preferences, role_id) 
+    $conn->exec("INSERT INTO cims_users (full_name, email, mobile, designation, department, password_hashed, notification_preferences, role_id) 
         VALUES ('Admin User', 'admin@hexalearn.com', '+1 (555) 123-4567', 'Senior HR Manager', 'software development', '$hashed', '$notifs', $adminId)
     ");
 
-    $conn->exec("INSERT INTO system_company_settings (company_name, website, timezone, date_format) VALUES ('Hexalearn Solutions', 'https://hexalearn.com', 'UTC', 'MM/DD/YYYY')");
-    $conn->exec("INSERT INTO system_recruitment_settings (notice_period, max_rounds, auto_duplicate_check, blacklist_approval, offer_expiry_days) VALUES (30, 4, 1, 1, 7)");
+    $conn->exec("INSERT INTO cims_company_settings (company_name, website, timezone, date_format) VALUES ('Hexalearn Solutions', 'https://hexalearn.com', 'UTC', 'MM/DD/YYYY')");
+    $conn->exec("INSERT INTO cims_recruitment_settings (notice_period, max_rounds, auto_duplicate_check, blacklist_approval, offer_expiry_days) VALUES (30, 4, 1, 1, 7)");
     
     $reasons = ['Not a culture fit', 'Lacking required technical skills', 'Salary expectations too high', 'Position closed/on hold'];
-    $stmt = $conn->prepare("INSERT INTO system_rejection_reasons (reason_text) VALUES (?)");
+    $stmt = $conn->prepare("INSERT INTO cims_rejection_reasons (reason_text) VALUES (?)");
     foreach($reasons as $r) $stmt->execute([$r]);
 
     $blacklists = ['Falsified resume/information', 'Unprofessional behavior during interview', 'No show without prior notice', 'Failed background check'];
-    $stmt = $conn->prepare("INSERT INTO system_blacklist_reasons (reason_text) VALUES (?)");
+    $stmt = $conn->prepare("INSERT INTO cims_blacklist_reasons (reason_text) VALUES (?)");
     foreach($blacklists as $b) $stmt->execute([$b]);
 
     echo "Tables created and seeded successfully.";

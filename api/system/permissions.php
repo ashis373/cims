@@ -21,7 +21,7 @@ try {
             echo json_encode(["status" => "error", "message" => "role_id required"]);
             exit;
         }
-        $stmt = $conn->prepare("SELECT * FROM system_permissions WHERE role_id = ?");
+        $stmt = $conn->prepare("SELECT * FROM cims_permissions WHERE role_id = ?");
         $stmt->execute([$role_id]);
         $perms = $stmt->fetchAll(PDO::FETCH_ASSOC);
         echo json_encode(["status" => "success", "data" => $perms]);
@@ -34,7 +34,7 @@ try {
         $conn->beginTransaction();
         
         $stmt = $conn->prepare("
-            INSERT INTO system_permissions (role_id, module_name, can_view, can_add, can_edit, can_delete) 
+            INSERT INTO cims_permissions (role_id, module_name, can_view, can_add, can_edit, can_delete) 
             VALUES (?, ?, ?, ?, ?, ?)
             ON DUPLICATE KEY UPDATE 
             can_view=VALUES(can_view), can_add=VALUES(can_add), can_edit=VALUES(can_edit), can_delete=VALUES(can_delete)
@@ -53,7 +53,7 @@ try {
         
         $conn->commit();
         
-        $logStmt = $conn->prepare("INSERT INTO system_audit_logs (user_id, action, module, details) VALUES (?, 'Update Permissions', 'Roles', ?)");
+        $logStmt = $conn->prepare("INSERT INTO cims_audit_logs (user_id, action, module, details) VALUES (?, 'Update Permissions', 'Roles', ?)");
         $logStmt->execute([$_SESSION['user_id'], json_encode(['role_id' => $role_id])]);
         
         echo json_encode(["status" => "success", "message" => "Permissions updated"]);

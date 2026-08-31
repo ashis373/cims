@@ -18,9 +18,9 @@ try {
     if ($method === 'GET') {
         $stmt = $conn->query("
             SELECT u.id, u.full_name, u.email, u.designation, u.department, u.is_active, u.created_at, r.role_name as role, r.id as role_id,
-            (SELECT log_time FROM system_audit_logs WHERE user_id = u.id AND action = 'Login' ORDER BY log_time DESC LIMIT 1) as last_login
-            FROM system_users u
-            LEFT JOIN system_roles r ON u.role_id = r.id
+            (SELECT log_time FROM cims_audit_logs WHERE user_id = u.id AND action = 'Login' ORDER BY log_time DESC LIMIT 1) as last_login
+            FROM cims_users u
+            LEFT JOIN cims_roles r ON u.role_id = r.id
             ORDER BY u.created_at DESC
         ");
         $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -37,7 +37,7 @@ try {
         }
 
         // Check duplicate email
-        $check = $conn->prepare("SELECT id FROM system_users WHERE email = ?");
+        $check = $conn->prepare("SELECT id FROM cims_users WHERE email = ?");
         $check->execute([$data['email']]);
         if ($check->fetch()) {
             http_response_code(400);
@@ -46,7 +46,7 @@ try {
         }
 
         $hashedPassword = password_hash($data['password'], PASSWORD_BCRYPT);
-        $stmt = $conn->prepare("INSERT INTO system_users (full_name, email, password_hashed, role_id, is_active) VALUES (?, ?, ?, ?, ?)");
+        $stmt = $conn->prepare("INSERT INTO cims_users (full_name, email, password_hashed, role_id, is_active) VALUES (?, ?, ?, ?, ?)");
         $stmt->execute([
             $data['full_name'],
             $data['email'],
@@ -56,7 +56,7 @@ try {
         ]);
         
         $new_id = $conn->lastInsertId();
-        $logStmt = $conn->prepare("INSERT INTO system_audit_logs (user_id, action, module, details) VALUES (?, 'Create User', 'Users', ?)");
+        $logStmt = $conn->prepare("INSERT INTO cims_audit_logs (user_id, action, module, details) VALUES (?, 'Create User', 'Users', ?)");
         $logStmt->execute([$_SESSION['user_id'], json_encode(['created_user_id' => $new_id, 'email' => $data['email']])]);
         
         echo json_encode(["status" => "success", "message" => "User created successfully"]);
@@ -79,10 +79,10 @@ try {
                 exit;
             }
             $hashedPassword = password_hash($data['password'], PASSWORD_BCRYPT);
-            $stmt = $conn->prepare("UPDATE system_users SET password_hashed = ? WHERE id = ?");
+            $stmt = $conn->prepare("UPDATE cims_users SET password_hashed = ? WHERE id = ?");
             $stmt->execute([$hashedPassword, $id]);
             
-            $logStmt = $conn->prepare("INSERT INTO system_audit_logs (user_id, action, module, details) VALUES (?, 'Reset Password', 'Users', ?)");
+            $logStmt = $conn->prepare("INSERT INTO cims_audit_logs (user_id, action, module, details) VALUES (?, 'Reset Password', 'Users', ?)");
             $logStmt->execute([$_SESSION['user_id'], json_encode(['target_user_id' => $id])]);
             
             echo json_encode(["status" => "success", "message" => "Password reset successfully"]);
@@ -91,13 +91,13 @@ try {
         
         if ($action === 'toggle_status') {
             // Prevent toggling last super admin
-            $checkAdmin = $conn->prepare("SELECT r.role_name FROM system_users u JOIN system_roles r ON u.role_id = r.id WHERE u.id = ?");
+            $checkAdmin = $conn->prepare("SELECT r.role_name FROM cims_users u JOIN cims_roles r ON u.role_id = r.id WHERE u.id = ?");
             $checkAdmin->execute([$id]);
             $roleName = $checkAdmin->fetchColumn();
             
             if ($roleName === 'Administrator' && $data['is_active'] == 0) {
                 // Check if it's the last active admin
-                $countAdmins = $conn->query("SELECT COUNT(*) FROM system_users u JOIN system_roles r ON u.role_id = r.id WHERE r.role_name = 'Administrator' AND u.is_active = 1")->fetchColumn();
+                $countAdmins = $conn->query("SELECT COUNT(*) FROM cims_users u JOIN cims_roles r ON u.role_id = r.id WHERE r.role_name = 'Administrator' AND u.is_active = 1")->fetchColumn();
                 if ($countAdmins <= 1) {
                     http_response_code(400);
                     echo json_encode(["status" => "error", "message" => "Cannot deactivate the last active Super Admin account."]);
@@ -105,11 +105,11 @@ try {
                 }
             }
             
-            $stmt = $conn->prepare("UPDATE system_users SET is_active = ? WHERE id = ?");
+            $stmt = $conn->prepare("UPDATE cims_users SET is_active = ? WHERE id = ?");
             $new_status = $data['is_active'] ? 1 : 0;
             $stmt->execute([$new_status, $id]);
             
-            $logStmt = $conn->prepare("INSERT INTO system_audit_logs (user_id, action, module, details) VALUES (?, 'Toggle Status', 'Users', ?)");
+            $logStmt = $conn->prepare("INSERT INTO cims_audit_logs (user_id, action, module, details) VALUES (?, 'Toggle Status', 'Users', ?)");
             $logStmt->execute([$_SESSION['user_id'], json_encode(['target_user_id' => $id, 'new_status' => $new_status])]);
             
             echo json_encode(["status" => "success", "message" => "Status updated"]);
@@ -117,7 +117,7 @@ try {
         }
 
         // Regular update
-        $stmt = $conn->prepare("UPDATE system_users SET full_name = ?, email = ?, role_id = ?, is_active = ? WHERE id = ?");
+        $stmt = $conn->prepare("UPDATE cims_users SET full_name = ?, email = ?, role_id = ?, is_active = ? WHERE id = ?");
         $stmt->execute([
             $data['full_name'],
             $data['email'],
@@ -126,7 +126,7 @@ try {
             $id
         ]);
         
-        $logStmt = $conn->prepare("INSERT INTO system_audit_logs (user_id, action, module, details) VALUES (?, 'Update User', 'Users', ?)");
+        $logStmt = $conn->prepare("INSERT INTO cims_audit_logs (user_id, action, module, details) VALUES (?, 'Update User', 'Users', ?)");
         $logStmt->execute([$_SESSION['user_id'], json_encode(['target_user_id' => $id, 'role_id' => $data['role_id']])]);
         
         echo json_encode(["status" => "success", "message" => "User updated successfully"]);
@@ -142,12 +142,12 @@ try {
         }
 
         // Prevent deleting last super admin
-        $checkAdmin = $conn->prepare("SELECT r.role_name FROM system_users u JOIN system_roles r ON u.role_id = r.id WHERE u.id = ?");
+        $checkAdmin = $conn->prepare("SELECT r.role_name FROM cims_users u JOIN cims_roles r ON u.role_id = r.id WHERE u.id = ?");
         $checkAdmin->execute([$id]);
         $roleName = $checkAdmin->fetchColumn();
         
         if ($roleName === 'Administrator') {
-            $countAdmins = $conn->query("SELECT COUNT(*) FROM system_users u JOIN system_roles r ON u.role_id = r.id WHERE r.role_name = 'Administrator'")->fetchColumn();
+            $countAdmins = $conn->query("SELECT COUNT(*) FROM cims_users u JOIN cims_roles r ON u.role_id = r.id WHERE r.role_name = 'Administrator'")->fetchColumn();
             if ($countAdmins <= 1) {
                 http_response_code(400);
                 echo json_encode(["status" => "error", "message" => "Cannot delete the last Super Admin account."]);
@@ -155,10 +155,10 @@ try {
             }
         }
 
-        $stmt = $conn->prepare("DELETE FROM system_users WHERE id = ?");
+        $stmt = $conn->prepare("DELETE FROM cims_users WHERE id = ?");
         $stmt->execute([$id]);
         
-        $logStmt = $conn->prepare("INSERT INTO system_audit_logs (user_id, action, module, details) VALUES (?, 'Delete User', 'Users', ?)");
+        $logStmt = $conn->prepare("INSERT INTO cims_audit_logs (user_id, action, module, details) VALUES (?, 'Delete User', 'Users', ?)");
         $logStmt->execute([$_SESSION['user_id'], json_encode(['target_user_id' => $id])]);
         
         echo json_encode(["status" => "success", "message" => "User deleted successfully"]);

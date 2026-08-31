@@ -26,8 +26,8 @@ if (empty($email) || empty($password)) {
 try {
     $stmt = $conn->prepare("
         SELECT u.id, u.full_name, u.email, u.password_hashed, u.designation, u.department, u.profile_photo, u.role_id, r.role_name 
-        FROM system_users u 
-        LEFT JOIN system_roles r ON u.role_id = r.id 
+        FROM cims_users u 
+        LEFT JOIN cims_roles r ON u.role_id = r.id 
         WHERE u.email = ? AND u.is_active = 1
     ");
     $stmt->execute([$email]);
@@ -40,13 +40,13 @@ try {
         $_SESSION['user_id'] = $user['id'];
         $_SESSION['LAST_ACTIVITY'] = time();
         
-        $logStmt = $conn->prepare("INSERT INTO system_audit_logs (user_id, action, module, details) VALUES (?, 'Login', 'Authentication', ?)");
+        $logStmt = $conn->prepare("INSERT INTO cims_audit_logs (user_id, action, module, details) VALUES (?, 'Login', 'Authentication', ?)");
         $logStmt->execute([$user['id'], json_encode(['ip' => $_SERVER['REMOTE_ADDR'] ?? ''])]);
         
         unset($user['password_hashed']);
         
         // Fetch permissions for this role
-        $permStmt = $conn->prepare("SELECT module_name, can_view, can_add, can_edit, can_delete FROM system_permissions WHERE role_id = ?");
+        $permStmt = $conn->prepare("SELECT module_name, can_view, can_add, can_edit, can_delete, can_approve, can_export, scope FROM cims_permissions WHERE role_id = ?");
         $permStmt->execute([$user['role_id']]);
         $user['permissions'] = $permStmt->fetchAll(PDO::FETCH_ASSOC);
         

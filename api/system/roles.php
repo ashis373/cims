@@ -17,8 +17,8 @@ try {
     if ($method === 'GET') {
         $stmt = $conn->query("
             SELECT r.*, COUNT(u.id) as user_count 
-            FROM system_roles r 
-            LEFT JOIN system_users u ON r.id = u.role_id 
+            FROM cims_roles r 
+            LEFT JOIN cims_users u ON r.id = u.role_id 
             GROUP BY r.id
         ");
         $roles = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -26,21 +26,21 @@ try {
     } 
     elseif ($method === 'POST') {
         $data = json_decode(file_get_contents('php://input'), true);
-        $stmt = $conn->prepare("INSERT INTO system_roles (role_name, description) VALUES (?, ?)");
+        $stmt = $conn->prepare("INSERT INTO cims_roles (role_name, description) VALUES (?, ?)");
         $stmt->execute([$data['role_name'], $data['description']]);
         $new_id = $conn->lastInsertId();
         
-        $logStmt = $conn->prepare("INSERT INTO system_audit_logs (user_id, action, module, details) VALUES (?, 'Create Role', 'Roles', ?)");
+        $logStmt = $conn->prepare("INSERT INTO cims_audit_logs (user_id, action, module, details) VALUES (?, 'Create Role', 'Roles', ?)");
         $logStmt->execute([$_SESSION['user_id'], json_encode(['role_id' => $new_id, 'role_name' => $data['role_name']])]);
         
         echo json_encode(["status" => "success", "message" => "Role created", "id" => $new_id]);
     } 
     elseif ($method === 'PUT') {
         $data = json_decode(file_get_contents('php://input'), true);
-        $stmt = $conn->prepare("UPDATE system_roles SET role_name=?, description=? WHERE id=?");
+        $stmt = $conn->prepare("UPDATE cims_roles SET role_name=?, description=? WHERE id=?");
         $stmt->execute([$data['role_name'], $data['description'], $data['id']]);
         
-        $logStmt = $conn->prepare("INSERT INTO system_audit_logs (user_id, action, module, details) VALUES (?, 'Update Role', 'Roles', ?)");
+        $logStmt = $conn->prepare("INSERT INTO cims_audit_logs (user_id, action, module, details) VALUES (?, 'Update Role', 'Roles', ?)");
         $logStmt->execute([$_SESSION['user_id'], json_encode(['role_id' => $data['id']])]);
         
         echo json_encode(["status" => "success", "message" => "Role updated"]);
@@ -53,7 +53,7 @@ try {
             exit;
         }
 
-        $checkAdmin = $conn->prepare("SELECT role_name FROM system_roles WHERE id = ?");
+        $checkAdmin = $conn->prepare("SELECT role_name FROM cims_roles WHERE id = ?");
         $checkAdmin->execute([$id]);
         $roleName = $checkAdmin->fetchColumn();
         
@@ -63,10 +63,10 @@ try {
             exit;
         }
 
-        $stmt = $conn->prepare("DELETE FROM system_roles WHERE id = ?");
+        $stmt = $conn->prepare("DELETE FROM cims_roles WHERE id = ?");
         $stmt->execute([$id]);
         
-        $logStmt = $conn->prepare("INSERT INTO system_audit_logs (user_id, action, module, details) VALUES (?, 'Delete Role', 'Roles', ?)");
+        $logStmt = $conn->prepare("INSERT INTO cims_audit_logs (user_id, action, module, details) VALUES (?, 'Delete Role', 'Roles', ?)");
         $logStmt->execute([$_SESSION['user_id'], json_encode(['role_id' => $id, 'role_name' => $roleName])]);
         
         echo json_encode(["status" => "success", "message" => "Role deleted successfully"]);

@@ -49,7 +49,7 @@ if (isset($allowed_roles) && is_array($allowed_roles) && count($allowed_roles) >
         require_once dirname(__DIR__) . '/db.php';
     }
     
-    $stmt = $conn->prepare("SELECT r.role_name FROM system_users u JOIN system_roles r ON u.role_id = r.id WHERE u.id = ?");
+    $stmt = $conn->prepare("SELECT r.role_name FROM cims_users u JOIN cims_roles r ON u.role_id = r.id WHERE u.id = ?");
     $stmt->execute([$_SESSION['user_id']]);
     $userRole = $stmt->fetchColumn();
     
@@ -68,12 +68,12 @@ if (isset($required_module)) {
     }
     
     // Admins always bypass module checks
-    $stmt = $conn->prepare("SELECT r.role_name, r.id as role_id FROM system_users u JOIN system_roles r ON u.role_id = r.id WHERE u.id = ?");
+    $stmt = $conn->prepare("SELECT r.role_name, r.id as role_id FROM cims_users u JOIN cims_roles r ON u.role_id = r.id WHERE u.id = ?");
     $stmt->execute([$_SESSION['user_id']]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
     
     if ($user && $user['role_name'] !== 'Administrator') {
-        $permStmt = $conn->prepare("SELECT can_view, can_add, can_edit, can_delete FROM system_permissions WHERE role_id = ? AND module_name = ?");
+        $permStmt = $conn->prepare("SELECT can_view, can_add, can_edit, can_delete FROM cims_permissions WHERE role_id = ? AND module_name = ?");
         $permStmt->execute([$user['role_id'], $required_module]);
         $perms = $permStmt->fetch(PDO::FETCH_ASSOC);
         
