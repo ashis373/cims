@@ -497,7 +497,7 @@ export default function CandidateFormPage() {
                   </div>
                   <div className="h-24 w-24 rounded-2xl overflow-hidden border-4 border-white shadow-md">
                     <img
-                      src={`${API_BASE_URL}/candidates/uploads/${form.photo}`}
+                      src={`${API_BASE_URL}/../uploads/candidates/photos/${form.photo}`}
                       alt="Profile preview"
                       className="h-full w-full object-cover"
                     />

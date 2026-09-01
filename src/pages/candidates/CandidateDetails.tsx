@@ -408,7 +408,7 @@ export default function CandidateProfile() {
             {candidate.photo ? (
               <div className="h-[72px] w-[72px] rounded-full overflow-hidden shrink-0 shadow-sm border-2 border-white ring-2 ring-slate-100">
                 <img
-                  src={`${API_BASE_URL}/candidates/uploads/${candidate.photo}`}
+                  src={`${API_BASE_URL}/../uploads/candidates/photos/${candidate.photo}`}
                   alt={candidate.name}
                   className="h-full w-full object-cover"
                 />
@@ -971,7 +971,7 @@ export default function CandidateProfile() {
                           </td>
                           <td className="py-3 px-4 text-right">
                             <div className="flex items-center justify-end gap-1">
-                              <a href={`${API_BASE_URL}/candidates/uploads/${doc.rawName}`} target="_blank" rel="noreferrer">
+                              <a href={`${API_BASE_URL}/../uploads/candidates/documents/${doc.rawName}`} target="_blank" rel="noreferrer">
                                 <Button
                                   variant="ghost"
                                   size="icon"
@@ -981,7 +981,7 @@ export default function CandidateProfile() {
                                   <Eye className="h-4 w-4" />
                                 </Button>
                               </a>
-                              <a href={`${API_BASE_URL}/candidates/uploads/${doc.rawName}`} download target="_blank" rel="noreferrer">
+                              <a href={`${API_BASE_URL}/../uploads/candidates/documents/${doc.rawName}`} download target="_blank" rel="noreferrer">
                                 <Button
                                   variant="ghost"
                                   size="icon"

@@ -409,7 +409,7 @@ export default function SendTemplate() {
                               )}>
                                 {candidate.photo ? (
                                   <img 
-                                    src={`${API_BASE_URL}/candidates/uploads/${candidate.photo}`} 
+                                    src={`${API_BASE_URL}/../uploads/candidates/photos/${candidate.photo}`} 
                                     alt={candidate.name} 
                                     className="h-full w-full rounded-full object-cover" 
                                     onError={(e) => {

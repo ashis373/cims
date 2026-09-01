@@ -69,16 +69,24 @@ try {
             }
             
             $file = $_FILES['photo'];
-            $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-            $allowed = ['jpg', 'jpeg', 'png', 'gif'];
-            
-            if (!in_array($ext, $allowed)) {
+            if ($file['size'] > 5 * 1024 * 1024) {
                 http_response_code(400);
-                echo json_encode(["status" => "error", "message" => "Invalid file type"]);
+                echo json_encode(["status" => "error", "message" => "Image exceeds 5MB limit"]);
                 exit;
             }
             
-            $uploadDir = '../uploads/profiles/';
+            $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+            $mime = mime_content_type($file['tmp_name']);
+            $allowedExts = ['jpg', 'jpeg', 'png', 'gif'];
+            $allowedMimes = ['image/jpeg', 'image/png', 'image/gif'];
+            
+            if (!in_array($ext, $allowedExts) || !in_array($mime, $allowedMimes)) {
+                http_response_code(400);
+                echo json_encode(["status" => "error", "message" => "Invalid file type. Only JPG, PNG, and GIF are allowed."]);
+                exit;
+            }
+            
+            $uploadDir = '../../uploads/profiles/';
             if (!is_dir($uploadDir)) {
                 mkdir($uploadDir, 0755, true);
             }
@@ -87,7 +95,7 @@ try {
             $destPath = $uploadDir . $fileName;
             
             if (move_uploaded_file($file['tmp_name'], $destPath)) {
-                $photoUrl = 'uploads/profiles/' . $fileName;
+                $photoUrl = '../../uploads/profiles/' . $fileName;
                 $stmt = $conn->prepare("UPDATE cims_users SET profile_photo=? WHERE id=?");
                 $stmt->execute([$photoUrl, $user_id]);
                 

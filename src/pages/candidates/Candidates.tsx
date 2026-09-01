@@ -594,7 +594,7 @@ export default function CandidatesPage() {
                           <div className="flex items-center gap-3">
                             {c.photo ? (
                               <img
-                                src={`${API_BASE_URL}/candidates/uploads/${c.photo}`}
+                                src={`${API_BASE_URL}/../uploads/candidates/photos/${c.photo}`}
                                 alt={c.name}
                                 className="h-8 w-8 rounded-full object-cover shadow-sm border border-slate-200 shrink-0"
                                 onError={(e) => {
@@ -730,7 +730,7 @@ export default function CandidatesPage() {
                       <div className="flex items-start justify-between mb-4">
                         <div className="flex items-center gap-3 overflow-hidden">
                           {c.photo ? (
-                            <img src={`${API_BASE_URL}/candidates/uploads/${c.photo}`} alt={c.name} className="h-10 w-10 rounded-full object-cover shadow-sm border border-slate-200 shrink-0" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden'); }} />
+                            <img src={`${API_BASE_URL}/../uploads/candidates/photos/${c.photo}`} alt={c.name} className="h-10 w-10 rounded-full object-cover shadow-sm border border-slate-200 shrink-0" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden'); }} />
                           ) : null}
                           <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-bold text-[11px]", c.isBlacklisted ? "bg-red-100 text-red-600" : "bg-purple-100 text-purple-600", c.photo ? "hidden" : "")}>
                             {getInitials(c.name)}

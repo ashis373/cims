@@ -393,7 +393,7 @@ export default function CandidateTimeline() {
                           <div className="col-span-3 flex items-center gap-3">
                             <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-[11px] font-bold text-slate-600 shrink-0 overflow-hidden">
                               {item.image ? (
-                                <img src={`${API_BASE_URL}/candidates/uploads/${item.image}`} alt={item.candidateName} className="w-full h-full object-cover" />
+                                <img src={`${API_BASE_URL}/../uploads/candidates/photos/${item.image}`} alt={item.candidateName} className="w-full h-full object-cover" />
                               ) : (
                                 item.candidateName?.charAt(0) || 'C'
                               )}

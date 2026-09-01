@@ -22,7 +22,7 @@ require_once '../auth_middleware.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_FILES['file']) && $_FILES['file']['error'] === UPLOAD_ERR_OK && isset($_POST['candidate_id'])) {
-        $uploadDir = 'uploads/';
+        $uploadDir = '../../uploads/candidates/documents/';
         if (!is_dir($uploadDir)) {
             mkdir($uploadDir, 0777, true);
         }
@@ -41,6 +41,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         $fileMimeType = mime_content_type($fileTmpPath);
         $fileExtension = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+        
+        if ($_FILES['file']['size'] > 10 * 1024 * 1024) {
+            http_response_code(400);
+            echo json_encode(["error" => "Document exceeds maximum allowed size (10MB)."]);
+            exit;
+        }
         
         if (!in_array($fileMimeType, $allowedMimeTypes) || !in_array($fileExtension, $allowedExtensions)) {
             http_response_code(400);
@@ -76,7 +82,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $doc = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if ($doc) {
-            $filePath = 'uploads/' . $doc['filePath'];
+            $filePath = '../../uploads/candidates/documents/' . $doc['filePath'];
             if (file_exists($filePath)) {
                 unlink($filePath);
             }

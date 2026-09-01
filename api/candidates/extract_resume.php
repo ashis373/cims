@@ -146,7 +146,7 @@ foreach ($known_cities as $city) {
 }
 
 // Upload the file as well so the user doesn't have to upload it twice
-$uploadDir = __DIR__ . '/uploads/';
+$uploadDir = __DIR__ . '/../../uploads/candidates/resumes/';
 if (!is_dir($uploadDir)) {
     mkdir($uploadDir, 0777, true);
 }
