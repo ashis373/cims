@@ -113,9 +113,9 @@ function App() {
 
                     {/* Reports */}
                     <Route path="/reports/candidate" element={<Reports />} />
-                    <Route path="/reports/recruiter-performance" element={<ReportsPerformance />} />
-                    <Route path="/reports/hiring" element={<Reports />} />
-                    <Route path="/reports/rejection-analysis" element={<ReportsPerformance />} />
+                    {/* <Route path="/reports/recruiter-performance" element={<ReportsPerformance />} /> */}
+                    <Route path="/reports/hiring" element={<ReportsPerformance />} />
+                    {/* <Route path="/reports/rejection-analysis" element={<ReportsPerformance />} /> */}
                     <Route path="/reports/blacklist" element={<Blacklisted />} />
                     <Route path="/reports/no-joiners" element={<NoJoiners />} />
                     <Route path="/reports" element={<Reports />} />

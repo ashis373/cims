@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 const API_BASE_URL = import.meta.env.PROD 
   ? "https://demo.hexalearn.com/cimss/api" 
   : "http://localhost/full-cims/api";
+import { getAuthHeaders } from "@/services/candidate-api";
 
 export default function UserProfile() {
   const [profile, setProfile] = useState({
@@ -33,7 +34,10 @@ export default function UserProfile() {
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    fetch(`${API_BASE_URL}/system/profile.php`)
+    fetch(`${API_BASE_URL}/system/profile.php`, {
+      credentials: 'include',
+      headers: getAuthHeaders(false)
+    })
       .then(res => res.json())
       .then(res => {
         if (res.status === 'success') {
@@ -58,9 +62,10 @@ export default function UserProfile() {
     setIsSaving(true);
     try {
       // Save Profile info
-      await fetch(`${API_BASE_URL}/system/profile.php?action=profile`, { credentials: 'include', 
+      await fetch(`${API_BASE_URL}/system/profile.php?action=profile`, { 
+        credentials: 'include', 
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(true),
         body: JSON.stringify({
           full_name: profile.name,
           email: profile.email,
@@ -71,17 +76,19 @@ export default function UserProfile() {
       });
 
       // Save Notifications
-      await fetch(`${API_BASE_URL}/system/profile.php?action=notifications`, { credentials: 'include', 
+      await fetch(`${API_BASE_URL}/system/profile.php?action=notifications`, { 
+        credentials: 'include', 
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(true),
         body: JSON.stringify({ preferences: notifications })
       });
 
       // Save Password if set
       if (password) {
-        await fetch(`${API_BASE_URL}/system/profile.php?action=password`, { credentials: 'include', 
+        await fetch(`${API_BASE_URL}/system/profile.php?action=password`, { 
+          credentials: 'include', 
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getAuthHeaders(true),
           body: JSON.stringify({ new_password: password })
         });
         setPassword("");

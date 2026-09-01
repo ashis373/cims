@@ -7,6 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ArrowLeft, Search, AlertCircle, Mail, MailPlus, Send, Users, CheckCircle2, UserCircle2, AlertTriangle, Info, Eye, RefreshCw, FileText, Settings, CheckCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { API_BASE_URL } from "@/config/api";
+import { getAuthHeaders } from "@/services/candidate-api";
 import {
   Dialog,
   DialogContent,
@@ -48,20 +49,20 @@ export default function SendTemplate() {
       setLoading(true);
       try {
         const [tplRes, candRes] = await Promise.all([
-          fetch(`${API_BASE_URL}/settings/email/templates.php`),
-          fetch(`${API_BASE_URL}/candidates/candidates.php`)
+          fetch(`${API_BASE_URL}/settings/email/templates.php`, { credentials: 'include', headers: getAuthHeaders(false) }),
+          fetch(`${API_BASE_URL}/candidates/candidates.php`, { credentials: 'include', headers: getAuthHeaders(false) })
         ]);
         const allTemplates = await tplRes.json();
-        setTemplates(allTemplates);
+        setTemplates(Array.isArray(allTemplates) ? allTemplates : []);
         
         // Auto-select Interview template by default
-        const defaultTemplate = allTemplates.find((t: any) => t.type === "Interview");
+        const defaultTemplate = (Array.isArray(allTemplates) ? allTemplates : []).find((t: any) => t.type === "Interview");
         if (defaultTemplate) {
           setSelectedTemplateId(defaultTemplate.id.toString());
         }
 
         const allCandidates = await candRes.json();
-        setCandidates(allCandidates);
+        setCandidates(Array.isArray(allCandidates) ? allCandidates : []);
       } catch (e) {
         console.error(e);
       }
@@ -140,7 +141,8 @@ export default function SendTemplate() {
           try {
             await fetch(`${API_BASE_URL}/settings/email/send_manual.php`, {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              credentials: 'include',
+              headers: getAuthHeaders(true),
               body: JSON.stringify({
                 to: candidate.email,
                 subject: parsedSubject,
@@ -159,8 +161,9 @@ export default function SendTemplate() {
         setSelectedCandidates([]);
         showAlert("Success", `${sentCount} emails queued successfully!`);
         // Refresh data to show updated email logs
-        const res = await fetch(`${API_BASE_URL}/candidates/candidates.php`);
-        setCandidates(await res.json());
+        const res = await fetch(`${API_BASE_URL}/candidates/candidates.php`, { credentials: 'include', headers: getAuthHeaders(false) });
+        const resJson = await res.json();
+        setCandidates(Array.isArray(resJson) ? resJson : []);
       }
     );
   };
@@ -267,7 +270,7 @@ export default function SendTemplate() {
                 <select
                   value={selectedTemplateId}
                   onChange={(e) => setSelectedTemplateId(e.target.value)}
-                  className="w-full h-[60px] pl-[52px] pr-10 text-sm font-bold bg-white border border-slate-200 rounded-xl outline-none transition-all focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 appearance-none cursor-pointer text-slate-700 shadow-sm"
+                  className={cn("w-full h-[60px] pl-[52px] pr-10 text-sm font-bold bg-white border border-slate-200 rounded-xl outline-none transition-all focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 appearance-none cursor-pointer text-slate-700 shadow-sm", template ? "pb-4 pt-1.5" : "")}
                 >
                   <option value="" className="text-slate-400">Select Template</option>
                   {templates.map(t => (
@@ -280,17 +283,12 @@ export default function SendTemplate() {
                   ▼
                 </div>
                 {template && (
-                  <div className="absolute left-[52px] top-[32px] text-[10px] font-medium text-slate-500 pointer-events-none">
+                  <div className="absolute left-[52px] top-[34px] text-[10.5px] font-medium text-slate-500 pointer-events-none">
                     {template.subject.length > 25 ? template.subject.substring(0, 25) + '...' : template.subject}
                   </div>
                 )}
               </div>
 
-              {template && (
-                <button className="flex items-center gap-1.5 text-blue-600 font-bold text-[12px] hover:text-blue-700 hover:underline px-1">
-                  <Eye className="h-3.5 w-3.5" /> Preview Template
-                </button>
-              )}
             </div>
           </Card>
 

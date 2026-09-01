@@ -84,7 +84,7 @@ export default function ReportsPerformance() {
               <Briefcase className="h-6 w-6" />
             </div>
             <div>
-              <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">Performance Reports</h1>
+              <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">Hiring Report</h1>
               <p className="text-slate-500 text-[13px] sm:text-[14px] font-medium mt-1.5 max-w-lg leading-relaxed">
                 Analytics on recruiter performance, pipeline conversions, and drop-offs.
               </p>

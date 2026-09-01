@@ -31,6 +31,9 @@ if ($smtp && isset($smtp['worker_enabled']) && $smtp['worker_enabled'] == 0) {
 
 $workerId = uniqid('worker_', true);
 
+// Update last worker run time
+$conn->exec("UPDATE cims_smtp_config SET last_worker_run = CURRENT_TIMESTAMP");
+
 // Recover stale processing records (crashed workers > 10 mins ago)
 $conn->exec("UPDATE cims_email_queue SET status = 'Pending', worker_id = NULL WHERE status = 'Processing' AND started_at < DATE_SUB(CURRENT_TIMESTAMP, INTERVAL 10 MINUTE) AND attempts < max_attempts");
 

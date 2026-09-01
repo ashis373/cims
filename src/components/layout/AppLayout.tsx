@@ -77,11 +77,11 @@ function ManualEmailDraftModal() {
           </div>
           <div className="space-y-1.5">
             <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Subject</label>
-            <input value={draft.subject} onChange={e => setDraft({...draft, subject: e.target.value})} className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 text-slate-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all" />
+            <input value={draft.subject} onChange={e => setDraft({ ...draft, subject: e.target.value })} className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 text-slate-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all" />
           </div>
           <div className="space-y-1.5">
             <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Message Body</label>
-            <textarea value={draft.body} onChange={e => setDraft({...draft, body: e.target.value})} rows={10} className="w-full text-sm border border-slate-200 rounded-lg px-3 py-3 text-slate-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all font-mono"></textarea>
+            <textarea value={draft.body} onChange={e => setDraft({ ...draft, body: e.target.value })} rows={10} className="w-full text-sm border border-slate-200 rounded-lg px-3 py-3 text-slate-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all font-mono"></textarea>
           </div>
         </div>
         <div className="p-5 border-t border-slate-100 flex items-center justify-end gap-3 bg-slate-50/50">
@@ -171,9 +171,9 @@ const nav = [
     module: "Reports",
     children: [
       { to: "/reports/candidate", label: "Candidate Report", roles: ["Administrator", "HR Manager"], module: "Reports" },
-      { to: "/reports/recruiter-performance", label: "Recruiter Performance", roles: ["Administrator", "HR Manager"], module: "Reports" },
-      { to: "/reports/hiring", label: "Hiring Report", roles: ["Administrator", "HR Manager"], module: "Reports" },
-      { to: "/reports/rejection-analysis", label: "Rejection Analysis", roles: ["Administrator", "HR Manager"], module: "Reports" },
+      // { to: "/reports/recruiter-performance", label: "Recruiter Performance", roles: ["Administrator", "HR Manager"], module: "Reports" },
+      // { to: "/reports/hiring", label: "Hiring Report", roles: ["Administrator", "HR Manager"], module: "Reports" },
+      // { to: "/reports/rejection-analysis", label: "Rejection Analysis", roles: ["Administrator", "HR Manager"], module: "Reports" },
     ],
   },
   {
@@ -236,7 +236,7 @@ const NavItem = ({
   if (!hasAccess(item)) return null;
 
   const active = isDirectActive || isChildrenActive;
-  
+
   const getGreeting = () => {
     const hour = new Date().getHours();
     if (hour < 12) return "Good morning";
@@ -400,15 +400,15 @@ export function AppLayout({ children }: { children: ReactNode }) {
     // Poor Man's Cron: Trigger email worker every 5 minutes while dashboard is open
     // This is useful for local XAMPP environments or shared hosting without Cron access.
     const triggerWorker = () => {
-      fetch(`${API_BASE_URL}/settings/email/worker.php`).catch(() => {});
+      fetch(`${API_BASE_URL}/settings/email/worker.php`).catch(() => { });
     };
-    
+
     // Run once shortly after login/load
     const initialTimer = setTimeout(triggerWorker, 5000);
-    
+
     // Run continuously every 5 minutes
     const intervalTimer = setInterval(triggerWorker, 5 * 60 * 1000);
-    
+
     return () => {
       clearTimeout(initialTimer);
       clearInterval(intervalTimer);

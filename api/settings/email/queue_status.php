@@ -1,7 +1,9 @@
 <?php
-header("Access-Control-Allow-Origin: *");
+$origin = isset($_SERVER["HTTP_ORIGIN"]) ? $_SERVER["HTTP_ORIGIN"] : "*";
+header("Access-Control-Allow-Origin: $origin");
+header("Access-Control-Allow-Credentials: true");
 header("Access-Control-Allow-Methods: GET, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type");
+header("Access-Control-Allow-Headers: Content-Type, Authorization, X-User-Id");
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit(0);
@@ -25,9 +27,9 @@ foreach ($results as $row) {
     }
 }
 
-// Get last processed time from logs
-$lastLogStmt = $conn->query("SELECT MAX(sent_at) as last_processed FROM cims_email_logs");
-$lastProcessed = $lastLogStmt->fetchColumn();
+// Get last processed time from smtp config (updated every time the worker runs)
+$lastLogStmt = $conn->query("SELECT last_worker_run as last_processed FROM cims_smtp_config LIMIT 1");
+$lastProcessed = $lastLogStmt ? $lastLogStmt->fetchColumn() : null;
 
 // Check if worker is running using the lock file
 $lockFile = __DIR__ . '/worker.lock';

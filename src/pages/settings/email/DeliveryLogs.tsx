@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Search, RefreshCcw, CheckCircle2, XCircle, Clock, Eye, MoreHorizontal, Mail } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { API_BASE_URL } from "@/config/api";
+import { getAuthHeaders } from "@/services/candidate-api";
 import {
   Dialog,
   DialogContent,
@@ -17,6 +18,7 @@ export default function DeliveryLogs() {
   const [logs, setLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [dateFilter, setDateFilter] = useState("all");
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [selectedLog, setSelectedLog] = useState<any>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -41,7 +43,8 @@ export default function DeliveryLogs() {
     try {
       await fetch(`${API_BASE_URL}/settings/email/toggle_worker.php`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        headers: getAuthHeaders(true),
         body: JSON.stringify({ enabled })
       });
       await fetchLogs();
@@ -56,8 +59,8 @@ export default function DeliveryLogs() {
     setLoading(true);
     try {
       const [resLogs, resQueue] = await Promise.all([
-        fetch(`${API_BASE_URL}/settings/email/logs.php`),
-        fetch(`${API_BASE_URL}/settings/email/queue_status.php`)
+        fetch(`${API_BASE_URL}/settings/email/logs.php`, { credentials: 'include', headers: getAuthHeaders(false) }),
+        fetch(`${API_BASE_URL}/settings/email/queue_status.php`, { credentials: 'include', headers: getAuthHeaders(false) })
       ]);
       setLogs(await resLogs.json());
       setQueueData(await resQueue.json());
@@ -70,6 +73,29 @@ export default function DeliveryLogs() {
   useEffect(() => {
     fetchLogs();
   }, []);
+
+  const filteredLogs = logs.filter(l => {
+    const matchesSearch = (l.recipient || '').toLowerCase().includes(searchQuery.toLowerCase()) || (l.subject || '').toLowerCase().includes(searchQuery.toLowerCase());
+    if (!matchesSearch) return false;
+    
+    if (dateFilter !== "all") {
+      const logDate = l.timestamp_sort ? new Date(l.timestamp_sort * 1000) : new Date(l.date);
+      const now = new Date();
+      if (dateFilter === "today") {
+        return logDate.toDateString() === now.toDateString();
+      } else if (dateFilter === "7days") {
+        const diffTime = Math.abs(now.getTime() - logDate.getTime());
+        return diffTime <= (7 * 24 * 60 * 60 * 1000);
+      } else if (dateFilter === "90days") {
+        const diffTime = Math.abs(now.getTime() - logDate.getTime());
+        return diffTime <= (90 * 24 * 60 * 60 * 1000);
+      }
+    }
+    return true;
+  });
+
+  const totalPages = Math.max(1, Math.ceil(filteredLogs.length / 10));
+  const paginatedLogs = filteredLogs.slice((currentPage - 1) * 10, currentPage * 10);
 
   return (
     <div className="space-y-6">
@@ -176,9 +202,24 @@ export default function DeliveryLogs() {
             className="pl-9 h-10 w-full text-sm bg-white border-slate-200 shadow-sm rounded-xl"
           />
         </div>
-        <Button onClick={fetchLogs} variant="outline" className="h-10 text-sm font-semibold bg-white border-slate-200 text-slate-700 hover:bg-slate-50 rounded-xl">
-          <RefreshCcw className="mr-2 h-4 w-4" /> Refresh Logs
-        </Button>
+        <div className="flex items-center gap-3">
+          <select
+            value={dateFilter}
+            onChange={(e) => {
+              setDateFilter(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="h-10 text-sm font-semibold rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 px-3 outline-none"
+          >
+            <option value="all">All Time</option>
+            <option value="today">Today</option>
+            <option value="7days">Last 7 Days</option>
+            <option value="90days">Last 90 Days</option>
+          </select>
+          <Button onClick={fetchLogs} variant="outline" className="h-10 text-sm font-semibold bg-white border-slate-200 text-slate-700 hover:bg-slate-50 rounded-xl">
+            <RefreshCcw className="mr-2 h-4 w-4" /> Refresh Logs
+          </Button>
+        </div>
       </div>
 
       <Card className="bg-white border-border/50 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] rounded-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-500 delay-100">
@@ -203,10 +244,6 @@ export default function DeliveryLogs() {
                 <tr><td colSpan={8} className="p-8 text-center text-slate-500">No email logs found.</td></tr>
               ) : (
                 (() => {
-                  const filteredLogs = logs.filter(l => (l.recipient || '').toLowerCase().includes(searchQuery.toLowerCase()) || (l.subject || '').toLowerCase().includes(searchQuery.toLowerCase()));
-                  const totalPages = Math.max(1, Math.ceil(filteredLogs.length / 10));
-                  const paginatedLogs = filteredLogs.slice((currentPage - 1) * 10, currentPage * 10);
-                  
                   if (paginatedLogs.length === 0 && currentPage > 1) {
                     setCurrentPage(1);
                   }
@@ -268,7 +305,7 @@ export default function DeliveryLogs() {
         {!loading && logs.length > 0 && (
           <div className="p-4 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between">
             <div className="text-[12px] font-medium text-slate-500">
-              Showing <span className="font-bold text-slate-700">{(currentPage - 1) * 10 + 1}</span> to <span className="font-bold text-slate-700">{Math.min(currentPage * 10, logs.filter(l => (l.recipient || '').toLowerCase().includes(searchQuery.toLowerCase()) || (l.subject || '').toLowerCase().includes(searchQuery.toLowerCase())).length)}</span> of <span className="font-bold text-slate-700">{logs.filter(l => (l.recipient || '').toLowerCase().includes(searchQuery.toLowerCase()) || (l.subject || '').toLowerCase().includes(searchQuery.toLowerCase())).length}</span> entries
+              Showing <span className="font-bold text-slate-700">{(currentPage - 1) * 10 + 1}</span> to <span className="font-bold text-slate-700">{Math.min(currentPage * 10, filteredLogs.length)}</span> of <span className="font-bold text-slate-700">{filteredLogs.length}</span> entries
             </div>
             <div className="flex items-center gap-2">
               <Button 
@@ -281,13 +318,13 @@ export default function DeliveryLogs() {
                 Previous
               </Button>
               <div className="text-[12px] font-bold text-slate-700 px-2">
-                Page {currentPage} of {Math.max(1, Math.ceil(logs.filter(l => (l.recipient || '').toLowerCase().includes(searchQuery.toLowerCase()) || (l.subject || '').toLowerCase().includes(searchQuery.toLowerCase())).length / 10))}
+                Page {currentPage} of {totalPages}
               </div>
               <Button 
                 variant="outline" 
                 size="sm" 
-                onClick={() => setCurrentPage(prev => Math.min(Math.ceil(logs.filter(l => (l.recipient || '').toLowerCase().includes(searchQuery.toLowerCase()) || (l.subject || '').toLowerCase().includes(searchQuery.toLowerCase())).length / 10), prev + 1))}
-                disabled={currentPage >= Math.ceil(logs.filter(l => (l.recipient || '').toLowerCase().includes(searchQuery.toLowerCase()) || (l.subject || '').toLowerCase().includes(searchQuery.toLowerCase())).length / 10)}
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage >= totalPages}
                 className="h-8 px-3 text-[12px] font-bold"
               >
                 Next
