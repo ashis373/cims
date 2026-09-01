@@ -32,6 +32,10 @@ try {
         $logStmt = $conn->prepare("INSERT INTO cims_audit_logs (user_id, action, module, details) VALUES (?, 'Login', 'Authentication', ?)");
         $logStmt->execute([$user['id'], json_encode(['ip' => $_SERVER['REMOTE_ADDR'] ?? ''])]);
         
+        // Update last_login timestamp
+        $updateStmt = $conn->prepare("UPDATE cims_users SET last_login = CURRENT_TIMESTAMP WHERE id = ?");
+        $updateStmt->execute([$user['id']]);
+        
         unset($user['password_hashed']);
         
         // Fetch permissions for this role

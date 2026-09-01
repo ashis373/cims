@@ -17,7 +17,13 @@ $action = $_GET['action'] ?? '';
 
 try {
     if ($method === 'GET') {
-        $stmt = $conn->prepare("SELECT id, full_name, email, mobile, designation, department, profile_photo, notification_preferences FROM cims_users WHERE id = ?");
+        $stmt = $conn->prepare("
+            SELECT u.id, u.full_name, u.email, u.mobile, u.designation, u.department, u.profile_photo, u.notification_preferences, 
+                   u.created_at, u.last_login, u.last_password_change, u.is_active, r.role_name as role_name, r.permissions
+            FROM cims_users u 
+            LEFT JOIN cims_roles r ON u.role_id = r.id
+            WHERE u.id = ?
+        ");
         $stmt->execute([$user_id]);
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
         
@@ -40,7 +46,7 @@ try {
         elseif ($action === 'password') {
             // In a real app, verify current password first
             $hashed = password_hash($data['new_password'], PASSWORD_BCRYPT);
-            $stmt = $conn->prepare("UPDATE cims_users SET password_hashed=? WHERE id=?");
+            $stmt = $conn->prepare("UPDATE cims_users SET password_hashed=?, last_password_change=CURRENT_TIMESTAMP WHERE id=?");
             $stmt->execute([$hashed, $user_id]);
             echo json_encode(["status" => "success", "message" => "Password updated"]);
         } 
@@ -49,6 +55,47 @@ try {
             $stmt = $conn->prepare("UPDATE cims_users SET notification_preferences=? WHERE id=?");
             $stmt->execute([$prefs, $user_id]);
             echo json_encode(["status" => "success", "message" => "Preferences updated"]);
+        } else {
+            http_response_code(400);
+            echo json_encode(["status" => "error", "message" => "Invalid action"]);
+        }
+    }
+    elseif ($method === 'POST') {
+        if ($action === 'photo') {
+            if (!isset($_FILES['photo']) || $_FILES['photo']['error'] !== UPLOAD_ERR_OK) {
+                http_response_code(400);
+                echo json_encode(["status" => "error", "message" => "No file uploaded or upload error"]);
+                exit;
+            }
+            
+            $file = $_FILES['photo'];
+            $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+            $allowed = ['jpg', 'jpeg', 'png', 'gif'];
+            
+            if (!in_array($ext, $allowed)) {
+                http_response_code(400);
+                echo json_encode(["status" => "error", "message" => "Invalid file type"]);
+                exit;
+            }
+            
+            $uploadDir = '../uploads/profiles/';
+            if (!is_dir($uploadDir)) {
+                mkdir($uploadDir, 0755, true);
+            }
+            
+            $fileName = 'user_' . $user_id . '_' . time() . '.' . $ext;
+            $destPath = $uploadDir . $fileName;
+            
+            if (move_uploaded_file($file['tmp_name'], $destPath)) {
+                $photoUrl = 'uploads/profiles/' . $fileName;
+                $stmt = $conn->prepare("UPDATE cims_users SET profile_photo=? WHERE id=?");
+                $stmt->execute([$photoUrl, $user_id]);
+                
+                echo json_encode(["status" => "success", "message" => "Photo updated", "photo_url" => $photoUrl]);
+            } else {
+                http_response_code(500);
+                echo json_encode(["status" => "error", "message" => "Failed to save file"]);
+            }
         } else {
             http_response_code(400);
             echo json_encode(["status" => "error", "message" => "Invalid action"]);

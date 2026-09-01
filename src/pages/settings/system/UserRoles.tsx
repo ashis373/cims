@@ -346,7 +346,7 @@ export default function UserRoles() {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         {user.profile_photo ? (
-                          <img src={user.profile_photo} alt={user.full_name || user.name} className="h-9 w-9 rounded-full object-cover border border-slate-200 shadow-sm" />
+                          <img src={user.profile_photo.startsWith('http') ? user.profile_photo : `${API_BASE_URL}/${user.profile_photo}`} alt={user.full_name || user.name} className="h-9 w-9 rounded-full object-cover border border-slate-200 shadow-sm" />
                         ) : (
                           <div className="h-9 w-9 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-xs shrink-0 border border-indigo-200">
                             {(user.full_name || user.name || 'U').charAt(0).toUpperCase()}
