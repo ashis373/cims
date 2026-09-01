@@ -11,39 +11,63 @@ import {
   Trash2,
   PowerOff,
   RefreshCw,
-  MoreHorizontal
+  MoreHorizontal,
+  Gauge,
+  Briefcase,
+  Users2,
+  Calendar,
+  Filter,
+  MailOpen,
+  Shield,
+  BarChart3,
+  Bell,
+  Mail,
+  UserCog,
+  Settings,
+  Info,
+  Lock,
+  Check
 } from "lucide-react";
 
-const mockModules = [
-  "Dashboard",
-  "Job Openings",
-  "Candidates",
-  "Interviews",
-  "Pipeline",
-  "Offers",
-  "Risk Management",
-  "Reports",
-  "Alerts",
-  "Email Settings",
-  "Users & Roles",
-  "System Settings"
-];
-
-// Map modules to descriptive names like in the reference
-const moduleDescriptions: Record<string, string> = {
-  "Dashboard": "Dashboard Access",
-  "Job Openings": "Job Openings",
-  "Candidates": "Candidate Management",
-  "Interviews": "Interview Tracking",
-  "Pipeline": "Pipeline Management",
-  "Offers": "Offer Processing",
-  "Risk Management": "Risk & Audit Control",
-  "Reports": "Reports & Analytics",
-  "Alerts": "Alerts & Notifications",
-  "Email Settings": "Email Templates",
-  "Users & Roles": "Users & Roles",
-  "System Settings": "System Settings",
+type PermissionConfig = {
+  view: boolean;
+  add: boolean;
+  edit: boolean;
+  delete: boolean;
+  scopes: string[];
 };
+
+const moduleConfig: Record<string, PermissionConfig> = {
+  "Dashboard": { view: true, add: true, edit: true, delete: true, scopes: ["All", "Assigned"] },
+  "Job Openings": { view: true, add: true, edit: true, delete: true, scopes: ["All", "Assigned"] },
+  "Candidate Management": { view: true, add: true, edit: true, delete: true, scopes: ["All", "Assigned"] },
+  "Interview Tracking": { view: true, add: true, edit: true, delete: true, scopes: ["All", "Assigned"] },
+  "Pipeline Management": { view: true, add: true, edit: true, delete: true, scopes: ["All", "Assigned"] },
+  "Offer Processing": { view: true, add: true, edit: true, delete: true, scopes: ["All", "Assigned"] },
+  "Risk / Blacklist": { view: true, add: true, edit: true, delete: true, scopes: ["All", "Assigned"] },
+  "Reports & Analytics": { view: true, add: true, edit: true, delete: true, scopes: ["All", "Assigned"] },
+  "Alerts & Notifications": { view: true, add: true, edit: true, delete: true, scopes: ["All", "Assigned"] },
+  "Email": { view: true, add: true, edit: true, delete: true, scopes: ["All", "Assigned"] },
+  "Users & Roles": { view: false, add: false, edit: false, delete: false, scopes: ["All"] },
+  "System Settings": { view: true, add: true, edit: true, delete: true, scopes: ["All", "Assigned"] }
+};
+
+const moduleIcons: Record<string, any> = {
+  "Dashboard": Gauge,
+  "Job Openings": Briefcase,
+  "Candidate Management": Users2,
+  "Interview Tracking": Calendar,
+  "Pipeline Management": Filter,
+  "Offer Processing": MailOpen,
+  "Risk / Blacklist": Shield,
+  "Reports & Analytics": BarChart3,
+  "Alerts & Notifications": Bell,
+  "Email": Mail,
+  "Users & Roles": UserCog,
+  "System Settings": Settings
+};
+
+const mockModules = Object.keys(moduleConfig);
 
 const API_BASE_URL = import.meta.env.PROD 
   ? "https://demo.hexalearn.com/cimss/api" 
@@ -83,8 +107,14 @@ export default function UserRoles() {
     description: ''
   });
 
-  // permissions: Record<module_name, boolean> (Simplified toggle for all actions)
-  const [permissions, setPermissions] = useState<Record<string, boolean>>({});
+  type PermissionEntry = {
+    view: boolean;
+    add: boolean;
+    edit: boolean;
+    delete: boolean;
+    scope: string;
+  };
+  const [permissions, setPermissions] = useState<Record<string, PermissionEntry>>({});
 
   const fetchUsers = () => {
     fetch(`${API_BASE_URL}/system/users.php`, { credentials: 'include' })
@@ -123,6 +153,14 @@ export default function UserRoles() {
     fetchUsers();
   }, []);
 
+  const getInitPermissions = () => {
+    const map: Record<string, PermissionEntry> = {};
+    mockModules.forEach(mod => {
+      map[mod] = { view: false, add: false, edit: false, delete: false, scope: 'Assigned' };
+    });
+    return map;
+  };
+
   const openRoleModal = (role?: any) => {
     if (role) {
       setEditingRole(role);
@@ -132,9 +170,15 @@ export default function UserRoles() {
         .then(res => res.json())
         .then(res => {
           if (res.status === "success") {
-            const permMap: Record<string, boolean> = {};
+            const permMap = getInitPermissions();
             res.data.forEach((p: any) => {
-              permMap[p.module_name] = !!p.can_view; // Simple toggle
+              permMap[p.module_name] = {
+                view: !!p.can_view,
+                add: !!p.can_add,
+                edit: !!p.can_edit,
+                delete: !!p.can_delete,
+                scope: p.scope || 'Assigned'
+              };
             });
             setPermissions(permMap);
             setIsRoleModalOpen(true);
@@ -143,16 +187,26 @@ export default function UserRoles() {
     } else {
       setEditingRole(null);
       setRoleData({ role_name: '', description: '' });
-      setPermissions({});
+      setPermissions(getInitPermissions());
       setIsRoleModalOpen(true);
     }
   };
 
-  const togglePermission = (mod: string) => {
-    setPermissions(prev => ({
-      ...prev,
-      [mod]: !prev[mod]
-    }));
+  const updatePermission = (mod: string, field: keyof PermissionEntry, val: any) => {
+    setPermissions(prev => {
+      const updated = { ...prev[mod], [field]: val };
+      // Auto-check all permissions if scope is set to 'All'
+      if (field === 'scope' && val === 'All') {
+        updated.view = true;
+        updated.add = true;
+        updated.edit = true;
+        updated.delete = true;
+      }
+      return {
+        ...prev,
+        [mod]: updated
+      };
+    });
   };
 
   const handleRoleSubmit = async () => {
@@ -174,10 +228,11 @@ export default function UserRoles() {
           // Save permissions
           const payloadArray = mockModules.map(mod => ({
             module_name: mod,
-            can_view: !!permissions[mod],
-            can_add: !!permissions[mod],
-            can_edit: !!permissions[mod],
-            can_delete: !!permissions[mod]
+            can_view: !!permissions[mod]?.view,
+            can_add: !!permissions[mod]?.add,
+            can_edit: !!permissions[mod]?.edit,
+            can_delete: !!permissions[mod]?.delete,
+            scope: permissions[mod]?.scope || 'Assigned'
           }));
           await fetch(`${API_BASE_URL}/system/permissions.php`, {
             method: 'PUT',
@@ -497,8 +552,9 @@ export default function UserRoles() {
               <button onClick={() => setIsRoleModalOpen(false)} className="text-slate-400 hover:text-slate-600">×</button>
             </div>
             
-            <div className="flex-1 overflow-y-auto p-8 flex flex-col lg:flex-row gap-12">
-              <div className="flex-1 space-y-6">
+            <div className="flex-1 overflow-y-auto p-8 flex flex-col space-y-8">
+              <div className="flex flex-col md:flex-row gap-8">
+                <div className="flex-1 space-y-6">
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-2">Role Name</label>
                   <input 
@@ -525,53 +581,126 @@ export default function UserRoles() {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-4">Permissions</label>
-                  <div className="space-y-4">
-                    {mockModules.map(mod => (
-                      <div key={mod} className="flex items-center justify-between">
-                        <span className="text-sm font-bold text-slate-600">{moduleDescriptions[mod]}</span>
-                        <button
-                          type="button"
-                          onClick={() => togglePermission(mod)}
-                          className={cn(
-                            "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#1447E6] focus:ring-offset-2",
-                            permissions[mod] ? "bg-[#1447E6]" : "bg-slate-200"
-                          )}
-                        >
-                          <span
-                            className={cn(
-                              "pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
-                              permissions[mod] ? "translate-x-5" : "translate-x-0"
-                            )}
-                          />
-                        </button>
-                      </div>
-                    ))}
+                <div className="pt-2">
+                  <div className="mb-4">
+                    <label className="block text-sm font-bold text-slate-900">Role Default Permissions</label>
+                    <span className="text-xs text-slate-500">Permissions assigned to this role apply to all users with this role.</span>
                   </div>
+                  <div className="text-[12px] text-slate-600 mb-6 bg-[#f8fbff] p-4 rounded-xl border border-blue-100 flex gap-3 items-start">
+                    <Info className="w-4 h-4 text-[#1447E6] shrink-0 mt-0.5" />
+                    <div>
+                      <strong className="text-[#1447E6] font-bold mb-2 block">Scope Guide</strong>
+                      <ul className="space-y-1.5 list-disc list-inside">
+                        <li><strong>All</strong> &ndash; Access all records.</li>
+                        <li><strong>Assigned</strong> &ndash; Access only records assigned to the user by admin.</li>
+                      </ul>
+                    </div>
+                  </div>
+                  <div className="overflow-x-auto border border-slate-200 rounded-xl bg-white shadow-sm">
+                    <table className="w-full text-sm text-left">
+                      <thead className="bg-slate-50/50 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase">
+                        <tr>
+                          <th className="px-6 py-4">Module</th>
+                          <th className="px-3 py-4 text-center">View</th>
+                          <th className="px-3 py-4 text-center">Add</th>
+                          <th className="px-3 py-4 text-center">Edit</th>
+                          <th className="px-3 py-4 text-center">Delete</th>
+                          <th className="px-6 py-4 text-center">Scope</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {mockModules.map(mod => {
+                          const config = moduleConfig[mod];
+                          const p = permissions[mod] || { view: false, add: false, edit: false, delete: false, scope: config.scopes.includes('Assigned') ? 'Assigned' : 'All' };
+                          const Icon = moduleIcons[mod] || Settings;
+                          
+                          const CheckBox = ({ checked, onChange, allowed }: { checked: boolean, onChange: (val: boolean) => void, allowed: boolean }) => {
+                            if (!allowed) {
+                              return <div className="w-5 h-5 flex items-center justify-center text-slate-300 font-bold">—</div>;
+                            }
+                            return (
+                              <button
+                                type="button"
+                                onClick={() => onChange(!checked)}
+                                className={cn(
+                                  "w-5 h-5 rounded flex items-center justify-center transition-all border outline-none focus:ring-2 focus:ring-[#1447E6]/30", 
+                                  checked ? "bg-[#1447E6] text-white border-[#1447E6]" : "bg-white text-transparent border-slate-300 hover:border-[#1447E6]"
+                                )}
+                              >
+                                <Check className="w-3.5 h-3.5" strokeWidth={3} />
+                              </button>
+                            );
+                          };
+
+                          return (
+                            <tr key={mod} className="hover:bg-slate-50/50">
+                              <td className="px-6 py-4">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-slate-50/50 border border-slate-100/50">
+                                    <Icon className="w-4 h-4 text-indigo-500" strokeWidth={2} />
+                                  </div>
+                                  <span className="font-bold text-[13px] text-slate-700">{mod}</span>
+                                </div>
+                              </td>
+                              <td className="px-3 py-4"><div className="flex justify-center"><CheckBox checked={p.view} allowed={config.view} onChange={v => updatePermission(mod, 'view', v)} /></div></td>
+                              <td className="px-3 py-4"><div className="flex justify-center"><CheckBox checked={p.add} allowed={config.add} onChange={v => updatePermission(mod, 'add', v)} /></div></td>
+                              <td className="px-3 py-4"><div className="flex justify-center"><CheckBox checked={p.edit} allowed={config.edit} onChange={v => updatePermission(mod, 'edit', v)} /></div></td>
+                              <td className="px-3 py-4"><div className="flex justify-center"><CheckBox checked={p.delete} allowed={config.delete} onChange={v => updatePermission(mod, 'delete', v)} /></div></td>
+                              <td className="px-6 py-4">
+                                {config.scopes.length <= 1 ? (
+                                  <div className="w-[140px] h-9 mx-auto px-3 rounded-lg border border-slate-200 bg-slate-50 flex items-center justify-between text-[12px] font-bold text-slate-400">
+                                    <span>{config.scopes[0]}</span>
+                                    <Lock className="w-3.5 h-3.5 opacity-50" />
+                                  </div>
+                                ) : (
+                                  <select 
+                                    value={p.scope} 
+                                    onChange={e => updatePermission(mod, 'scope', e.target.value)}
+                                    className="w-[140px] mx-auto block h-9 text-[12px] font-bold rounded-lg border-slate-200 focus:ring-[#1447E6] text-slate-700 bg-white shadow-sm"
+                                  >
+                                    {config.scopes.map(s => <option key={s} value={s}>{s}</option>)}
+                                  </select>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
                 </div>
               </div>
 
-              <div className="w-full lg:w-72 bg-slate-50 p-6 rounded-2xl border border-slate-100">
-                <h4 className="text-sm font-bold text-slate-900 mb-4">
-                  Users with this Role ({editingRole ? activeUsers.filter(u => u.role_id === editingRole.id).length : 0})
-                </h4>
-                <div className="space-y-3">
-                  {editingRole && activeUsers.filter(u => u.role_id === editingRole.id).map(u => (
-                    <div key={u.id} className="flex items-center gap-3">
-                      <div className="h-8 w-8 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-xs shrink-0">
-                        {u.full_name?.charAt(0) || u.email?.charAt(0)}
-                      </div>
-                      <div className="min-w-0">
-                        <div className="text-xs font-bold text-slate-900 truncate">{u.full_name || u.name}</div>
-                        <div className="text-[10px] font-medium text-slate-500 truncate">{u.email}</div>
-                      </div>
-                    </div>
-                  ))}
-                  {(!editingRole || activeUsers.filter(u => u.role_id === editingRole.id).length === 0) && (
-                    <div className="text-sm font-medium text-slate-500">No users assigned to this role</div>
-                  )}
+              <div className="pt-6 border-t border-slate-100">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                    <Users className="w-4 h-4 text-[#1447E6]" />
+                    Users assigned to this role ({editingRole ? activeUsers.filter(u => u.role_id === editingRole.id).length : 0})
+                  </h4>
+                  <Button variant="outline" size="sm" className="h-8 text-xs font-bold text-[#1447E6] border-[#1447E6]/20 bg-blue-50/50 hover:bg-blue-50">
+                    View Users
+                  </Button>
                 </div>
+                {(!editingRole || activeUsers.filter(u => u.role_id === editingRole.id).length === 0) ? (
+                  <div className="bg-slate-50 border border-slate-100 rounded-xl p-6 text-center">
+                    <p className="text-sm font-medium text-slate-500">No users currently assigned to this role.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {activeUsers.filter(u => u.role_id === editingRole.id).map(u => (
+                      <div key={u.id} className="flex items-center gap-4 bg-white border border-slate-200 p-4 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
+                        <div className="h-10 w-10 rounded-full bg-indigo-50 text-indigo-700 flex items-center justify-center font-black text-sm shrink-0 border border-indigo-100 shadow-inner">
+                          {u.full_name?.charAt(0) || u.email?.charAt(0)}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="text-sm font-bold text-slate-900 truncate">{u.full_name || u.name}</div>
+                          <div className="text-xs font-medium text-slate-500 truncate">{u.email}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 

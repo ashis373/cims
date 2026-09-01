@@ -1,7 +1,5 @@
 <?php
-include 'api/db.php';
-try {
-    $conn->exec("ALTER TABLE cims_roles ADD COLUMN permissions JSON NULL");
-    echo "permissions column added\n";
-} catch(Exception $e) { echo $e->getMessage() . "\n"; }
+$c = new PDO('mysql:host=localhost;dbname=cims', 'root', '');
+$stmt = $c->query("DESCRIBE cims_permissions");
+print_r($stmt->fetchAll(PDO::FETCH_ASSOC));
 ?>

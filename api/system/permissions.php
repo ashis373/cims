@@ -33,10 +33,11 @@ try {
         $conn->beginTransaction();
         
         $stmt = $conn->prepare("
-            INSERT INTO cims_permissions (role_id, module_name, can_view, can_add, can_edit, can_delete) 
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO cims_permissions (role_id, module_name, can_view, can_add, can_edit, can_delete, scope) 
+            VALUES (?, ?, ?, ?, ?, ?, ?)
             ON DUPLICATE KEY UPDATE 
-            can_view=VALUES(can_view), can_add=VALUES(can_add), can_edit=VALUES(can_edit), can_delete=VALUES(can_delete)
+            can_view=VALUES(can_view), can_add=VALUES(can_add), can_edit=VALUES(can_edit), can_delete=VALUES(can_delete),
+            scope=VALUES(scope)
         ");
 
         foreach ($permissions as $p) {
@@ -46,7 +47,8 @@ try {
                 $p['can_view'] ? 1 : 0,
                 $p['can_add'] ? 1 : 0,
                 $p['can_edit'] ? 1 : 0,
-                $p['can_delete'] ? 1 : 0
+                $p['can_delete'] ? 1 : 0,
+                $p['scope'] ?? 'Assigned'
             ]);
         }
         
