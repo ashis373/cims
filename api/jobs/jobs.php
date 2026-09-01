@@ -13,10 +13,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 require '../db.php';
 
-// If auth middleware is needed later, require it here.
-// require_once '../auth_middleware.php';
-
+$required_module = 'Job Openings';
 $method = $_SERVER['REQUEST_METHOD'];
+
+if ($method === 'POST') $required_permission = 'can_add';
+else if ($method === 'PUT') $required_permission = 'can_edit';
+else if ($method === 'DELETE') $required_permission = 'can_delete';
+else $required_permission = 'can_view';
+
+require_once '../auth_middleware.php';
 
 try {
     if ($method == 'GET') {

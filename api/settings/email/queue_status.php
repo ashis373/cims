@@ -10,6 +10,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 include '../../db.php';
+$required_module = 'Email';
+$required_permission = 'can_view';
+require_once '../../auth_middleware.php';
 
 $stmt = $conn->query("SELECT status, COUNT(*) as count FROM cims_email_queue GROUP BY status");
 $results = $stmt->fetchAll(PDO::FETCH_ASSOC);

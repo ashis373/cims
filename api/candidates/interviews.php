@@ -11,10 +11,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 include '../db.php';
-$required_module = 'Candidates';
-require_once '../auth_middleware.php';
+$required_module = 'Interview Tracking';
 
 $method = $_SERVER['REQUEST_METHOD'];
+if ($method === 'POST') $required_permission = 'can_add';
+else if ($method === 'PUT') $required_permission = 'can_edit';
+else if ($method === 'DELETE') $required_permission = 'can_delete';
+else $required_permission = 'can_view';
+
+require_once '../auth_middleware.php';
 
 if ($method === 'POST') {
     $data = json_decode(file_get_contents("php://input"), true);

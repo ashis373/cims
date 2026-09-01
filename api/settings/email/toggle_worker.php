@@ -10,6 +10,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 include '../../db.php';
+$allowed_roles = ['Administrator'];
+require_once '../../auth_middleware.php';
 
 $data = json_decode(file_get_contents("php://input"), true);
 $enabled = isset($data['enabled']) && $data['enabled'] ? 1 : 0;

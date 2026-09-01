@@ -10,6 +10,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 include '../../db.php';
+$required_module = 'Email';
+$required_permission = 'can_view';
+require_once '../../auth_middleware.php';
 
 try {
     // Fetch active queue items (Pending, Processing)

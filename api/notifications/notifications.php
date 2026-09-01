@@ -1,7 +1,9 @@
 <?php
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type");
+$origin = isset($_SERVER['HTTP_ORIGIN']) ? $_SERVER['HTTP_ORIGIN'] : '*';
+header("Access-Control-Allow-Origin: $origin");
+header("Access-Control-Allow-Credentials: true");
+header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type, Authorization, X-User-Id");
 header("Content-Type: application/json");
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -10,6 +12,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 include '../db.php';
+
+$required_module = 'Alerts & Notifications';
+$method = $_SERVER['REQUEST_METHOD'];
+if ($method === 'POST') $required_permission = 'can_add';
+else if ($method === 'PUT') $required_permission = 'can_edit';
+else if ($method === 'DELETE') $required_permission = 'can_delete';
+else $required_permission = 'can_view';
+require_once '../auth_middleware.php';
+
 
 try {
     $alerts = [];
