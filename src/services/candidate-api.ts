@@ -7,6 +7,10 @@ export function getAuthHeaders(includeContentType = true) {
   const headers: Record<string, string> = {};
   if (includeContentType) headers["Content-Type"] = "application/json";
   try {
+    const token = localStorage.getItem("cims_token");
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
     const userStr = localStorage.getItem("cims_user");
     if (userStr) {
       const u = JSON.parse(userStr);
@@ -51,7 +55,10 @@ export async function putCandidateAPI(c: Candidate): Promise<void> {
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.error || "Failed to update database");
+    if (res.status === 403) {
+      throw new Error(err.message || "You do not have permission to edit candidates.");
+    }
+    throw new Error(err.error || err.message || "Failed to update database");
   }
 }
 
@@ -62,7 +69,13 @@ export async function deleteCandidatesAPI(ids: string[]): Promise<void> {
     headers: getAuthHeaders(),
     body: JSON.stringify({ ids }),
   });
-  if (!res.ok) throw new Error("Failed to delete from database");
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    if (res.status === 403) {
+      throw new Error(err.message || "You do not have permission to delete candidates.");
+    }
+    throw new Error(err.error || err.message || "Failed to delete from database");
+  }
 }
 
 export async function bulkUndoSyncAPI(candidates: Candidate[]): Promise<void> {
