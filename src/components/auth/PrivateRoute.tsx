@@ -4,9 +4,7 @@ import { toast } from "sonner";
 import { ShieldAlert, ArrowLeft, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-const API_BASE_URL = import.meta.env.PROD 
-  ? "https://demo.hexalearn.com/cimss/api" 
-  : "http://localhost/full-cims/api";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 interface PrivateRouteProps {
   children: React.ReactNode;

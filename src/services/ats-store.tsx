@@ -29,6 +29,7 @@ import {
   postInterviewAPI,
   putInterviewAPI,
 } from "./candidate-api";
+import { API_BASE_URL } from "@/config/api";
 
 import { uid, now, findDuplicateHelper } from "./candidate-utils";
 
@@ -208,7 +209,7 @@ export function AtsProvider({ children }: { children: ReactNode }) {
           mutate((prev) => prev.map((c) => (c.id === id ? next : c)));
           
           try {
-            const triggerRes = await fetch(`http://localhost/full-cims/api/settings/email/trigger.php`, {
+            const triggerRes = await fetch(`${API_BASE_URL}/settings/email/trigger.php`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ candidate_id: id, stage })

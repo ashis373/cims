@@ -69,9 +69,7 @@ const moduleIcons: Record<string, any> = {
 
 const mockModules = Object.keys(moduleConfig);
 
-const API_BASE_URL = import.meta.env.PROD 
-  ? "https://demo.hexalearn.com/cimss/api" 
-  : "http://localhost/full-cims/api";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 export default function UserRoles() {
   const [roles, setRoles] = useState<any[]>([]);

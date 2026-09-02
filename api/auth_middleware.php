@@ -15,17 +15,7 @@ if ($jwt) {
     $payload = validate_jwt($jwt);
 }
 
-// Fallback for local development CORS cookie issues
-if (!$payload && isset($_SERVER['HTTP_ORIGIN']) && strpos($_SERVER['HTTP_ORIGIN'], 'localhost') !== false && !isset($headers['authorization'])) {
-    // ALWAYS fallback to Super Admin (ID 1) during local development to prevent 401s across the app
-    // Only if they aren't explicitly providing an invalid token in Auth header
-    $payload = [
-        'user_id' => 1,
-        'role_id' => 1,
-        'iat' => time(),
-        'exp' => time() + 3600
-    ];
-}
+
 
 if (!$payload || !isset($payload['user_id'])) {
     http_response_code(401);

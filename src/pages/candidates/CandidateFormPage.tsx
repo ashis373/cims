@@ -101,54 +101,7 @@ export default function CandidateFormPage() {
   const [openJobs, setOpenJobs] = useState<any[]>([]);
   const [dbDepartments, setDbDepartments] = useState<any[]>([]);
   const [recruiters, setRecruiters] = useState<any[]>([]);
-  const [isExtracting, setIsExtracting] = useState(false);
 
-  const extractCV = async (file: File) => {
-    setIsExtracting(true);
-    const formData = new FormData();
-    formData.append("resume", file);
-    try {
-      const res = await fetch(`${API_BASE_URL}/candidates/extract_resume.php`, {
-        method: "POST",
-        headers: getAuthHeaders(false),
-        credentials: 'include',
-        body: formData,
-      });
-      const result = await res.json();
-      if (result.success) {
-        if (result.data) {
-          setForm(prev => ({
-            ...prev,
-            name: result.data.name || prev.name,
-            email: result.data.email || prev.email,
-            phone: result.data.phone || prev.phone,
-            experience: result.data.experience || prev.experience,
-            skills: result.data.skills || prev.skills,
-            currentCompany: result.data.currentCompany || prev.currentCompany,
-            currentDesignation: result.data.currentDesignation || prev.currentDesignation,
-            location: result.data.location || prev.location,
-            linkedInProfile: result.data.linkedInProfile || prev.linkedInProfile,
-            currentCtc: result.data.currentCtc || prev.currentCtc,
-            noticePeriod: result.data.noticePeriod || prev.noticePeriod,
-            resume: result.resume || prev.resume,
-          }));
-        }
-
-        if (result.rawTextLength < 50) {
-          toast.warning("Unable to extract resume information. Please enter candidate details manually.");
-        } else {
-          toast.success("Resume data extracted! Missing fields left blank for manual entry.");
-        }
-      } else {
-        toast.error(result.error || "Failed to extract data.");
-      }
-    } catch (e) {
-      toast.error("Failed to connect to extraction service.");
-      console.error(e);
-    } finally {
-      setIsExtracting(false);
-    }
-  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -413,41 +366,7 @@ export default function CandidateFormPage() {
       </div>
 
       <form onSubmit={submit} className="space-y-6" noValidate>
-        {/* CV Extraction Feature - Hidden for now */}
-        {false && !candidate && (
-          <Card className="p-6 bg-gradient-to-br from-indigo-50 to-blue-50 border-indigo-100 shadow-sm rounded-3xl overflow-hidden relative">
-            <div className="absolute top-0 right-0 -mt-8 -mr-8 w-32 h-32 bg-indigo-200/50 rounded-full blur-2xl pointer-events-none" />
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 relative z-10">
-              <div>
-                <h3 className="text-[17px] font-bold text-indigo-900 tracking-tight flex items-center gap-2">
-                  <Wand2 className="h-5 w-5 text-indigo-600" /> Resume/CV Data Extraction & Auto-Fill
-                </h3>
-                <p className="text-sm text-indigo-700/80 mt-1 max-w-lg font-medium">
-                  Upload a candidate's resume to automatically extract data and fill matching fields. Missing fields (like Source or Recruiter) remain blank for manual selection.
-                </p>
-              </div>
-              <div className="flex items-center gap-3 w-full md:w-auto">
-                <Input
-                  type="file"
-                  accept=".pdf,.doc,.docx"
-                  className="bg-white border-indigo-200 cursor-pointer h-10 w-full md:w-[250px] shadow-sm text-indigo-900 font-medium"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      extractCV(file);
-                    }
-                  }}
-                  disabled={isExtracting}
-                />
-                {isExtracting && (
-                  <span className="text-sm font-bold text-indigo-600 flex items-center gap-2 shrink-0">
-                    <Loader2 className="h-4 w-4 animate-spin" /> Extracting...
-                  </span>
-                )}
-              </div>
-            </div>
-          </Card>
-        )}
+
 
         {/* Section 1: Basic Information */}
         <Card className="p-6 bg-white border-border/50 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] rounded-3xl">

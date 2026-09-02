@@ -401,10 +401,10 @@ function Dashboard() {
               })}
 
               <div className="absolute transform -translate-x-1/2 -translate-y-1/2 z-0" style={{ left: '18%', top: '32.5%' }}>
-                <img src="https://ui-avatars.com/api/?name=Alex&background=random" className="w-10 h-10 rounded-full border-2 border-white shadow-sm" alt="Avatar" />
+                <div className="w-10 h-10 rounded-full border-2 border-white shadow-sm bg-indigo-100 text-indigo-700 flex items-center justify-center text-sm font-bold">AL</div>
               </div>
               <div className="absolute transform -translate-x-1/2 -translate-y-1/2 z-0" style={{ left: '66%', top: '50%' }}>
-                <img src="https://ui-avatars.com/api/?name=Sarah&background=random" className="w-12 h-12 rounded-full border-2 border-white shadow-sm" alt="Avatar" />
+                <div className="w-12 h-12 rounded-full border-2 border-white shadow-sm bg-pink-100 text-pink-700 flex items-center justify-center text-base font-bold">SA</div>
               </div>
               <div className="absolute transform -translate-x-1/2 -translate-y-1/2 z-0" style={{ left: '34%', top: '50%' }}>
                 <div className="w-4 h-4 bg-[#3b82f6] rounded-full border-2 border-white shadow-sm"></div>
@@ -436,7 +436,7 @@ function Dashboard() {
               <div className="flex-1">
                 <div className="font-bold text-slate-800 text-[13px] mb-1 group-hover:text-blue-600 transition-colors">Technical Interview</div>
                 <div className="text-[11px] font-medium text-slate-500 flex items-center gap-2">
-                  <img src="https://ui-avatars.com/api/?name=John+Mathew&background=f1f5f9" alt="J" className="w-5 h-5 rounded-full" />
+                  <div className="w-5 h-5 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center text-[10px] font-bold">JM</div>
                   John Mathew <span className="text-slate-300">•</span> Full Stack
                 </div>
               </div>
@@ -453,7 +453,7 @@ function Dashboard() {
               <div className="flex-1">
                 <div className="font-bold text-slate-800 text-[13px] mb-1 group-hover:text-amber-600 transition-colors">HR Round</div>
                 <div className="text-[11px] font-medium text-slate-500 flex items-center gap-2">
-                  <img src="https://ui-avatars.com/api/?name=Priya+Sharma&background=f1f5f9" alt="P" className="w-5 h-5 rounded-full" />
+                  <div className="w-5 h-5 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center text-[10px] font-bold">PS</div>
                   Priya Sharma <span className="text-slate-300">•</span> UI/UX
                 </div>
               </div>
@@ -470,7 +470,7 @@ function Dashboard() {
               <div className="flex-1">
                 <div className="font-bold text-slate-800 text-[13px] mb-1 group-hover:text-purple-600 transition-colors">Managerial Round</div>
                 <div className="text-[11px] font-medium text-slate-500 flex items-center gap-2">
-                  <img src="https://ui-avatars.com/api/?name=Rakesh+Kumar&background=f1f5f9" alt="R" className="w-5 h-5 rounded-full" />
+                  <div className="w-5 h-5 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center text-[10px] font-bold">RK</div>
                   Rakesh Kumar <span className="text-slate-300">•</span> DevOps
                 </div>
               </div>
@@ -528,7 +528,7 @@ function Dashboard() {
                     </td>
                     <td className="py-3 pr-4">
                       <div className="flex items-center gap-2">
-                        <img src={`https://ui-avatars.com/api/?name=${c.recruiter || 'HR'}&background=random`} alt="R" className="w-6 h-6 rounded-full" />
+                        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-[10px] font-bold text-indigo-700">{(c.recruiter || 'HR').substring(0, 2).toUpperCase()}</div>
                         <span className="text-[12px] font-semibold text-slate-700">{c.recruiter || 'Priya Nair'}</span>
                       </div>
                     </td>

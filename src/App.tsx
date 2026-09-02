@@ -1,43 +1,47 @@
+import { Suspense, lazy } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
 import { ThemeProvider } from "@/components/common/theme";
 import { AtsProvider } from "@/services/ats-store";
 import { AppLayout } from "@/components/layout/AppLayout";
-import Dashboard from "@/pages/dashboard/Dashboard";
-import Calendar from "@/pages/calendar/Calendar";
-import Candidates from "@/pages/candidates/Candidates";
-import CandidateDetails from "@/pages/candidates/CandidateDetails";
-import Pipeline from "@/pages/pipeline/Pipeline";
-import Reports from "@/pages/reports/Reports";
-import CandidateFormPage from "@/pages/candidates/CandidateFormPage";
 import Login from "@/pages/auth/Login";
 import { PrivateRoute } from "@/components/auth/PrivateRoute";
+import { Loader2 } from "lucide-react";
+
+// Lazily loaded components
+const Dashboard = lazy(() => import("@/pages/dashboard/Dashboard"));
+const Calendar = lazy(() => import("@/pages/calendar/Calendar"));
+const Candidates = lazy(() => import("@/pages/candidates/Candidates"));
+const CandidateDetails = lazy(() => import("@/pages/candidates/CandidateDetails"));
+const Pipeline = lazy(() => import("@/pages/pipeline/Pipeline"));
+const Reports = lazy(() => import("@/pages/reports/Reports"));
+const CandidateFormPage = lazy(() => import("@/pages/candidates/CandidateFormPage"));
 
 // New Pages
-import AllJobs from "@/pages/jobs/AllJobs";
-import CreateJob from "@/pages/jobs/CreateJob";
-import Recruiters from "@/pages/recruiters/Recruiters";
-import DuplicateCheck from "@/pages/candidates/DuplicateCheck";
-import CandidateTimeline from "@/pages/candidates/CandidateTimeline";
-import InterviewsUpcoming from "@/pages/interviews/InterviewsUpcoming";
-import InterviewsFeedback from "@/pages/interviews/InterviewsFeedback";
-import InterviewsHistory from "@/pages/interviews/InterviewsHistory";
-import Offers from "@/pages/offers/Offers";
-import JoiningTracker from "@/pages/offers/JoiningTracker";
-import NoJoiners from "@/pages/offers/NoJoiners";
-import Rejected from "@/pages/rejection/Rejected";
-import Blacklisted from "@/pages/rejection/Blacklisted";
-import ReportsPerformance from "@/pages/reports/ReportsPerformance";
-import Notifications from "@/pages/notifications/Notifications";
-import UserProfile from "@/pages/settings/system/UserProfile";
-import UserRoles from "@/pages/settings/system/UserRoles";
-import SystemSettings from "@/pages/settings/system/SystemSettings";
-import Departments from "@/pages/settings/system/Departments";
-import EmailTemplates from "@/pages/settings/email/EmailTemplates";
-import SendTemplate from "@/pages/settings/email/SendTemplate";
-import SmtpSettings from "@/pages/settings/email/SmtpSettings";
-import DeliveryLogs from "@/pages/settings/email/DeliveryLogs";
-import ErrorLogs from "@/pages/settings/system/ErrorLogs";
+const AllJobs = lazy(() => import("@/pages/jobs/AllJobs"));
+const CreateJob = lazy(() => import("@/pages/jobs/CreateJob"));
+const Recruiters = lazy(() => import("@/pages/recruiters/Recruiters"));
+const DuplicateCheck = lazy(() => import("@/pages/candidates/DuplicateCheck"));
+const CandidateTimeline = lazy(() => import("@/pages/candidates/CandidateTimeline"));
+const InterviewsUpcoming = lazy(() => import("@/pages/interviews/InterviewsUpcoming"));
+const InterviewsFeedback = lazy(() => import("@/pages/interviews/InterviewsFeedback"));
+const InterviewsHistory = lazy(() => import("@/pages/interviews/InterviewsHistory"));
+const Offers = lazy(() => import("@/pages/offers/Offers"));
+const JoiningTracker = lazy(() => import("@/pages/offers/JoiningTracker"));
+const NoJoiners = lazy(() => import("@/pages/offers/NoJoiners"));
+const Rejected = lazy(() => import("@/pages/rejection/Rejected"));
+const Blacklisted = lazy(() => import("@/pages/rejection/Blacklisted"));
+const ReportsPerformance = lazy(() => import("@/pages/reports/ReportsPerformance"));
+const Notifications = lazy(() => import("@/pages/notifications/Notifications"));
+const UserProfile = lazy(() => import("@/pages/settings/system/UserProfile"));
+const UserRoles = lazy(() => import("@/pages/settings/system/UserRoles"));
+const SystemSettings = lazy(() => import("@/pages/settings/system/SystemSettings"));
+const Departments = lazy(() => import("@/pages/settings/system/Departments"));
+const EmailTemplates = lazy(() => import("@/pages/settings/email/EmailTemplates"));
+const SendTemplate = lazy(() => import("@/pages/settings/email/SendTemplate"));
+const SmtpSettings = lazy(() => import("@/pages/settings/email/SmtpSettings"));
+const DeliveryLogs = lazy(() => import("@/pages/settings/email/DeliveryLogs"));
+const ErrorLogs = lazy(() => import("@/pages/settings/system/ErrorLogs"));
 
 const queryClient = new QueryClient();
 
@@ -74,68 +78,74 @@ function App() {
               <PrivateRoute>
                 <AtsProvider>
                   <AppLayout>
-                    <Routes>
-                    <Route path="/" element={<Dashboard />} />
-                    <Route path="/calendar" element={<Calendar />} />
-                    <Route path="/pipeline" element={<Pipeline />} />
-                    <Route path="/reports" element={<Reports />} />
+                    <Suspense fallback={
+                      <div className="flex h-[calc(100vh-100px)] w-full items-center justify-center">
+                        <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+                      </div>
+                    }>
+                      <Routes>
+                      <Route path="/" element={<Dashboard />} />
+                      <Route path="/calendar" element={<Calendar />} />
+                      <Route path="/pipeline" element={<Pipeline />} />
+                      <Route path="/reports" element={<Reports />} />
 
-                    {/* Jobs */}
-                    <Route path="/jobs/all" element={<AllJobs />} />
-                    <Route path="/jobs/create" element={<CreateJob />} />
-                    <Route path="/jobs/edit/:id" element={<CreateJob />} />
+                      {/* Jobs */}
+                      <Route path="/jobs/all" element={<AllJobs />} />
+                      <Route path="/jobs/create" element={<CreateJob />} />
+                      <Route path="/jobs/edit/:id" element={<CreateJob />} />
 
-                    {/* Recruiters */}
-                    <Route path="/recruiters" element={<Recruiters />} />
+                      {/* Recruiters */}
+                      <Route path="/recruiters" element={<Recruiters />} />
 
-                    {/* Candidates */}
-                    <Route path="/candidates" element={<Candidates />} />
-                    <Route path="/candidates/add" element={<CandidateFormPage />} />
-                    <Route path="/candidates/new" element={<CandidateFormPage />} />
-                    <Route path="/candidates/duplicate-check" element={<DuplicateCheck />} />
-                    <Route path="/candidates/timeline" element={<CandidateTimeline />} />
-                    <Route path="/candidates/:id" element={<CandidateDetails />} />
-                    <Route path="/candidates/:id/edit" element={<CandidateFormPage />} />
+                      {/* Candidates */}
+                      <Route path="/candidates" element={<Candidates />} />
+                      <Route path="/candidates/add" element={<CandidateFormPage />} />
+                      <Route path="/candidates/new" element={<CandidateFormPage />} />
+                      <Route path="/candidates/duplicate-check" element={<DuplicateCheck />} />
+                      <Route path="/candidates/timeline" element={<CandidateTimeline />} />
+                      <Route path="/candidates/:id" element={<CandidateDetails />} />
+                      <Route path="/candidates/:id/edit" element={<CandidateFormPage />} />
 
-                    {/* Interviews */}
-                    <Route path="/interviews/upcoming" element={<InterviewsUpcoming />} />
-                    <Route path="/interviews/feedback-pending" element={<InterviewsFeedback />} />
-                    <Route path="/interviews/history" element={<InterviewsHistory />} />
+                      {/* Interviews */}
+                      <Route path="/interviews/upcoming" element={<InterviewsUpcoming />} />
+                      <Route path="/interviews/feedback-pending" element={<InterviewsFeedback />} />
+                      <Route path="/interviews/history" element={<InterviewsHistory />} />
 
-                    {/* Offers */}
-                    <Route path="/offers/management" element={<Offers />} />
-                    <Route path="/offers/joining-tracker" element={<JoiningTracker />} />
-                    <Route path="/offers/no-joiners" element={<NoJoiners />} />
-                    <Route path="/offers/:tab?" element={<Offers />} />
+                      {/* Offers */}
+                      <Route path="/offers/management" element={<Offers />} />
+                      <Route path="/offers/joining-tracker" element={<JoiningTracker />} />
+                      <Route path="/offers/no-joiners" element={<NoJoiners />} />
+                      <Route path="/offers/:tab?" element={<Offers />} />
 
-                    {/* Rejections & Blacklist */}
-                    <Route path="/rejections/rejected" element={<Rejected />} />
-                    <Route path="/rejections/blacklisted" element={<Blacklisted />} />
+                      {/* Rejections & Blacklist */}
+                      <Route path="/rejections/rejected" element={<Rejected />} />
+                      <Route path="/rejections/blacklisted" element={<Blacklisted />} />
 
-                    {/* Reports */}
-                    <Route path="/reports/candidate" element={<Reports />} />
-                    {/* <Route path="/reports/recruiter-performance" element={<ReportsPerformance />} /> */}
-                    <Route path="/reports/hiring" element={<ReportsPerformance />} />
-                    {/* <Route path="/reports/rejection-analysis" element={<ReportsPerformance />} /> */}
-                    <Route path="/reports/blacklist" element={<Blacklisted />} />
-                    <Route path="/reports/no-joiners" element={<NoJoiners />} />
-                    <Route path="/reports" element={<Reports />} />
+                      {/* Reports */}
+                      <Route path="/reports/candidate" element={<Reports />} />
+                      {/* <Route path="/reports/recruiter-performance" element={<ReportsPerformance />} /> */}
+                      <Route path="/reports/hiring" element={<ReportsPerformance />} />
+                      {/* <Route path="/reports/rejection-analysis" element={<ReportsPerformance />} /> */}
+                      <Route path="/reports/blacklist" element={<Blacklisted />} />
+                      <Route path="/reports/no-joiners" element={<NoJoiners />} />
+                      <Route path="/reports" element={<Reports />} />
 
-                    {/* Others */}
-                    <Route path="/notifications/alerts" element={<Notifications />} />
-                    {/* System Settings & Email (Admin/HR only) */}
-                    <Route path="/email-settings/templates" element={<PrivateRoute requiredModule="Email Settings"><EmailTemplates /></PrivateRoute>} />
-                    <Route path="/email-settings/send" element={<PrivateRoute requiredModule="Email Settings"><SendTemplate /></PrivateRoute>} />
-                    <Route path="/email-settings/smtp" element={<PrivateRoute requiredModule="Email Settings"><SmtpSettings /></PrivateRoute>} />
-                    <Route path="/email-settings/logs" element={<PrivateRoute requiredModule="Email Settings"><DeliveryLogs /></PrivateRoute>} />
-                    <Route path="/system-settings/profile" element={<UserProfile />} />
-                    <Route path="/system-settings/roles" element={<PrivateRoute allowedRoles={["Administrator"]}><UserRoles /></PrivateRoute>} />
-                    <Route path="/system-settings/departments" element={<PrivateRoute requiredModule="System Settings"><Departments /></PrivateRoute>} />
-                    <Route path="/system-settings/general" element={<PrivateRoute requiredModule="System Settings"><SystemSettings /></PrivateRoute>} />
-                    <Route path="/system-settings/error-logs" element={<PrivateRoute allowedRoles={["Administrator"]}><ErrorLogs /></PrivateRoute>} />
+                      {/* Others */}
+                      <Route path="/notifications/alerts" element={<Notifications />} />
+                      {/* System Settings & Email (Admin/HR only) */}
+                      <Route path="/email-settings/templates" element={<PrivateRoute requiredModule="Email Settings"><EmailTemplates /></PrivateRoute>} />
+                      <Route path="/email-settings/send" element={<PrivateRoute requiredModule="Email Settings"><SendTemplate /></PrivateRoute>} />
+                      <Route path="/email-settings/smtp" element={<PrivateRoute requiredModule="Email Settings"><SmtpSettings /></PrivateRoute>} />
+                      <Route path="/email-settings/logs" element={<PrivateRoute requiredModule="Email Settings"><DeliveryLogs /></PrivateRoute>} />
+                      <Route path="/system-settings/profile" element={<UserProfile />} />
+                      <Route path="/system-settings/roles" element={<PrivateRoute allowedRoles={["Administrator"]}><UserRoles /></PrivateRoute>} />
+                      <Route path="/system-settings/departments" element={<PrivateRoute requiredModule="System Settings"><Departments /></PrivateRoute>} />
+                      <Route path="/system-settings/general" element={<PrivateRoute requiredModule="System Settings"><SystemSettings /></PrivateRoute>} />
+                      <Route path="/system-settings/error-logs" element={<PrivateRoute allowedRoles={["Administrator"]}><ErrorLogs /></PrivateRoute>} />
 
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                    </Suspense>
                   </AppLayout>
                 </AtsProvider>
               </PrivateRoute>

@@ -46,9 +46,9 @@ try {
     // Joined
     $stats['joined'] = $conn->query("SELECT COUNT(*) FROM cims_applications WHERE stage = 'Joined'")->fetchColumn();
     // Rejected
-    $stats['rejected'] = $conn->query("SELECT COUNT(*) FROM cims_applications WHERE stage = 'Rejected'")->fetchColumn();
+    $stats['rejected'] = $conn->query("SELECT COUNT(*) FROM cims_candidate_rejections WHERE type = 'Rejected'")->fetchColumn();
     // Blacklisted
-    $stats['blacklisted'] = $conn->query("SELECT COUNT(*) FROM cims_candidates WHERE isBlacklisted = 1")->fetchColumn();
+    $stats['blacklisted'] = $conn->query("SELECT COUNT(*) FROM cims_candidate_rejections WHERE type = 'Blacklisted'")->fetchColumn();
     // No Show
     $stats['noShow'] = $conn->query("SELECT COUNT(*) FROM cims_applications WHERE stage = 'No Show'")->fetchColumn();
     

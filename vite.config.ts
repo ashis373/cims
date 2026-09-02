@@ -5,7 +5,7 @@ import tailwindcss from "@tailwindcss/vite";
 
 export default defineConfig(({ mode }) => {
   return {
-    base: mode === 'production' ? '/cimss/' : '/',
+    base: mode === 'production' ? '/test/' : '/',
     plugins: [react(), tsconfigPaths(), tailwindcss()],
   };
 });

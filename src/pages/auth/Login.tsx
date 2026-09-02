@@ -23,10 +23,7 @@ export default function Login() {
 
     setIsLoading(true);
     try {
-      // In a production app, the correct API_BASE_URL would be used
-      const apiUrl = import.meta.env.PROD 
-        ? "https://demo.hexalearn.com/cimss/api" 
-        : "http://localhost/full-cims/api";
+      const apiUrl = import.meta.env.VITE_API_BASE_URL;
         
       const res = await fetch(`${apiUrl}/auth/login.php`, { credentials: 'include', 
         method: "POST",
