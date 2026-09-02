@@ -10,6 +10,8 @@ import { API_BASE_URL } from "@/config/api";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import { getAuthHeaders } from "@/services/candidate-api";
 
 export default function DuplicateCheck() {
   const [data, setData] = useState<{ exact: any[]; possible: any[] } | null>(null);
@@ -17,10 +19,17 @@ export default function DuplicateCheck() {
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
-    fetch(`${API_BASE_URL}/candidates/duplicates.php`)
-      .then((res) => res.json())
-      .then((json) => {
-        setData(json);
+    fetch(`${API_BASE_URL}/candidates/duplicates.php`, {
+      credentials: 'include',
+      headers: getAuthHeaders(false)
+    })
+      .then(async (res) => {
+        const json = await res.json();
+        if (!res.ok && json.message) {
+          toast.error(json.message);
+        } else {
+          setData(json);
+        }
         setLoading(false);
       })
       .catch((err) => {

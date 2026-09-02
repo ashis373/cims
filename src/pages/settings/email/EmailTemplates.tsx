@@ -14,6 +14,8 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { useNavigate } from "react-router-dom";
+import { getAuthHeaders } from "@/services/candidate-api";
+import { toast } from "sonner";
 
 export default function EmailTemplates() {
   const navigate = useNavigate();
@@ -44,10 +46,19 @@ export default function EmailTemplates() {
   const fetchTemplates = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/settings/email/templates.php`);
-      setTemplates(await res.json());
-    } catch (e) {
+      const res = await fetch(`${API_BASE_URL}/settings/email/templates.php`, {
+        credentials: 'include',
+        headers: getAuthHeaders(false)
+      });
+      const data = await res.json();
+      if (!res.ok && data.message) {
+        toast.error(data.message);
+      } else {
+        setTemplates(data);
+      }
+    } catch (e: any) {
       console.error(e);
+      toast.error(e.message || "Failed to load templates.");
     }
     setLoading(false);
   };
@@ -61,16 +72,22 @@ export default function EmailTemplates() {
     try {
       const res = await fetch(`${API_BASE_URL}/settings/email/templates.php`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        headers: getAuthHeaders(),
         body: JSON.stringify({ action: 'toggle', id, is_active: newStatus })
       });
       const data = await res.json();
+      if (!res.ok && data.message) {
+        toast.error(data.message);
+        return;
+      }
       if (data.success) {
         setTemplates(templates.map(t => t.id === id ? { ...t, is_active: newStatus } : t));
+        toast.success(newStatus ? "Template enabled" : "Template disabled");
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      alert("Failed to toggle template.");
+      toast.error(e.message || "Failed to toggle template.");
     }
   };
 
@@ -78,16 +95,22 @@ export default function EmailTemplates() {
     try {
       const res = await fetch(`${API_BASE_URL}/settings/email/templates.php`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        headers: getAuthHeaders(),
         body: JSON.stringify({ action: 'update_method', id, sending_method: method })
       });
       const data = await res.json();
+      if (!res.ok && data.message) {
+        toast.error(data.message);
+        return;
+      }
       if (data.success) {
         setTemplates(templates.map(t => t.id === id ? { ...t, sending_method: method } : t));
+        toast.success("Template sending method updated");
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      alert("Failed to update sending method.");
+      toast.error(e.message || "Failed to update sending method.");
     }
   };
 
@@ -95,16 +118,22 @@ export default function EmailTemplates() {
     try {
       const res = await fetch(`${API_BASE_URL}/settings/email/templates.php`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        headers: getAuthHeaders(),
         body: JSON.stringify({ action: 'toggle_all', is_active: status })
       });
       const data = await res.json();
+      if (!res.ok && data.message) {
+        toast.error(data.message);
+        return;
+      }
       if (data.success) {
         setTemplates(templates.map(t => ({ ...t, is_active: status })));
+        toast.success(status ? "All templates enabled" : "All templates disabled");
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      alert("Failed to toggle templates.");
+      toast.error(e.message || "Failed to toggle templates.");
     }
   };
 
@@ -145,20 +174,26 @@ export default function EmailTemplates() {
       
       const res = await fetch(`${API_BASE_URL}/settings/email/templates.php`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        headers: getAuthHeaders(),
         body: JSON.stringify(payload)
       });
       
       const data = await res.json();
+      if (!res.ok && data.message) {
+        toast.error(data.message);
+        return;
+      }
       if (data.success) {
         setDialogOpen(false);
         fetchTemplates();
+        toast.success(editingTemplate ? "Template updated successfully" : "Template created successfully");
       } else {
-        alert(data.error || "Failed to save template.");
+        toast.error(data.error || "Failed to save template.");
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      alert("An error occurred while saving the template.");
+      toast.error(e.message || "An error occurred while saving the template.");
     }
   };
 
@@ -167,21 +202,27 @@ export default function EmailTemplates() {
     try {
       const res = await fetch(`${API_BASE_URL}/settings/email/templates.php`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        headers: getAuthHeaders(),
         body: JSON.stringify({ action: 'delete', id: templateToDelete })
       });
       
       const data = await res.json();
+      if (!res.ok && data.message) {
+        toast.error(data.message);
+        return;
+      }
       if (data.success) {
         setDeleteOpen(false);
         setTemplateToDelete(null);
         fetchTemplates();
+        toast.success("Template deleted successfully");
       } else {
-        alert(data.error || "Failed to delete template.");
+        toast.error(data.error || "Failed to delete template.");
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      alert("An error occurred while deleting.");
+      toast.error(e.message || "An error occurred while deleting.");
     }
   };
 

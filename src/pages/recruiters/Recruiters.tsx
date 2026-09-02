@@ -42,8 +42,10 @@ export default function Recruiters() {
     try {
       const res = await fetch(`${API_BASE_URL}/recruiters/recruiters.php`, { credentials: 'include', headers: getAuthHeaders(false) });
       const data = await res.json();
-      if (Array.isArray(data)) {
+      if (res.ok && Array.isArray(data)) {
         setRecruiters(data);
+      } else if (!res.ok && data.message) {
+        toast.error(data.message);
       }
     } catch (e) {
       toast.error("Failed to fetch recruiters");
@@ -134,12 +136,12 @@ export default function Recruiters() {
       });
       const data = await res.json();
       
-      if (res.ok && (data.success || !data.error)) {
+      if (res.ok && (data.success || !data.error) && !data.message) {
         toast.success(editingId ? "Recruiter updated" : "Recruiter added successfully");
         fetchRecruiters();
         setShowAdd(false);
       } else {
-        toast.error(data.error || "Failed to save recruiter");
+        toast.error(data.message || data.error || "Failed to save recruiter");
       }
     } catch (e) {
       toast.error("An error occurred");
@@ -154,9 +156,12 @@ export default function Recruiters() {
         headers: getAuthHeaders(true),
         body: JSON.stringify({ status: newStatus })
       });
-      if (res.ok) {
+      const data = await res.json();
+      if (res.ok && !data.error && !data.message) {
         toast.success("Status updated");
         fetchRecruiters();
+      } else {
+        toast.error(data.message || data.error || "Failed to update status");
       }
     } catch (e) {
       toast.error("Failed to update status");
@@ -169,9 +174,12 @@ export default function Recruiters() {
         method: "DELETE",
         headers: getAuthHeaders(false)
       });
-      if (res.ok) {
+      const data = await res.json();
+      if (res.ok && !data.error && !data.message) {
         toast.success("Recruiter deleted");
         fetchRecruiters();
+      } else {
+        toast.error(data.message || data.error || "Failed to delete recruiter");
       }
     } catch (e) {
       toast.error("Failed to delete recruiter");
@@ -185,7 +193,7 @@ export default function Recruiters() {
   return (
     <div className="flex flex-col gap-6 w-full pb-10">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 relative overflow-hidden rounded-[28px] bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 shadow-lg border border-indigo-900/50 p-8 sm:p-10 text-white">
-        <div className="absolute top-0 right-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 pointer-events-none mix-blend-overlay"></div>
+
         <div className="relative z-10 flex items-center gap-6">
           <div className="flex h-[72px] w-[72px] items-center justify-center rounded-[20px] bg-white/10 border border-white/20 shadow-[0_0_20px_rgba(255,255,255,0.1)] backdrop-blur-md">
             <Shield className="h-8 w-8 text-indigo-100" />

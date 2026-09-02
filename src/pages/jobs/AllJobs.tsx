@@ -42,6 +42,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { API_BASE_URL } from "@/config/api";
+import { getAuthHeaders } from "@/services/candidate-api";
 
 
 
@@ -127,9 +128,16 @@ export default function AllJobs() {
   useEffect(() => {
     const fetchJobs = async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/jobs/jobs.php`);
+        const res = await fetch(`${API_BASE_URL}/jobs/jobs.php`, {
+          credentials: 'include',
+          headers: getAuthHeaders(false)
+        });
         const data = await res.json();
-        setJobs(data);
+        if (res.ok && Array.isArray(data)) {
+          setJobs(data);
+        } else if (!res.ok && data.message) {
+          toast.error(data.message);
+        }
       } catch (err) {
         console.error("Failed to fetch jobs", err);
       } finally {
@@ -141,12 +149,17 @@ export default function AllJobs() {
 
   const handleDelete = async (jobId: string) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/jobs/jobs.php?job_id=${jobId}`, { credentials: 'include', 
-        method: "DELETE"
+      const res = await fetch(`${API_BASE_URL}/jobs/jobs.php?job_id=${jobId}`, { 
+        credentials: 'include', 
+        method: "DELETE",
+        headers: getAuthHeaders(false)
       });
-      if (res.ok) {
+      const data = await res.json();
+      if (res.ok && !data.error && !data.message) {
         setJobs(jobs.filter(j => j.id !== jobId));
         toast.success("Job deleted successfully");
+      } else {
+        toast.error(data.message || data.error || "Failed to delete job");
       }
     } catch (e) {
       toast.error("Failed to delete job");
@@ -156,14 +169,18 @@ export default function AllJobs() {
 
   const handleUpdateStatus = async (jobId: string, newStatus: string) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/jobs/jobs.php`, { credentials: 'include', 
+      const res = await fetch(`${API_BASE_URL}/jobs/jobs.php`, { 
+        credentials: 'include', 
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: getAuthHeaders(true),
         body: JSON.stringify({ job_id: jobId, status: newStatus })
       });
-      if (res.ok) {
+      const data = await res.json();
+      if (res.ok && !data.error && !data.message) {
         setJobs(jobs.map(j => j.id === jobId ? { ...j, status: newStatus } : j));
         toast.success(`Job marked as ${newStatus}`);
+      } else {
+        toast.error(data.message || data.error || "Failed to update status");
       }
     } catch (e) {
       toast.error("Failed to update status");

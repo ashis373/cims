@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Server, Lock, Send } from "lucide-react";
 import { API_BASE_URL } from "@/config/api";
+import { toast } from "sonner";
+import { getAuthHeaders } from "@/services/candidate-api";
 
 export default function SmtpSettings() {
   const [smtpConfig, setSmtpConfig] = useState<any>({
@@ -20,10 +22,19 @@ export default function SmtpSettings() {
   useEffect(() => {
     const fetchConfig = async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/settings/email/smtp.php`);
-        setSmtpConfig(await res.json());
-      } catch (e) {
+        const res = await fetch(`${API_BASE_URL}/settings/email/smtp.php`, {
+          credentials: 'include',
+          headers: getAuthHeaders(false)
+        });
+        const data = await res.json();
+        if (!res.ok && data.message) {
+          toast.error(data.message);
+        } else {
+          setSmtpConfig(data);
+        }
+      } catch (e: any) {
         console.error(e);
+        toast.error(e.message || "Failed to load SMTP configuration");
       }
       setLoading(false);
     };
@@ -34,18 +45,23 @@ export default function SmtpSettings() {
     try {
       const res = await fetch(`${API_BASE_URL}/settings/email/smtp.php`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        headers: getAuthHeaders(),
         body: JSON.stringify(smtpConfig)
       });
       const data = await res.json();
-      if (data.success) {
-        alert("SMTP configuration saved!");
-      } else {
-        alert("Error saving configuration");
+      if (!res.ok && data.message) {
+        toast.error(data.message);
+        return;
       }
-    } catch (e) {
+      if (data.success) {
+        toast.success("SMTP configuration saved!");
+      } else {
+        toast.error("Error saving configuration");
+      }
+    } catch (e: any) {
       console.error(e);
-      alert("Error saving configuration");
+      toast.error(e.message || "Error saving configuration");
     }
   };
 
@@ -56,14 +72,19 @@ export default function SmtpSettings() {
     try {
       const res = await fetch(`${API_BASE_URL}/settings/email/test.php`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        headers: getAuthHeaders(),
         body: JSON.stringify({ email })
       });
       const data = await res.json();
-      alert(data.message);
-    } catch (e) {
+      if (!res.ok && data.message) {
+        toast.error(data.message);
+        return;
+      }
+      toast.success(data.message || "Test email sent!");
+    } catch (e: any) {
       console.error(e);
-      alert("Failed to send test email.");
+      toast.error(e.message || "Failed to send test email.");
     }
   };
 

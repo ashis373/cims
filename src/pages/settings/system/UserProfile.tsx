@@ -178,7 +178,7 @@ export default function UserProfile() {
                   <div className="w-28 h-28 rounded-full bg-slate-100 border-4 border-white shadow-md flex items-center justify-center overflow-hidden">
                     {profile.profile_photo ? (
                       <img 
-                        src={profile.profile_photo.startsWith('http') ? profile.profile_photo : `${API_BASE_URL}/${profile.profile_photo}`} 
+                        src={profile.profile_photo.startsWith('http') ? profile.profile_photo : `${API_BASE_URL}/${profile.profile_photo.replace('../../', '../')}`} 
                         alt="Profile" 
                         className="w-full h-full object-cover"
                       />
@@ -241,7 +241,7 @@ export default function UserProfile() {
               <div className="w-20 h-20 rounded-full bg-white border-4 border-white shadow-md flex items-center justify-center overflow-hidden -mt-10 mb-3">
                 {profile.profile_photo ? (
                   <img 
-                    src={profile.profile_photo.startsWith('http') ? profile.profile_photo : `${API_BASE_URL}/${profile.profile_photo}`} 
+                    src={profile.profile_photo.startsWith('http') ? profile.profile_photo : `${API_BASE_URL}/${profile.profile_photo.replace('../../', '../')}`} 
                     alt="Profile" 
                     className="w-full h-full object-cover"
                   />

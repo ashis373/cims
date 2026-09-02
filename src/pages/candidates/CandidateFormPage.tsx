@@ -110,6 +110,8 @@ export default function CandidateFormPage() {
     try {
       const res = await fetch(`${API_BASE_URL}/candidates/extract_resume.php`, {
         method: "POST",
+        headers: getAuthHeaders(false),
+        credentials: 'include',
         body: formData,
       });
       const result = await res.json();

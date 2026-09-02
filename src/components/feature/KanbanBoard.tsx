@@ -44,12 +44,17 @@ export function KanbanBoard({ candidates }: { candidates: Candidate[] }) {
               setOverStage(stage);
             }}
             onDragLeave={() => setOverStage((s) => (s === stage ? null : s))}
-            onDrop={() => {
+            onDrop={async () => {
               if (dragId) {
-                const c = candidates.find((x) => x.id === dragId);
+                const currentDragId = dragId;
+                const c = candidates.find((x) => x.id === currentDragId);
                 if (c && c.stage !== stage) {
-                  setStage(dragId, stage);
-                  toast.success(`Candidate moved to ${stage}`);
+                  try {
+                    await setStage(currentDragId, stage);
+                    toast.success(`Candidate moved to ${stage}`);
+                  } catch (e) {
+                    // Error is handled and toasted by ats-store
+                  }
                 }
               }
               setDragId(null);

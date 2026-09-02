@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Briefcase, ArrowLeft, Save, Building2, Users, MapPin, Plus } from "lucide-react";
+import { getAuthHeaders } from "@/services/candidate-api";
 
 export default function CreateJob() {
   const navigate = useNavigate();
@@ -22,19 +23,25 @@ export default function CreateJob() {
   useEffect(() => {
     const fetchDepts = async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/jobs/departments.php`);
-        const data = await res.json();
-        if (Array.isArray(data)) setDbDepartments(data.filter((d: any) => d.status !== 'Inactive'));
+        const response = await fetch(`${API_BASE_URL}/jobs/departments.php`, { credentials: 'include', headers: getAuthHeaders(false) });
+        const data = await response.json();
+        if (response.ok && Array.isArray(data)) {
+          setDbDepartments(data.filter((d: any) => d.status !== 'Inactive'));
+        } else if (!response.ok && data.message) {
+          toast.error(data.message);
+        }
       } catch (e) {
         console.error("Failed to fetch departments", e);
       }
     };
     const fetchRecruiters = async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/recruiters/recruiters.php`);
-        const data = await res.json();
-        if (Array.isArray(data)) {
+        const response = await fetch(`${API_BASE_URL}/recruiters/recruiters.php`, { credentials: 'include', headers: getAuthHeaders(false) });
+        const data = await response.json();
+        if (response.ok && Array.isArray(data)) {
           setRecruiters(data.filter((r: any) => r.status === "Active"));
+        } else if (!response.ok && data.message) {
+          toast.error(data.message);
         }
       } catch (e) {
         console.error("Failed to fetch recruiters", e);
@@ -42,8 +49,11 @@ export default function CreateJob() {
     };
     const fetchJobForEdit = async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/jobs/jobs.php?id=${id}`);
-        const data = await res.json();
+        const response = await fetch(`${API_BASE_URL}/jobs/jobs.php?id=${id}`, { credentials: 'include', headers: getAuthHeaders(false) });
+        const data = await response.json();
+        if (!response.ok && data.message) {
+          toast.error(data.message);
+        }
         // Since jobs.php currently returns an array for GET without specific ID handling (or it might have it), let's find it.
         const job = Array.isArray(data) ? data.find((j: any) => j.id == id) : data;
         if (job) {
@@ -111,18 +121,19 @@ export default function CreateJob() {
       
       const method = id ? "PUT" : "POST";
       
-      const res = await fetch(url, { credentials: 'include', 
+      const res = await fetch(url, { 
+        credentials: 'include', 
         method,
-        headers: { "Content-Type": "application/json" },
+        headers: getAuthHeaders(true),
         body: JSON.stringify(id ? { ...formData, id, job_id: id } : formData)
       });
 
       const data = await res.json();
-      if (res.ok && (data.success || id)) { // PUT might just return 200 without strict data.success
+      if (res.ok && (data.success || id) && !data.error && !data.message) { // PUT might just return 200 without strict data.success
         toast.success(id ? "Job updated successfully!" : "Job created successfully!");
         navigate("/jobs/all");
       } else {
-        toast.error(data.error || "Failed to create job.");
+        toast.error(data.message || data.error || "Failed to create job.");
       }
     } catch (e) {
       toast.error("Network error. Please try again.");
@@ -139,13 +150,14 @@ export default function CreateJob() {
 
     try {
       const res = await fetch(`${API_BASE_URL}/recruiters/recruiters.php`, {
+        credentials: 'include',
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: getAuthHeaders(true),
         body: JSON.stringify(newRecruiter)
       });
       const data = await res.json();
       
-      if (res.ok && (data.success || !data.error)) {
+      if (res.ok && (data.success || !data.error) && !data.message) {
         const added = data.data || { id: data.id || newRecruiter.name, ...newRecruiter };
         setRecruiters([...recruiters, added]);
         setFormData({ ...formData, recruiter: String(added.id) });
@@ -153,7 +165,7 @@ export default function CreateJob() {
         setShowAddRecruiter(false);
         toast.success("Recruiter added successfully");
       } else {
-        toast.error(data.error || "Failed to add recruiter");
+        toast.error(data.message || data.error || "Failed to add recruiter");
       }
     } catch (e) {
       toast.error("Network error");

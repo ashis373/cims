@@ -7,6 +7,7 @@ import { Briefcase, Filter, Calendar, BarChart2, PieChart as PieChartIcon, Trend
 import { toast } from "sonner";
 import { API_BASE_URL } from "@/config/api";
 import { cn } from "@/lib/utils";
+import { getAuthHeaders } from "@/services/candidate-api";
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#64748b'];
 
@@ -37,13 +38,18 @@ export default function ReportsPerformance() {
       if (filters.recruiter !== "all") params.append("recruiter", filters.recruiter);
       if (filters.position !== "all") params.append("position", filters.position);
       
-      const res = await fetch(`${API_BASE_URL}/reports/reports.php?${params.toString()}`);
-      if (!res.ok) throw new Error("Failed to fetch reports");
+      const res = await fetch(`${API_BASE_URL}/reports/reports.php?${params.toString()}`, {
+        credentials: 'include',
+        headers: getAuthHeaders(false)
+      });
       const json = await res.json();
+      if (!res.ok) {
+        throw new Error(json.message || "Failed to fetch reports");
+      }
       setData(json);
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      toast.error("Failed to load reports");
+      toast.error(e.message || "Failed to load reports");
     } finally {
       setIsLoading(false);
     }

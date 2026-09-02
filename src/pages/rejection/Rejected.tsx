@@ -6,6 +6,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { API_BASE_URL } from "@/config/api";
+import { toast } from "sonner";
+import { getAuthHeaders } from "@/services/candidate-api";
 
 export default function Rejected() {
   const [data, setData] = useState<any[]>([]);
@@ -14,10 +16,17 @@ export default function Rejected() {
   const [search, setSearch] = useState("");
 
   useEffect(() => {
-    fetch(`${API_BASE_URL}/rejections/rejected.php`)
-      .then((res) => res.json())
-      .then((json) => {
-        setData(json.rejected || []);
+    fetch(`${API_BASE_URL}/rejections/rejected.php`, {
+      credentials: 'include',
+      headers: getAuthHeaders(false)
+    })
+      .then(async (res) => {
+        const json = await res.json();
+        if (!res.ok && json.message) {
+          toast.error(json.message);
+        } else {
+          setData(json.rejected || []);
+        }
         setLoading(false);
       })
       .catch((err) => {
@@ -59,7 +68,7 @@ export default function Rejected() {
       
       {/* Top Banner (Deep Purple) */}
       <div className="relative overflow-hidden rounded-[28px] bg-gradient-to-r from-[#110B3A] via-[#21115A] to-[#45148C] shadow-lg border border-indigo-900/50 p-8 sm:p-10 text-white flex items-center justify-between">
-        <div className="absolute top-0 right-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 pointer-events-none mix-blend-overlay"></div>
+
         
         <div className="relative z-10 flex items-center gap-6">
           <div className="flex h-[72px] w-[72px] items-center justify-center rounded-[20px] bg-[#6136D7]/20 border border-[#6136D7]/50 shadow-[0_0_20px_rgba(97,54,215,0.4)] backdrop-blur-md">

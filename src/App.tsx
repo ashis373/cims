@@ -37,6 +37,7 @@ import EmailTemplates from "@/pages/settings/email/EmailTemplates";
 import SendTemplate from "@/pages/settings/email/SendTemplate";
 import SmtpSettings from "@/pages/settings/email/SmtpSettings";
 import DeliveryLogs from "@/pages/settings/email/DeliveryLogs";
+import ErrorLogs from "@/pages/settings/system/ErrorLogs";
 
 const queryClient = new QueryClient();
 
@@ -131,6 +132,7 @@ function App() {
                     <Route path="/system-settings/roles" element={<PrivateRoute allowedRoles={["Administrator"]}><UserRoles /></PrivateRoute>} />
                     <Route path="/system-settings/departments" element={<PrivateRoute requiredModule="System Settings"><Departments /></PrivateRoute>} />
                     <Route path="/system-settings/general" element={<PrivateRoute requiredModule="System Settings"><SystemSettings /></PrivateRoute>} />
+                    <Route path="/system-settings/error-logs" element={<PrivateRoute allowedRoles={["Administrator"]}><ErrorLogs /></PrivateRoute>} />
 
                     <Route path="*" element={<NotFound />} />
                   </Routes>

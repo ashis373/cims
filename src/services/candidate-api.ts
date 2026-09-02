@@ -27,7 +27,10 @@ export async function fetchCandidatesAPI(): Promise<Candidate[]> {
     credentials: 'include',
     headers: getAuthHeaders(false)
   });
-  if (!r.ok) throw new Error(await r.text());
+  if (!r.ok) {
+    const err = await r.json().catch(() => ({}));
+    throw new Error(err.message || err.error || "Failed to load candidates");
+  }
   const data = await r.json();
   if (Array.isArray(data)) return data;
   return [];
@@ -42,7 +45,7 @@ export async function postCandidateAPI(cand: Candidate): Promise<void> {
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.error || "Failed to add candidate");
+    throw new Error(err.message || err.error || "Failed to add candidate");
   }
 }
 
@@ -55,10 +58,7 @@ export async function putCandidateAPI(c: Candidate): Promise<void> {
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    if (res.status === 403) {
-      throw new Error(err.message || "You do not have permission to edit candidates.");
-    }
-    throw new Error(err.error || err.message || "Failed to update database");
+    throw new Error(err.message || err.error || "Failed to update database");
   }
 }
 
@@ -71,10 +71,7 @@ export async function deleteCandidatesAPI(ids: string[]): Promise<void> {
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    if (res.status === 403) {
-      throw new Error(err.message || "You do not have permission to delete candidates.");
-    }
-    throw new Error(err.error || err.message || "Failed to delete from database");
+    throw new Error(err.message || err.error || "Failed to delete from database");
   }
 }
 
@@ -96,7 +93,7 @@ export async function postInterviewAPI(interview: any): Promise<void> {
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.error || "Failed to add interview");
+    throw new Error(err.message || err.error || "Failed to add interview");
   }
 }
 
@@ -109,6 +106,6 @@ export async function putInterviewAPI(id: string, patch: any): Promise<void> {
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.error || "Failed to update interview");
+    throw new Error(err.message || err.error || "Failed to update interview");
   }
 }

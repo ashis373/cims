@@ -35,3 +35,4 @@ dist-ssr
 # PHP / Composer
 api/vendor/
 .env
+api/error.log

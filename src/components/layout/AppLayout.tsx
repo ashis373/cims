@@ -210,6 +210,7 @@ const nav = [
       { to: "/system-settings/roles", label: "User Roles & Permissions", roles: ["Administrator"], module: "Users & Roles" },
       { to: "/system-settings/departments", label: "Departments", roles: ["Administrator", "HR Manager"], module: "System Settings" },
       { to: "/recruiters", label: "Recruiters", roles: ["Administrator", "HR Manager"], module: "System Settings" },
+      { to: "/system-settings/error-logs", label: "Error Logs", roles: ["Administrator"], module: "Users & Roles" },
     ],
   },
 ];

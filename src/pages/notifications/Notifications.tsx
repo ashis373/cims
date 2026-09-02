@@ -4,6 +4,8 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { API_BASE_URL } from "@/config/api";
+import { toast } from "sonner";
+import { getAuthHeaders } from "@/services/candidate-api";
 
 interface Alert {
   id: number;
@@ -21,9 +23,16 @@ export default function Notifications() {
   useEffect(() => {
     const fetchAlerts = async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/notifications/notifications.php`);
+        const res = await fetch(`${API_BASE_URL}/notifications/notifications.php`, {
+          credentials: 'include',
+          headers: getAuthHeaders(false)
+        });
         const data = await res.json();
-        setAlerts(data);
+        if (!res.ok && data.message) {
+          toast.error(data.message);
+        } else {
+          setAlerts(data);
+        }
       } catch (err) {
         console.error("Failed to load notifications", err);
       } finally {
@@ -57,7 +66,7 @@ export default function Notifications() {
   return (
     <div className="flex flex-col gap-6 w-full pb-10">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 relative overflow-hidden rounded-[28px] bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 shadow-lg border border-indigo-900/50 p-8 sm:p-10 text-white">
-        <div className="absolute top-0 right-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 pointer-events-none mix-blend-overlay"></div>
+
         <div className="relative z-10 flex items-center gap-6">
           <div className="flex h-[72px] w-[72px] items-center justify-center rounded-[20px] bg-white/10 border border-white/20 shadow-[0_0_20px_rgba(255,255,255,0.1)] backdrop-blur-md shrink-0">
             <Bell className="h-8 w-8 text-indigo-100" />

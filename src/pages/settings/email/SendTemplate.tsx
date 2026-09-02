@@ -15,6 +15,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { toast } from "sonner";
 
 export default function SendTemplate() {
   const navigate = useNavigate();
@@ -52,19 +53,30 @@ export default function SendTemplate() {
           fetch(`${API_BASE_URL}/settings/email/templates.php`, { credentials: 'include', headers: getAuthHeaders(false) }),
           fetch(`${API_BASE_URL}/candidates/candidates.php`, { credentials: 'include', headers: getAuthHeaders(false) })
         ]);
-        const allTemplates = await tplRes.json();
-        setTemplates(Array.isArray(allTemplates) ? allTemplates : []);
-        
-        // Auto-select Interview template by default
-        const defaultTemplate = (Array.isArray(allTemplates) ? allTemplates : []).find((t: any) => t.type === "Interview");
-        if (defaultTemplate) {
-          setSelectedTemplateId(defaultTemplate.id.toString());
+        const [allTemplates, allCandidates] = await Promise.all([
+          tplRes.json(),
+          candRes.json()
+        ]);
+        if (!tplRes.ok && allTemplates.message) {
+          toast.error(allTemplates.message);
+        } else {
+          setTemplates(Array.isArray(allTemplates) ? allTemplates : []);
+          
+          // Auto-select Interview template by default
+          const defaultTemplate = (Array.isArray(allTemplates) ? allTemplates : []).find((t: any) => t.type === "Interview");
+          if (defaultTemplate) {
+            setSelectedTemplateId(defaultTemplate.id.toString());
+          }
         }
 
-        const allCandidates = await candRes.json();
-        setCandidates(Array.isArray(allCandidates) ? allCandidates : []);
-      } catch (e) {
+        if (!candRes.ok && allCandidates.message) {
+          toast.error(allCandidates.message);
+        } else {
+          setCandidates(Array.isArray(allCandidates) ? allCandidates : []);
+        }
+      } catch (e: any) {
         console.error(e);
+        toast.error(e.message || "Failed to load data");
       }
       setLoading(false);
     };
@@ -139,7 +151,7 @@ export default function SendTemplate() {
             .replace(/{Date}/g, new Date().toLocaleDateString());
 
           try {
-            await fetch(`${API_BASE_URL}/settings/email/send_manual.php`, {
+            const res = await fetch(`${API_BASE_URL}/settings/email/send_manual.php`, {
               method: 'POST',
               credentials: 'include',
               headers: getAuthHeaders(true),
@@ -151,9 +163,15 @@ export default function SendTemplate() {
                 candidate_id: candidate.id
               })
             });
-            sentCount++;
+            const data = await res.json();
+            if (!res.ok && data.message) {
+              toast.error(`Failed to send to ${candidate.email}: ${data.message}`);
+            } else {
+              sentCount++;
+            }
           } catch (e) {
             console.error("Failed to send to " + candidate.email);
+            toast.error("Network error when sending to " + candidate.email);
           }
         }
 

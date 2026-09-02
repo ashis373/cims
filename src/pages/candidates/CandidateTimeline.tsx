@@ -9,6 +9,8 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { API_BASE_URL } from "@/config/api";
+import { toast } from "sonner";
+import { getAuthHeaders } from "@/services/candidate-api";
 
 export default function CandidateTimeline() {
   const [timeline, setTimeline] = useState<any[]>([]);
@@ -25,8 +27,16 @@ export default function CandidateTimeline() {
 
   useEffect(() => {
     Promise.all([
-      fetch(`${API_BASE_URL}/candidates/timeline.php`).then(res => res.json()),
-      fetch(`${API_BASE_URL}/dashboard/stats.php`).then(res => res.json())
+      fetch(`${API_BASE_URL}/candidates/timeline.php`, { credentials: 'include', headers: getAuthHeaders(false) }).then(async res => {
+        const json = await res.json();
+        if (!res.ok && json.message) toast.error(json.message);
+        return json;
+      }),
+      fetch(`${API_BASE_URL}/dashboard/stats.php`, { credentials: 'include', headers: getAuthHeaders(false) }).then(async res => {
+        const json = await res.json();
+        if (!res.ok && json.message) toast.error(json.message);
+        return json;
+      })
     ])
       .then(([timelineData, statsData]) => {
         setTimeline(timelineData);

@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import { getAuthHeaders } from "@/services/candidate-api";
 
 export default function Departments() {
   const [departments, setDepartments] = useState<any[]>([]);
@@ -22,12 +23,21 @@ export default function Departments() {
   const [formData, setFormData] = useState({ name: '', status: 'Active' });
   const [isSaving, setIsSaving] = useState(false);
 
-  const fetchDepartments = () => {
-    fetch(`${API_BASE_URL}/jobs/departments.php`)
-      .then(res => res.json())
-      .then(res => {
-        if (Array.isArray(res)) setDepartments(res);
+  const fetchDepartments = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/jobs/departments.php`, {
+        credentials: 'include',
+        headers: getAuthHeaders(false)
       });
+      const res = await response.json();
+      if (response.ok && Array.isArray(res)) {
+        setDepartments(res);
+      } else if (!response.ok && res.message) {
+        toast.error(res.message);
+      }
+    } catch (e) {
+      toast.error("Failed to fetch departments");
+    }
   };
 
   useEffect(() => {
@@ -53,18 +63,19 @@ export default function Departments() {
     const payload = { ...formData, id: editingDept?.id };
 
     try {
-      const res = await fetch(`${API_BASE_URL}/jobs/departments.php`, {
+      const response = await fetch(`${API_BASE_URL}/jobs/departments.php`, {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(true),
         body: JSON.stringify(payload)
-      }).then(r => r.json());
+      });
+      const res = await response.json();
 
-      if (res.success) {
+      if (response.ok && res.success) {
         toast.success(editingDept ? "Department updated" : "Department added");
         setIsModalOpen(false);
         fetchDepartments();
       } else {
-        toast.error(res.error || "Failed to save department");
+        toast.error(res.message || res.error || "Failed to save department");
       }
     } catch (err) {
       toast.error("An error occurred");
@@ -76,17 +87,18 @@ export default function Departments() {
   const toggleStatus = async (dept: any) => {
     try {
       const newStatus = dept.status === 'Active' ? 'Inactive' : 'Active';
-      const res = await fetch(`${API_BASE_URL}/jobs/departments.php`, {
+      const response = await fetch(`${API_BASE_URL}/jobs/departments.php`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(true),
         body: JSON.stringify({ id: dept.id, action: 'toggle_status', status: newStatus })
-      }).then(r => r.json());
+      });
+      const res = await response.json();
 
-      if (res.success) {
+      if (response.ok && res.success) {
         toast.success(`Department marked as ${newStatus}`);
         fetchDepartments();
       } else {
-        toast.error(res.error || "Failed to update status");
+        toast.error(res.message || res.error || "Failed to update status");
       }
     } catch (err) {
       toast.error("An error occurred");

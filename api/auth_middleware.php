@@ -59,7 +59,7 @@ if (isset($allowed_roles) && is_array($allowed_roles) && count($allowed_roles) >
     
     if (!$userRole || !in_array($userRole, $allowed_roles)) {
         http_response_code(403);
-        echo json_encode(["status" => "error", "message" => "Forbidden: Insufficient privileges"]);
+        echo json_encode(["status" => "error", "message" => "You do not have the required role to access this. Please contact the Administrator."]);
         exit;
     }
 }
@@ -80,7 +80,7 @@ if (isset($required_module)) {
         
         if (!$perms || ($perms[$reqPerm] !== 1 && $perms[$reqPerm] !== "1")) {
             http_response_code(403);
-            echo json_encode(["status" => "error", "message" => "Forbidden: Insufficient module permissions"]);
+            echo json_encode(["status" => "error", "message" => "You do not have access to perform this action. Please contact the Administrator."]);
             exit;
         }
     }

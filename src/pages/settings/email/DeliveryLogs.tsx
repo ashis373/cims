@@ -6,6 +6,7 @@ import { Search, RefreshCcw, CheckCircle2, XCircle, Clock, Eye, MoreHorizontal, 
 import { cn } from "@/lib/utils";
 import { API_BASE_URL } from "@/config/api";
 import { getAuthHeaders } from "@/services/candidate-api";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -41,15 +42,21 @@ export default function DeliveryLogs() {
   const toggleWorker = async (enabled: boolean) => {
     setToggling(true);
     try {
-      await fetch(`${API_BASE_URL}/settings/email/toggle_worker.php`, {
+      const res = await fetch(`${API_BASE_URL}/settings/email/toggle_worker.php`, {
         method: 'POST',
         credentials: 'include',
         headers: getAuthHeaders(true),
         body: JSON.stringify({ enabled })
       });
-      await fetchLogs();
+      const data = await res.json();
+      if (!res.ok && data.message) {
+        toast.error(data.message);
+      } else {
+        await fetchLogs();
+      }
     } catch (e) {
       console.error(e);
+      toast.error("Failed to toggle worker");
     }
     setToggling(false);
     setPauseDialogOpen(false);
@@ -59,13 +66,28 @@ export default function DeliveryLogs() {
     setLoading(true);
     try {
       const [resLogs, resQueue] = await Promise.all([
-        fetch(`${API_BASE_URL}/settings/email/logs.php`, { credentials: 'include', headers: getAuthHeaders(false) }),
-        fetch(`${API_BASE_URL}/settings/email/queue_status.php`, { credentials: 'include', headers: getAuthHeaders(false) })
+        fetch(`${API_BASE_URL}/settings/email/logs.php`, { credentials: 'include', headers: getAuthHeaders(false) }).then(async res => {
+          const json = await res.json();
+          if (!res.ok && json.message) toast.error(json.message);
+          return json;
+        }),
+        fetch(`${API_BASE_URL}/settings/email/queue_status.php`, { credentials: 'include', headers: getAuthHeaders(false) }).then(async res => {
+          const json = await res.json();
+          if (!res.ok && json.message) toast.error(json.message);
+          return json;
+        })
       ]);
-      setLogs(await resLogs.json());
-      setQueueData(await resQueue.json());
+      if (Array.isArray(resLogs)) {
+        setLogs(resLogs);
+      } else {
+        setLogs(resLogs.logs || []);
+      }
+      if (resQueue && resQueue.counts) {
+        setQueueData(resQueue);
+      }
     } catch (e) {
       console.error(e);
+      toast.error("Failed to load logs");
     }
     setLoading(false);
   };
