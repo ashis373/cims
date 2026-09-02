@@ -38,6 +38,21 @@ if (!isset($conn)) {
     require_once __DIR__ . '/db.php';
 }
 
+// Check if token is revoked
+if ($jwt) {
+    $parts = explode('.', $jwt);
+    if (count($parts) === 3) {
+        $signature = $parts[2];
+        $revokedStmt = $conn->prepare("SELECT id FROM cims_revoked_tokens WHERE token_signature = ?");
+        $revokedStmt->execute([$signature]);
+        if ($revokedStmt->fetchColumn()) {
+            http_response_code(401);
+            echo json_encode(["status" => "error", "message" => "Unauthorized: Token has been revoked (logged out)"]);
+            exit;
+        }
+    }
+}
+
 // Check if user is still active in database
 $stmt = $conn->prepare("SELECT is_active FROM cims_users WHERE id = ?");
 $stmt->execute([$payload['user_id']]);

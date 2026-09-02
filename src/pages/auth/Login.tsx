@@ -36,8 +36,11 @@ export default function Login() {
       const data = await res.json();
 
       if (data.status === "success") {
-        // Store user and login time in localStorage
+        // Store user, token and login time in localStorage
         localStorage.setItem("cims_user", JSON.stringify(data.data));
+        if (data.token) {
+          localStorage.setItem("cims_token", data.token);
+        }
         localStorage.setItem("cims_login_time", Date.now().toString());
         toast.success("Login successful!");
         navigate("/");

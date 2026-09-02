@@ -25,12 +25,9 @@ export function PrivateRoute({ children, allowedRoles, requiredModule }: Private
     const verifySession = async () => {
       try {
         const headers: Record<string, string> = {};
-        const userStr = localStorage.getItem("cims_user");
-        if (userStr) {
-          try {
-            const u = JSON.parse(userStr);
-            if (u.id) headers["X-User-Id"] = u.id.toString();
-          } catch(e) {}
+        const token = localStorage.getItem("cims_token");
+        if (token) {
+          headers["Authorization"] = `Bearer ${token}`;
         }
 
         const res = await fetch(`${API_BASE_URL}/auth/me.php`, { 

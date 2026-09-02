@@ -11,13 +11,6 @@ export function getAuthHeaders(includeContentType = true) {
     if (token) {
       headers["Authorization"] = `Bearer ${token}`;
     }
-    const userStr = localStorage.getItem("cims_user");
-    if (userStr) {
-      const u = JSON.parse(userStr);
-      if (u.id) headers["X-User-Id"] = u.id.toString();
-    } else {
-      headers["X-User-Id"] = "1"; // Fallback for local development
-    }
   } catch (e) { }
   return headers;
 }
