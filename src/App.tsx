@@ -10,6 +10,7 @@ import { Loader2 } from "lucide-react";
 
 // Lazily loaded components
 const Dashboard = lazy(() => import("@/pages/dashboard/Dashboard"));
+const CareersPage = lazy(() => import("@/pages/public/CareersPage"));
 const Calendar = lazy(() => import("@/pages/calendar/Calendar"));
 const Candidates = lazy(() => import("@/pages/candidates/Candidates"));
 const CandidateDetails = lazy(() => import("@/pages/candidates/CandidateDetails"));
@@ -72,9 +73,18 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <BrowserRouter basename={import.meta.env.MODE === 'production' ? '/cims' : '/'}>
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/*" element={
+          <Suspense fallback={
+            <div className="flex min-h-screen items-center justify-center">
+              <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+            </div>
+          }>
+            <Routes>
+              {/* Public Routes */}
+              <Route path="/careers/*" element={<CareersPage />} />
+              <Route path="/login" element={<Login />} />
+              
+              {/* Private Routes */}
+              <Route path="/*" element={
               <PrivateRoute>
                 <AtsProvider>
                   <AppLayout>
@@ -151,6 +161,7 @@ function App() {
               </PrivateRoute>
             } />
           </Routes>
+          </Suspense>
         </BrowserRouter>
       </ThemeProvider>
     </QueryClientProvider>

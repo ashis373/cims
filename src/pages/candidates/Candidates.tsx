@@ -166,7 +166,7 @@ export default function CandidatesPage() {
     const recruiters: Record<string, number> = {};
 
     candidates.forEach((c) => {
-      const s = c.stage;
+      const s = c.stage || "New Applicant";
       if (
         !["Rejected", "Offer Declined", "No Show", "Offer Expired"].includes(s) &&
         !c.isBlacklisted

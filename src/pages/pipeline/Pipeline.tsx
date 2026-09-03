@@ -76,14 +76,15 @@ function Pipeline() {
   const { candidates, undo, canUndo } = useAts();
   const [search, setSearch] = useState("");
 
-  const filtered = candidates.filter(
-    (c) =>
-      c.name.toLowerCase().includes(search.toLowerCase()) ||
-      c.role.toLowerCase().includes(search.toLowerCase()),
-  );
+  const filtered = candidates.filter((c) => {
+    const matchesSearch =
+      (c.name || "").toLowerCase().includes(search.toLowerCase()) ||
+      (c.role || "").toLowerCase().includes(search.toLowerCase());
+    return matchesSearch;
+  });
 
   const counts = useMemo(() => {
-    const c = (s: string) => candidates.filter((x) => x.stage === s).length;
+    const c = (s: string) => candidates.filter((x) => (x.stage || "") === s).length;
     const isInactive = (st: string) =>
       ["Rejected", "Offer Declined", "No Show", "Offer Expired"].includes(st);
 
@@ -266,8 +267,8 @@ function Pipeline() {
       avgHireTime = Math.round(times.reduce((a, b) => a + b, 0) / hired.length);
     }
 
-    const interviews = candidates.filter((c) => c.stage.includes("Interview")).length;
-    const offers = candidates.filter((c) => c.stage.includes("Offer")).length;
+    const interviews = candidates.filter((c) => (c.stage || "").includes("Interview")).length;
+    const offers = candidates.filter((c) => (c.stage || "").includes("Offer")).length;
     const intToOffer = interviews > 0 ? Math.round((offers / interviews) * 100) : 0;
 
     const joins = hired.length;
