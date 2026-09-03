@@ -812,8 +812,8 @@ export default function CandidateFormPage() {
                       <SelectValue placeholder="Select position" />
                     </SelectTrigger>
                     <SelectContent>
-                      {openJobs.filter(j => !activeDepartment || j.department === activeDepartment).length > 0 ? (
-                        openJobs.filter(j => !activeDepartment || j.department === activeDepartment).map((job) => (
+                      {openJobs.filter(j => !activeDepartment || j.department?.toLowerCase() === activeDepartment?.toLowerCase()).length > 0 ? (
+                        openJobs.filter(j => !activeDepartment || j.department?.toLowerCase() === activeDepartment?.toLowerCase()).map((job) => (
                           <SelectItem key={job.id} value={job.title}>
                             {job.title} ({job.id})
                           </SelectItem>
@@ -823,7 +823,7 @@ export default function CandidateFormPage() {
                           {openJobs.length > 0 ? "No jobs found for this department" : "Loading jobs..."}
                         </SelectItem>
                       )}
-                      {activeRole && !openJobs.find(j => j.title === activeRole && (!activeDepartment || j.department === activeDepartment)) && activeRole !== "loading" && (
+                      {activeRole && !openJobs.find(j => j.title === activeRole && (!activeDepartment || j.department?.toLowerCase() === activeDepartment?.toLowerCase())) && activeRole !== "loading" && (
                         <SelectItem value={activeRole}>{activeRole}</SelectItem>
                       )}
                     </SelectContent>
