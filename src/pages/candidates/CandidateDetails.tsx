@@ -85,12 +85,12 @@ export default function CandidateProfile() {
   const { candidates, setStage, remove, update, addInterview, updateInterview } = useAts();
   const candidate = candidates.find((c) => c.id === id);
 
-  let currentUser = "Admin";
+  let currentUser = "System";
   try {
     const userStr = localStorage.getItem("cims_user");
     if (userStr) {
       const u = JSON.parse(userStr);
-      currentUser = u.name || u.first_name || "Admin";
+      currentUser = u.full_name || u.name || u.role_name || "System";
     }
   } catch (e) { }
 
@@ -99,6 +99,7 @@ export default function CandidateProfile() {
   const [blacklistReason, setBlacklistReason] = useState("");
   const [fullDetailsOpen, setFullDetailsOpen] = useState(false);
   const [fullTimelineOpen, setFullTimelineOpen] = useState(false);
+  const [fullActivityLogOpen, setFullActivityLogOpen] = useState(false);
   const [allNotesOpen, setAllNotesOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("Overview");
   const [addNoteOpen, setAddNoteOpen] = useState(false);
@@ -140,7 +141,7 @@ export default function CandidateProfile() {
   const [selectedTemplate, setSelectedTemplate] = useState("");
   const [emailTemplates, setEmailTemplates] = useState<any[]>([]);
   const [emailLoading, setEmailLoading] = useState(false);
-  const [previewData, setPreviewData] = useState<{subject: string, body: string} | null>(null);
+  const [previewData, setPreviewData] = useState<{ subject: string, body: string } | null>(null);
 
   const fetchEmailTemplates = async () => {
     try {
@@ -255,19 +256,19 @@ export default function CandidateProfile() {
 
   const openEditInterview = (iv: any) => {
     setInterviewForm({
-        type: iv.type || "HR Round",
-        date: iv.interviewDate ? iv.interviewDate.substring(0, 16) : "",
-        end_time: iv.end_time ? iv.end_time.substring(0, 16) : "",
-        mode: iv.mode || "Online",
-        interviewers: iv.interviewers || "",
-        meeting_link: iv.meeting_link || "",
-        location: iv.location || "",
-        notes: iv.notes || "",
-        status: iv.status || "Scheduled",
-        feedback: iv.feedback || "",
-        rating: iv.rating || 0,
-        recommendation: iv.recommendation || "",
-        comments: iv.comments || ""
+      type: iv.type || "HR Round",
+      date: iv.interviewDate ? iv.interviewDate.substring(0, 16) : "",
+      end_time: iv.end_time ? iv.end_time.substring(0, 16) : "",
+      mode: iv.mode || "Online",
+      interviewers: iv.interviewers || "",
+      meeting_link: iv.meeting_link || "",
+      location: iv.location || "",
+      notes: iv.notes || "",
+      status: iv.status || "Scheduled",
+      feedback: iv.feedback || "",
+      rating: iv.rating || 0,
+      recommendation: iv.recommendation || "",
+      comments: iv.comments || ""
     });
     setEditingInterviewId(iv.id);
     setScheduleInterviewOpen(true);
@@ -629,7 +630,7 @@ export default function CandidateProfile() {
             </div>
           </Card>
 
-        
+
         </div>
 
         {/* Main Content Area */}
@@ -674,51 +675,52 @@ export default function CandidateProfile() {
                       detail = item.message.split('Status changed:')[1].trim();
                     }
                     return (
-                    <div key={i} className="flex items-start gap-4">
-                      <div
-                        className={cn(
-                          "h-8 w-8 rounded-full border-2 border-white flex items-center justify-center shrink-0 z-10",
-                          i === 0 ? "bg-emerald-100 text-emerald-600" : "bg-slate-100 text-slate-500",
-                        )}
-                      >
-                        {item.message.includes('Created') || item.message.includes('Application') ? <FileText className="h-3.5 w-3.5" /> :
-                          item.message.includes('Interview') ? <Users className="h-3.5 w-3.5" /> :
-                            item.message.includes('Offer') ? <Mail className="h-3.5 w-3.5" /> :
-                              item.message.includes('Reject') || item.message.includes('Decline') ? <Trash2 className="h-3.5 w-3.5" /> :
-                                <Activity className="h-3.5 w-3.5" />}
-                      </div>
-                      <div className="flex-1 pb-1">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <div
+                      <div key={i} className="flex items-start gap-4">
+                        <div
+                          className={cn(
+                            "h-8 w-8 rounded-full border-2 border-white flex items-center justify-center shrink-0 z-10",
+                            i === 0 ? "bg-emerald-100 text-emerald-600" : "bg-slate-100 text-slate-500",
+                          )}
+                        >
+                          {item.message.includes('Created') || item.message.includes('Application') ? <FileText className="h-3.5 w-3.5" /> :
+                            item.message.includes('Interview') ? <Users className="h-3.5 w-3.5" /> :
+                              item.message.includes('Offer') ? <Mail className="h-3.5 w-3.5" /> :
+                                item.message.includes('Reject') || item.message.includes('Decline') ? <Trash2 className="h-3.5 w-3.5" /> :
+                                  <Activity className="h-3.5 w-3.5" />}
+                        </div>
+                        <div className="flex-1 pb-1">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <div
+                                className={cn(
+                                  "text-[11px] font-bold",
+                                  i === 0 ? "text-slate-900" : "text-slate-600",
+                                )}
+                              >
+                                {title}
+                              </div>
+                              <div className="text-[9px] font-bold text-slate-400 mt-0.5">
+                                {formatDateTime(item.at)}
+                              </div>
+                            </div>
+                            <Badge
                               className={cn(
-                                "text-[11px] font-bold",
-                                i === 0 ? "text-slate-900" : "text-slate-600",
+                                "text-[9px] font-bold px-1.5 py-0 rounded border-transparent uppercase tracking-wider",
+                                i === 0 ? "bg-emerald-100 text-emerald-600" : "bg-slate-100 text-slate-500",
                               )}
                             >
-                              {title}
-                            </div>
-                            <div className="text-[9px] font-bold text-slate-400 mt-0.5">
-                              {formatDateTime(item.at)}
-                            </div>
+                              {i === 0 ? "Current" : "Completed"}
+                            </Badge>
                           </div>
-                          <Badge
-                            className={cn(
-                              "text-[9px] font-bold px-1.5 py-0 rounded border-transparent uppercase tracking-wider",
-                              i === 0 ? "bg-emerald-100 text-emerald-600" : "bg-slate-100 text-slate-500",
-                            )}
-                          >
-                            {i === 0 ? "Current" : "Completed"}
-                          </Badge>
+                          {detail && (
+                            <div className="text-[10px] text-slate-500 mt-1 font-medium bg-slate-50 p-1.5 rounded-md border border-slate-100 inline-block">
+                              {detail}
+                            </div>
+                          )}
                         </div>
-                        {detail && (
-                          <div className="text-[10px] text-slate-500 mt-1 font-medium bg-slate-50 p-1.5 rounded-md border border-slate-100 inline-block">
-                            {detail}
-                          </div>
-                        )}
                       </div>
-                    </div>
-                  )})}
+                    )
+                  })}
               </div>
               <div className="mt-5 pt-3 border-t border-slate-100 text-center">
                 <Button variant="link" className="text-blue-600 text-[11px] font-bold" onClick={() => setFullTimelineOpen(true)}>
@@ -746,7 +748,7 @@ export default function CandidateProfile() {
               <div className="space-y-4 flex-1">
                 {candidate.notesList?.slice(0, 3).map((note: any, i: number) => (
                   <div key={i} className="flex gap-3">
-                    
+
                     <div>
                       <div className="flex items-center justify-between gap-2">
                         <span className="text-[11px] font-bold text-slate-900">{note.createdBy}</span>
@@ -1061,7 +1063,7 @@ export default function CandidateProfile() {
                   </table>
                 </div>
                 <div className="mt-2 pt-3 border-t border-slate-100 text-center">
-                  <Button variant="link" className="text-blue-600 text-[11px] font-bold" onClick={() => setFullTimelineOpen(true)}>
+                  <Button variant="link" className="text-blue-600 text-[11px] font-bold" onClick={() => setFullActivityLogOpen(true)}>
                     View Full Activity Log →
                   </Button>
                 </div>
@@ -1120,7 +1122,7 @@ export default function CandidateProfile() {
           </div>
         </div>
 
-        </div>
+      </div>
 
       <AlertDialog open={del} onOpenChange={setDel}>
         <AlertDialogContent>
@@ -1250,51 +1252,101 @@ export default function CandidateProfile() {
                 detail = item.message.split('Status changed:')[1].trim();
               }
               return (
-              <div key={i} className="flex items-start gap-4">
-                <div
-                  className={cn(
-                    "h-8 w-8 rounded-full border-2 border-white flex items-center justify-center shrink-0 z-10",
-                    i === 0 ? "bg-emerald-100 text-emerald-600" : "bg-slate-100 text-slate-500",
-                  )}
-                >
-                  {item.message.includes('Created') || item.message.includes('Application') ? <FileText className="h-3.5 w-3.5" /> :
-                    item.message.includes('Interview') ? <Users className="h-3.5 w-3.5" /> :
-                      item.message.includes('Offer') ? <Mail className="h-3.5 w-3.5" /> :
-                        item.message.includes('Reject') || item.message.includes('Decline') ? <Trash2 className="h-3.5 w-3.5" /> :
-                          <Activity className="h-3.5 w-3.5" />}
-                </div>
-                <div className="flex-1 pb-1">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <div
+                <div key={i} className="flex items-start gap-4">
+                  <div
+                    className={cn(
+                      "h-8 w-8 rounded-full border-2 border-white flex items-center justify-center shrink-0 z-10",
+                      i === 0 ? "bg-emerald-100 text-emerald-600" : "bg-slate-100 text-slate-500",
+                    )}
+                  >
+                    {item.message.includes('Created') || item.message.includes('Application') ? <FileText className="h-3.5 w-3.5" /> :
+                      item.message.includes('Interview') ? <Users className="h-3.5 w-3.5" /> :
+                        item.message.includes('Offer') ? <Mail className="h-3.5 w-3.5" /> :
+                          item.message.includes('Reject') || item.message.includes('Decline') ? <Trash2 className="h-3.5 w-3.5" /> :
+                            <Activity className="h-3.5 w-3.5" />}
+                  </div>
+                  <div className="flex-1 pb-1">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <div
+                          className={cn(
+                            "text-[11px] font-bold",
+                            i === 0 ? "text-slate-900" : "text-slate-600",
+                          )}
+                        >
+                          {title}
+                        </div>
+                        <div className="text-[9px] font-bold text-slate-400 mt-0.5">
+                          {formatDateTime(item.at)}
+                        </div>
+                      </div>
+                      <Badge
                         className={cn(
-                          "text-[11px] font-bold",
-                          i === 0 ? "text-slate-900" : "text-slate-600",
+                          "text-[9px] font-bold px-1.5 py-0 rounded border-transparent uppercase tracking-wider",
+                          i === 0 ? "bg-emerald-100 text-emerald-600" : "bg-slate-100 text-slate-500",
                         )}
                       >
-                        {title}
-                      </div>
-                      <div className="text-[9px] font-bold text-slate-400 mt-0.5">
-                        {formatDateTime(item.at)}
-                      </div>
+                        {i === 0 ? "Current" : "Completed"}
+                      </Badge>
                     </div>
-                    <Badge
-                      className={cn(
-                        "text-[9px] font-bold px-1.5 py-0 rounded border-transparent uppercase tracking-wider",
-                        i === 0 ? "bg-emerald-100 text-emerald-600" : "bg-slate-100 text-slate-500",
-                      )}
-                    >
-                      {i === 0 ? "Current" : "Completed"}
-                    </Badge>
+                    {detail && (
+                      <div className="text-[10px] text-slate-500 mt-1 font-medium bg-slate-50 p-1.5 rounded-md border border-slate-100 inline-block">
+                        {detail}
+                      </div>
+                    )}
                   </div>
-                  {detail && (
-                    <div className="text-[10px] text-slate-500 mt-1 font-medium bg-slate-50 p-1.5 rounded-md border border-slate-100 inline-block">
-                      {detail}
-                    </div>
-                  )}
                 </div>
-              </div>
-            )})}
+              )
+            })}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={fullActivityLogOpen} onOpenChange={setFullActivityLogOpen}>
+        <DialogContent aria-describedby={undefined} className="max-w-3xl bg-white border-0 shadow-2xl rounded-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold text-slate-900">
+              Full Activity Log
+            </DialogTitle>
+          </DialogHeader>
+          <div className="mt-4 overflow-x-auto">
+            <table className="w-full text-left text-[11px]">
+              <thead className="border-b border-slate-100 text-slate-400 font-bold">
+                <tr>
+                  <th className="py-2.5 px-2">Activity</th>
+                  <th className="py-2.5 px-2">Description</th>
+                  <th className="py-2.5 px-2">By</th>
+                  <th className="py-2.5 px-2 text-right">Date & Time</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50 font-semibold text-slate-700">
+                {candidate.activity?.slice().reverse().map((act: any, i: number) => {
+                  const title = act.message.includes(':') ? act.message.split(':')[0] : act.message;
+                  const desc = act.message.includes(':') ? act.message.substring(act.message.indexOf(':') + 1).trim() : act.message;
+                  return (
+                    <tr key={i} className="hover:bg-slate-50 transition-colors">
+                      <td className="py-3 px-2 font-bold text-slate-900">{title}</td>
+                      <td className="py-3 px-2 text-slate-500 max-w-[250px] break-words">{desc}</td>
+                      <td className="py-3 px-2">
+                        <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full text-[9px] font-bold">
+                          {act.author || (act.message.toLowerCase().includes("application received") || act.message.toLowerCase().includes("created") ? "System" : currentUser)}
+                        </span>
+                      </td>
+                      <td className="py-3 px-2 text-right text-slate-400 whitespace-nowrap">
+                        {formatDateTime(act.at)}
+                      </td>
+                    </tr>
+                  );
+                })}
+                {(!candidate.activity || candidate.activity.length === 0) && (
+                  <tr>
+                    <td colSpan={4} className="py-6 text-center text-[11px] font-bold text-slate-400">
+                      No activity found.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
         </DialogContent>
       </Dialog>
@@ -1362,7 +1414,7 @@ export default function CandidateProfile() {
           <div className="space-y-4 mt-4">
             {candidate.notesList?.map((note: any, i: number) => (
               <div key={i} className="flex gap-3 p-4 bg-slate-50 rounded-xl border border-slate-100">
-                
+
                 <div className="flex-1">
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-[12px] font-bold text-slate-900">{note.createdBy}</span>
@@ -1499,7 +1551,7 @@ export default function CandidateProfile() {
           <div className="grid grid-cols-2 gap-4 mt-4">
             <div className="space-y-2">
               <Label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Interview Stage</Label>
-              <Select value={interviewForm.type} onValueChange={(v) => setInterviewForm({...interviewForm, type: v})}>
+              <Select value={interviewForm.type} onValueChange={(v) => setInterviewForm({ ...interviewForm, type: v })}>
                 <SelectTrigger className="h-9 text-[12px] font-semibold"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {INTERVIEW_TYPES.map(t => <SelectItem key={t} value={t} className="text-[12px]">{t}</SelectItem>)}
@@ -1508,7 +1560,7 @@ export default function CandidateProfile() {
             </div>
             <div className="space-y-2">
               <Label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Status</Label>
-              <Select value={interviewForm.status} onValueChange={(v) => setInterviewForm({...interviewForm, status: v})}>
+              <Select value={interviewForm.status} onValueChange={(v) => setInterviewForm({ ...interviewForm, status: v })}>
                 <SelectTrigger className="h-9 text-[12px] font-semibold"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Scheduled" className="text-[12px]">Scheduled</SelectItem>
@@ -1521,11 +1573,11 @@ export default function CandidateProfile() {
             </div>
             <div className="space-y-2">
               <Label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Interview Date *</Label>
-              <Input type="date" value={interviewForm.date} onChange={e => setInterviewForm({...interviewForm, date: e.target.value})} className="h-9 text-[12px] font-semibold" />
+              <Input type="date" value={interviewForm.date} onChange={e => setInterviewForm({ ...interviewForm, date: e.target.value })} className="h-9 text-[12px] font-semibold" />
             </div>
             <div className="space-y-2">
               <Label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Mode</Label>
-              <Select value={interviewForm.mode} onValueChange={(v) => setInterviewForm({...interviewForm, mode: v})}>
+              <Select value={interviewForm.mode} onValueChange={(v) => setInterviewForm({ ...interviewForm, mode: v })}>
                 <SelectTrigger className="h-9 text-[12px] font-semibold"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Online" className="text-[12px]">Online</SelectItem>
@@ -1536,29 +1588,29 @@ export default function CandidateProfile() {
             </div>
             <div className="space-y-2">
               <Label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Interviewer(s)</Label>
-              <Input value={interviewForm.interviewers} onChange={e => setInterviewForm({...interviewForm, interviewers: e.target.value})} placeholder="e.g. Rahul, Neha" className="h-9 text-[12px] font-semibold" />
+              <Input value={interviewForm.interviewers} onChange={e => setInterviewForm({ ...interviewForm, interviewers: e.target.value })} placeholder="e.g. Rahul, Neha" className="h-9 text-[12px] font-semibold" />
             </div>
             <div className="space-y-2">
               <Label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Meeting Link / Location</Label>
-              <Input value={interviewForm.meeting_link} onChange={e => setInterviewForm({...interviewForm, meeting_link: e.target.value})} placeholder="Zoom link or Office room" className="h-9 text-[12px] font-semibold" />
+              <Input value={interviewForm.meeting_link} onChange={e => setInterviewForm({ ...interviewForm, meeting_link: e.target.value })} placeholder="Zoom link or Office room" className="h-9 text-[12px] font-semibold" />
             </div>
-            
+
             {editingInterviewId && interviewForm.status === 'Completed' && (
               <>
                 <div className="col-span-2 space-y-2 pt-4 border-t border-slate-100">
                   <Label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Feedback Summary</Label>
-                  <Input value={interviewForm.feedback} onChange={e => setInterviewForm({...interviewForm, feedback: e.target.value})} placeholder="Brief feedback summary" className="h-9 text-[12px] font-semibold" />
+                  <Input value={interviewForm.feedback} onChange={e => setInterviewForm({ ...interviewForm, feedback: e.target.value })} placeholder="Brief feedback summary" className="h-9 text-[12px] font-semibold" />
                 </div>
                 <div className="col-span-2 space-y-2">
                   <Label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Interviewer Comments</Label>
-                  <Textarea value={interviewForm.comments} onChange={e => setInterviewForm({...interviewForm, comments: e.target.value})} placeholder="Detailed comments" className="h-20 text-[12px] font-semibold resize-none" />
+                  <Textarea value={interviewForm.comments} onChange={e => setInterviewForm({ ...interviewForm, comments: e.target.value })} placeholder="Detailed comments" className="h-20 text-[12px] font-semibold resize-none" />
                 </div>
               </>
             )}
-            
+
             <div className="col-span-2 space-y-2 mt-2">
               <Label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Internal Notes</Label>
-              <Textarea value={interviewForm.notes} onChange={e => setInterviewForm({...interviewForm, notes: e.target.value})} placeholder="Notes for HR..." className="h-16 text-[12px] font-semibold resize-none" />
+              <Textarea value={interviewForm.notes} onChange={e => setInterviewForm({ ...interviewForm, notes: e.target.value })} placeholder="Notes for HR..." className="h-16 text-[12px] font-semibold resize-none" />
             </div>
           </div>
           <div className="flex justify-end gap-3 mt-6">

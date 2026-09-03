@@ -96,16 +96,16 @@ function ManualEmailDraftModal() {
 }
 
 const nav = [
-  { to: "/", label: "Dashboard", icon: LayoutDashboard, roles: ["Administrator", "HR Manager", "Recruiter", "Hiring Manager"], module: "Dashboard" },
+  { to: "/", label: "Dashboard", icon: LayoutDashboard, roles: ["Administrator", "HR Manager", "Recruiter", "Hiring Manager"], module: "dashboard" },
   {
     to: "/jobs",
     label: "Job Openings",
     icon: Briefcase,
     roles: ["Administrator", "HR Manager", "Recruiter"],
-    module: "Job Openings",
+    module: "job_openings",
     children: [
-      { to: "/jobs/all", label: "All Jobs", roles: ["Administrator", "HR Manager", "Recruiter"], module: "Job Openings" },
-      { to: "/jobs/create", label: "Create Job", roles: ["Administrator", "HR Manager", "Recruiter"], module: "Job Openings" },
+      { to: "/jobs/all", label: "All Jobs", roles: ["Administrator", "HR Manager", "Recruiter"], module: "job_openings" },
+      { to: "/jobs/create", label: "Create Job", roles: ["Administrator", "HR Manager", "Recruiter"], module: "job_openings" },
     ],
   },
 
@@ -114,12 +114,12 @@ const nav = [
     label: "Candidates",
     icon: Users,
     roles: ["Administrator", "HR Manager", "Recruiter", "Hiring Manager"],
-    module: "Candidates",
+    module: "candidates",
     children: [
-      { to: "/candidates", label: "All Candidates", roles: ["Administrator", "HR Manager", "Recruiter", "Hiring Manager"], module: "Candidates" },
-      { to: "/candidates/add", label: "Add Candidate", roles: ["Administrator", "HR Manager", "Recruiter"], module: "Candidates" },
-      { to: "/candidates/duplicate-check", label: "Duplicate Check", roles: ["Administrator", "HR Manager", "Recruiter"], module: "Candidates" },
-      { to: "/candidates/timeline", label: "Candidate Timeline", roles: ["Administrator", "HR Manager", "Recruiter"], module: "Candidates" },
+      { to: "/candidates", label: "All Candidates", roles: ["Administrator", "HR Manager", "Recruiter", "Hiring Manager"], module: "candidates" },
+      { to: "/candidates/add", label: "Add Candidate", roles: ["Administrator", "HR Manager", "Recruiter"], module: "candidates" },
+      { to: "/candidates/duplicate-check", label: "Duplicate Check", roles: ["Administrator", "HR Manager", "Recruiter"], module: "candidates" },
+      { to: "/candidates/timeline", label: "Candidate Timeline", roles: ["Administrator", "HR Manager", "Recruiter"], module: "candidates" },
     ],
   },
   /* {
@@ -139,17 +139,17 @@ const nav = [
     label: "Recruitment Pipeline",
     icon: KanbanSquare,
     roles: ["Administrator", "HR Manager", "Recruiter"],
-    module: "Pipeline",
+    module: "pipeline",
   },
   {
     to: "/offers",
     label: "Offers & Joining",
     icon: FileText,
     roles: ["Administrator", "HR Manager"],
-    module: "Offers",
+    module: "offers",
     children: [
-      { to: "/offers/management", label: "Offer Management", roles: ["Administrator", "HR Manager"], module: "Offers" },
-      { to: "/offers/joining-tracker", label: "Joining Tracker", roles: ["Administrator", "HR Manager"], module: "Offers" },
+      { to: "/offers/management", label: "Offer Management", roles: ["Administrator", "HR Manager"], module: "offers" },
+      { to: "/offers/joining-tracker", label: "Joining Tracker", roles: ["Administrator", "HR Manager"], module: "offers" },
     ],
   },
   {
@@ -157,10 +157,10 @@ const nav = [
     label: "Risk Management",
     icon: Ban,
     roles: ["Administrator", "HR Manager"],
-    module: "Risk Management",
+    module: "risk_management",
     children: [
-      { to: "/rejections/rejected", label: "Rejected Candidates", roles: ["Administrator", "HR Manager"], module: "Risk Management" },
-      { to: "/rejections/blacklisted", label: "Blacklisted Candidates", roles: ["Administrator", "HR Manager"], module: "Risk Management" },
+      { to: "/rejections/rejected", label: "Rejected Candidates", roles: ["Administrator", "HR Manager"], module: "risk_management" },
+      { to: "/rejections/blacklisted", label: "Blacklisted Candidates", roles: ["Administrator", "HR Manager"], module: "risk_management" },
     ],
   },
   {
@@ -168,12 +168,12 @@ const nav = [
     label: "Reports",
     icon: BarChart3,
     roles: ["Administrator", "HR Manager"],
-    module: "Reports",
+    module: "reports",
     children: [
-      { to: "/reports/candidate", label: "Candidate Report", roles: ["Administrator", "HR Manager"], module: "Reports" },
-      // { to: "/reports/recruiter-performance", label: "Recruiter Performance", roles: ["Administrator", "HR Manager"], module: "Reports" },
-      // { to: "/reports/hiring", label: "Hiring Report", roles: ["Administrator", "HR Manager"], module: "Reports" },
-      // { to: "/reports/rejection-analysis", label: "Rejection Analysis", roles: ["Administrator", "HR Manager"], module: "Reports" },
+      { to: "/reports/candidate", label: "Candidate Report", roles: ["Administrator", "HR Manager"], module: "reports" },
+      // { to: "/reports/recruiter-performance", label: "Recruiter Performance", roles: ["Administrator", "HR Manager"], module: "reports" },
+      // { to: "/reports/hiring", label: "Hiring Report", roles: ["Administrator", "HR Manager"], module: "reports" },
+      // { to: "/reports/rejection-analysis", label: "Rejection Analysis", roles: ["Administrator", "HR Manager"], module: "reports" },
     ],
   },
   {
@@ -181,9 +181,9 @@ const nav = [
     label: "Alerts Center",
     icon: Bell,
     roles: ["Administrator", "HR Manager", "Recruiter", "Hiring Manager"],
-    module: "Alerts",
+    module: "alerts",
     children: [
-      { to: "/notifications/alerts", label: "Alerts Center", roles: ["Administrator", "HR Manager", "Recruiter", "Hiring Manager"], module: "Alerts" },
+      { to: "/notifications/alerts", label: "Alerts Center", roles: ["Administrator", "HR Manager", "Recruiter", "Hiring Manager"], module: "alerts" },
     ],
   },
   {
@@ -191,12 +191,12 @@ const nav = [
     label: "Email Settings",
     icon: Mail,
     roles: ["Administrator", "HR Manager"],
-    module: "Email Settings",
+    module: "email_settings",
     children: [
-      { to: "/email-settings/templates", label: "Templates", roles: ["Administrator", "HR Manager"], module: "Email Settings" },
-      { to: "/email-settings/send", label: "Send Email", roles: ["Administrator", "HR Manager"], module: "Email Settings" },
-      { to: "/email-settings/smtp", label: "SMTP Settings", roles: ["Administrator", "HR Manager"], module: "Email Settings" },
-      { to: "/email-settings/logs", label: "Delivery Logs", roles: ["Administrator", "HR Manager"], module: "Email Settings" },
+      { to: "/email-settings/templates", label: "Templates", roles: ["Administrator", "HR Manager"], module: "email_settings" },
+      { to: "/email-settings/send", label: "Send Email", roles: ["Administrator", "HR Manager"], module: "email_settings" },
+      { to: "/email-settings/smtp", label: "SMTP Settings", roles: ["Administrator", "HR Manager"], module: "email_settings" },
+      { to: "/email-settings/logs", label: "Delivery Logs", roles: ["Administrator", "HR Manager"], module: "email_settings" },
     ],
   },
   {
@@ -204,13 +204,13 @@ const nav = [
     label: "System Settings",
     icon: Settings,
     roles: ["Administrator", "HR Manager", "Recruiter", "Hiring Manager"],
-    module: "System Settings",
+    module: "system_settings",
     children: [
-      { to: "/system-settings/profile", label: "User Profile", roles: ["Administrator", "HR Manager", "Recruiter", "Hiring Manager"], module: "System Settings" },
-      { to: "/system-settings/roles", label: "User Roles & Permissions", roles: ["Administrator"], module: "Users & Roles" },
-      { to: "/system-settings/departments", label: "Departments", roles: ["Administrator", "HR Manager"], module: "System Settings" },
-      { to: "/recruiters", label: "Recruiters", roles: ["Administrator", "HR Manager"], module: "System Settings" },
-      { to: "/system-settings/error-logs", label: "Error Logs", roles: ["Administrator"], module: "Users & Roles" },
+      { to: "/system-settings/profile", label: "User Profile", roles: ["Administrator", "HR Manager", "Recruiter", "Hiring Manager"] },
+      { to: "/system-settings/roles", label: "User Roles & Permissions", roles: ["Administrator"], module: "users_roles" },
+      { to: "/system-settings/departments", label: "Departments", roles: ["Administrator", "HR Manager"] },
+      { to: "/recruiters", label: "Recruiters", roles: ["Administrator", "HR Manager"] },
+      { to: "/system-settings/error-logs", label: "Error Logs", roles: ["Administrator"], module: "users_roles" },
     ],
   },
 ];

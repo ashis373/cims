@@ -12,7 +12,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 require '../db.php';
 
 // Strict enforcement: Only the Administrator role can access error logs
-$required_module = 'Users & Roles'; // System settings module or similar
+$required_module = 'users_roles';
 $required_permission = 'can_view';
 $allowed_roles = ['Administrator'];
 require_once '../auth_middleware.php';

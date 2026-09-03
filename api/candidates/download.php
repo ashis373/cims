@@ -10,7 +10,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require '../db.php';
-$required_module = 'Candidate Management';
+$required_module = 'candidates';
 $required_permission = 'can_view';
 require_once '../auth_middleware.php';
 

@@ -13,7 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 require '../db.php';
 
-$required_module = 'Job Openings';
+$required_module = 'job_openings';
 $method = $_SERVER['REQUEST_METHOD'];
 
 if ($method === 'POST') $required_permission = 'can_add';

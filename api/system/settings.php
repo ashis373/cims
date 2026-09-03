@@ -7,7 +7,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { exit(0); }
 
 header('Content-Type: application/json');
 require '../db.php';
-$required_module = 'System Settings';
+$required_module = 'system_settings';
 $method = $_SERVER['REQUEST_METHOD'];
 
 if ($method === 'POST') $required_permission = 'can_add';

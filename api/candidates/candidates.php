@@ -11,7 +11,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 include '../db.php';
-$required_module = 'Candidate Management';
+$required_module = 'candidates';
 
 $method = $_SERVER['REQUEST_METHOD'];
 if ($method === 'POST') $required_permission = 'can_add';
@@ -53,15 +53,24 @@ if ($method === 'GET') {
         $inQuery = implode(',', array_fill(0, count($candidateIds), '?'));
         
         // 1. Batch fetch history
-        $stmtHist = $conn->prepare("SELECT * FROM cims_candidate_history WHERE candidate_id IN ($inQuery) ORDER BY createdAt DESC");
+        $stmtHist = $conn->prepare("
+            SELECT h.*, u.full_name, r.role_name 
+            FROM cims_candidate_history h 
+            LEFT JOIN cims_users u ON h.userId = u.id 
+            LEFT JOIN cims_roles r ON u.role_id = r.id 
+            WHERE h.candidate_id IN ($inQuery) 
+            ORDER BY h.createdAt DESC
+        ");
         $stmtHist->execute($candidateIds);
         $allHistory = $stmtHist->fetchAll(PDO::FETCH_ASSOC);
         $histByCand = [];
         foreach ($allHistory as $h) {
+            $author = $h['role_name'] ?: ($h['full_name'] ?: 'System');
             $histByCand[$h['candidate_id']][] = [
                 'id' => $h['id'],
                 'at' => str_replace(' ', 'T', $h['createdAt']),
                 'kind' => 'system',
+                'author' => $author,
                 'message' => $h['action'] . ($h['details'] ? ': ' . $h['details'] : '')
             ];
         }
@@ -177,6 +186,17 @@ if ($method === 'GET') {
 
         $c = $data;
         $id = $c['id'];
+        $userId = isset($payload['user_id']) ? $payload['user_id'] : null;
+        
+        $userName = 'System';
+        if ($userId) {
+            $stmtUser = $conn->prepare("SELECT u.full_name, r.role_name FROM cims_users u LEFT JOIN cims_roles r ON u.role_id = r.id WHERE u.id = ?");
+            $stmtUser->execute([$userId]);
+            $userRow = $stmtUser->fetch(PDO::FETCH_ASSOC);
+            if ($userRow) {
+                $userName = $userRow['full_name'] ?: ($userRow['role_name'] ?: 'System');
+            }
+        }
         
         // Duplicate Check
         $stmtCheck = $conn->prepare("SELECT id FROM cims_candidates WHERE email = ? OR (phone != '' AND phone = ?)");
@@ -242,13 +262,13 @@ if ($method === 'GET') {
         ]);
         
         // 3. Log history
-        $stmtHist = $conn->prepare("INSERT INTO cims_candidate_history (candidate_id, action, details, createdAt) VALUES (?, ?, ?, ?)");
-        $stmtHist->execute([$id, 'Candidate Created', 'Application received from ' . ($c['source'] ?? 'Website'), $now]);
+        $stmtHist = $conn->prepare("INSERT INTO cims_candidate_history (candidate_id, action, details, createdAt, userId) VALUES (?, ?, ?, ?, ?)");
+        $stmtHist->execute([$id, 'Candidate Created', 'Application received from ' . ($c['source'] ?? 'Website'), $now, $userId]);
         
         // 4. Save Notes
         if (isset($c['notes']) && trim($c['notes']) !== '') {
             $stmtNote = $conn->prepare("INSERT INTO cims_candidate_notes (candidate_id, text, createdBy, createdAt) VALUES (?, ?, ?, ?)");
-            $stmtNote->execute([$id, trim($c['notes']), 'System', $now]);
+            $stmtNote->execute([$id, trim($c['notes']), $userName, $now]);
         }
         
         $conn->commit();
@@ -272,6 +292,17 @@ if ($method === 'GET') {
     
     try {
         $conn->beginTransaction();
+        
+        $userId = isset($payload['user_id']) ? $payload['user_id'] : null;
+        $userName = 'System';
+        if ($userId) {
+            $stmtUser = $conn->prepare("SELECT u.full_name, r.role_name FROM cims_users u LEFT JOIN cims_roles r ON u.role_id = r.id WHERE u.id = ?");
+            $stmtUser->execute([$userId]);
+            $userRow = $stmtUser->fetch(PDO::FETCH_ASSOC);
+            if ($userRow) {
+                $userName = $userRow['full_name'] ?: ($userRow['role_name'] ?: 'System');
+            }
+        }
         
         // Check if candidate exists
         $stmt = $conn->prepare("SELECT * FROM cims_candidates WHERE id = ?");
@@ -407,12 +438,12 @@ if ($method === 'GET') {
             // Find the newest activity and insert it
             $latest = end($data['activity']);
             if ($latest && isset($latest['message'])) {
-                $stmtHist = $conn->prepare("INSERT INTO cims_candidate_history (candidate_id, action, details) VALUES (?, ?, ?)");
-                $stmtHist->execute([$id, 'Candidate Updated', $latest['message']]);
+                $stmtHist = $conn->prepare("INSERT INTO cims_candidate_history (candidate_id, action, details, userId) VALUES (?, ?, ?, ?)");
+                $stmtHist->execute([$id, 'Candidate Updated', $latest['message'], $userId]);
             }
         } else {
-            $stmtHist = $conn->prepare("INSERT INTO cims_candidate_history (candidate_id, action) VALUES (?, ?)");
-            $stmtHist->execute([$id, 'Candidate Updated']);
+            $stmtHist = $conn->prepare("INSERT INTO cims_candidate_history (candidate_id, action, userId) VALUES (?, ?, ?)");
+            $stmtHist->execute([$id, 'Candidate Updated', $userId]);
         }
         
         // 4. Update or Add Notes
@@ -420,7 +451,7 @@ if ($method === 'GET') {
             $now = date('Y-m-d H:i:s');
             // If the note doesn't exist for today, create one, otherwise just append/update. Since the UI just passes 'notes', we'll append a new note.
             $stmtNote = $conn->prepare("INSERT INTO cims_candidate_notes (candidate_id, text, createdBy, createdAt) VALUES (?, ?, ?, ?)");
-            $stmtNote->execute([$id, trim($data['notes']), 'System', $now]);
+            $stmtNote->execute([$id, trim($data['notes']), $userName, $now]);
         }
         
         $conn->commit();

@@ -103,7 +103,7 @@ try {
                 }
             }
             
-            // Prevent toggling last super admin
+            // Prevent toggling last Administrator
             $checkAdmin = $conn->prepare("SELECT r.role_name FROM cims_users u JOIN cims_roles r ON u.role_id = r.id WHERE u.id = ?");
             $checkAdmin->execute([$id]);
             $roleName = $checkAdmin->fetchColumn();
@@ -113,7 +113,7 @@ try {
                 $countAdmins = $conn->query("SELECT COUNT(*) FROM cims_users u JOIN cims_roles r ON u.role_id = r.id WHERE r.role_name = 'Administrator' AND u.is_active = 1")->fetchColumn();
                 if ($countAdmins <= 1) {
                     http_response_code(400);
-                    echo json_encode(["status" => "error", "message" => "Cannot deactivate the last active Super Admin account."]);
+                    echo json_encode(["status" => "error", "message" => "Cannot deactivate the last active Administrator account."]);
                     exit;
                 }
             }
@@ -165,7 +165,7 @@ try {
             exit;
         }
 
-        // Prevent deleting last super admin
+        // Prevent deleting last Administrator
         $checkAdmin = $conn->prepare("SELECT r.role_name FROM cims_users u JOIN cims_roles r ON u.role_id = r.id WHERE u.id = ?");
         $checkAdmin->execute([$id]);
         $roleName = $checkAdmin->fetchColumn();
@@ -174,7 +174,7 @@ try {
             $countAdmins = $conn->query("SELECT COUNT(*) FROM cims_users u JOIN cims_roles r ON u.role_id = r.id WHERE r.role_name = 'Administrator'")->fetchColumn();
             if ($countAdmins <= 1) {
                 http_response_code(400);
-                echo json_encode(["status" => "error", "message" => "Cannot delete the last Super Admin account."]);
+                echo json_encode(["status" => "error", "message" => "Cannot delete the last Administrator account."]);
                 exit;
             }
         }

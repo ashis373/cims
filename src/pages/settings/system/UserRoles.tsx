@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 
 type PermissionConfig = {
+  label: string;
   view: boolean;
   add: boolean;
   edit: boolean;
@@ -38,33 +39,33 @@ type PermissionConfig = {
 };
 
 const moduleConfig: Record<string, PermissionConfig> = {
-  "Dashboard": { view: true, add: true, edit: true, delete: true, scopes: ["All", "Assigned"] },
-  "Job Openings": { view: true, add: true, edit: true, delete: true, scopes: ["All", "Assigned"] },
-  "Candidate Management": { view: true, add: true, edit: true, delete: true, scopes: ["All", "Assigned"] },
-  "Interview Tracking": { view: true, add: true, edit: true, delete: true, scopes: ["All", "Assigned"] },
-  "Pipeline Management": { view: true, add: true, edit: true, delete: true, scopes: ["All", "Assigned"] },
-  "Offer Processing": { view: true, add: true, edit: true, delete: true, scopes: ["All", "Assigned"] },
-  "Risk / Blacklist": { view: true, add: true, edit: true, delete: true, scopes: ["All", "Assigned"] },
-  "Reports & Analytics": { view: true, add: true, edit: true, delete: true, scopes: ["All", "Assigned"] },
-  "Alerts & Notifications": { view: true, add: true, edit: true, delete: true, scopes: ["All", "Assigned"] },
-  "Email": { view: true, add: true, edit: true, delete: true, scopes: ["All", "Assigned"] },
-  "Users & Roles": { view: false, add: false, edit: false, delete: false, scopes: ["All"] },
-  "System Settings": { view: true, add: true, edit: true, delete: true, scopes: ["All", "Assigned"] }
+  "dashboard": { label: "Dashboard", view: true, add: true, edit: true, delete: true, scopes: ["All", "Assigned", "None"] },
+  "job_openings": { label: "Job Openings", view: true, add: true, edit: true, delete: true, scopes: ["All", "Assigned", "None"] },
+  "candidates": { label: "Candidates", view: true, add: true, edit: true, delete: true, scopes: ["All", "Assigned", "None"] },
+  "interviews": { label: "Interviews", view: true, add: true, edit: true, delete: true, scopes: ["All", "Assigned", "None"] },
+  "pipeline": { label: "Recruitment Pipeline", view: true, add: true, edit: true, delete: true, scopes: ["All", "Assigned", "None"] },
+  "offers": { label: "Offers & Joining", view: true, add: true, edit: true, delete: true, scopes: ["All", "Assigned", "None"] },
+  "risk_management": { label: "Risk Management", view: true, add: true, edit: true, delete: true, scopes: ["All", "Assigned", "None"] },
+  "reports": { label: "Reports", view: true, add: true, edit: true, delete: true, scopes: ["All", "Assigned", "None"] },
+  "alerts": { label: "Alerts Center", view: true, add: true, edit: true, delete: true, scopes: ["All", "Assigned", "None"] },
+  "email_settings": { label: "Email Settings", view: true, add: true, edit: true, delete: true, scopes: ["All", "Assigned", "None"] },
+  "users_roles": { label: "Users & Roles", view: false, add: false, edit: false, delete: false, scopes: ["All", "None"] },
+  "system_settings": { label: "System Settings", view: true, add: true, edit: true, delete: true, scopes: ["All", "Assigned", "None"] }
 };
 
 const moduleIcons: Record<string, any> = {
-  "Dashboard": Gauge,
-  "Job Openings": Briefcase,
-  "Candidate Management": Users2,
-  "Interview Tracking": Calendar,
-  "Pipeline Management": Filter,
-  "Offer Processing": MailOpen,
-  "Risk / Blacklist": Shield,
-  "Reports & Analytics": BarChart3,
-  "Alerts & Notifications": Bell,
-  "Email": Mail,
-  "Users & Roles": UserCog,
-  "System Settings": Settings
+  "dashboard": Gauge,
+  "job_openings": Briefcase,
+  "candidates": Users2,
+  "interviews": Calendar,
+  "pipeline": Filter,
+  "offers": MailOpen,
+  "risk_management": Shield,
+  "reports": BarChart3,
+  "alerts": Bell,
+  "email_settings": Mail,
+  "users_roles": UserCog,
+  "system_settings": Settings
 };
 
 const mockModules = Object.keys(moduleConfig);
@@ -170,13 +171,37 @@ export default function UserRoles() {
           if (res.status === "success") {
             const permMap = getInitPermissions();
             res.data.forEach((p: any) => {
-              permMap[p.module_name] = {
-                view: !!p.can_view,
-                add: !!p.can_add,
-                edit: !!p.can_edit,
-                delete: !!p.can_delete,
-                scope: p.scope || 'Assigned'
-              };
+              const config = moduleConfig[p.module_name];
+              let scope = p.scope || 'Assigned';
+              let view = !!p.can_view;
+              let add = !!p.can_add;
+              let edit = !!p.can_edit;
+              let deletePerm = !!p.can_delete;
+              
+              // Auto-correct state mismatches from DB
+              if (config) {
+                if (scope === 'All') {
+                  view = true; add = true; edit = true; deletePerm = true;
+                } else if (scope === 'None') {
+                  view = false; add = false; edit = false; deletePerm = false;
+                } else {
+                  const allChecked = view && add && edit && deletePerm;
+                  const noneChecked = !view && !add && !edit && !deletePerm;
+                  if (allChecked && config.scopes.includes('All')) scope = 'All';
+                  else if (noneChecked && config.scopes.includes('None')) scope = 'None';
+                  else if (config.scopes.includes('Assigned')) scope = 'Assigned';
+                }
+              }
+
+              if (permMap[p.module_name]) {
+                permMap[p.module_name] = {
+                  view,
+                  add,
+                  edit,
+                  delete: deletePerm,
+                  scope
+                };
+              }
             });
             setPermissions(permMap);
             setIsRoleModalOpen(true);
@@ -193,13 +218,35 @@ export default function UserRoles() {
   const updatePermission = (mod: string, field: keyof PermissionEntry, val: any) => {
     setPermissions(prev => {
       const updated = { ...prev[mod], [field]: val };
-      // Auto-check all permissions if scope is set to 'All'
-      if (field === 'scope' && val === 'All') {
-        updated.view = true;
-        updated.add = true;
-        updated.edit = true;
-        updated.delete = true;
+      const config = moduleConfig[mod];
+      
+      // Auto-check all permissions if scope is set to 'All', or uncheck if 'None'
+      if (field === 'scope') {
+        if (val === 'All') {
+          updated.view = true;
+          updated.add = true;
+          updated.edit = true;
+          updated.delete = true;
+        } else if (val === 'None') {
+          updated.view = false;
+          updated.add = false;
+          updated.edit = false;
+          updated.delete = false;
+        }
+      } else {
+        // A checkbox was changed. Auto-update scope.
+        const allChecked = updated.view && updated.add && updated.edit && updated.delete;
+        const noneChecked = !updated.view && !updated.add && !updated.edit && !updated.delete;
+        
+        if (allChecked && config.scopes.includes('All')) {
+          updated.scope = 'All';
+        } else if (noneChecked && config.scopes.includes('None')) {
+          updated.scope = 'None';
+        } else if (config.scopes.includes('Assigned')) {
+          updated.scope = 'Assigned';
+        }
       }
+      
       return {
         ...prev,
         [mod]: updated
@@ -344,7 +391,7 @@ export default function UserRoles() {
         <ShieldAlert className="h-20 w-20 text-rose-500 mb-6 opacity-80" />
         <h1 className="text-3xl font-black tracking-tight text-slate-900 mb-2">403 Access Denied</h1>
         <p className="text-slate-500 max-w-md text-center">
-          You do not have the required permissions to view or manage User Roles. Only Super Administrators can access this page.
+          You do not have the required permissions to view or manage User Roles. Only Administrators can access this page.
         </p>
         <Button 
           onClick={() => window.history.back()}
@@ -591,6 +638,7 @@ export default function UserRoles() {
                       <ul className="space-y-1.5 list-disc list-inside">
                         <li><strong>All</strong> &ndash; Access all records.</li>
                         <li><strong>Assigned</strong> &ndash; Access only records assigned to the user by admin.</li>
+                        <li><strong>None</strong> &ndash; No access to this module.</li>
                       </ul>
                     </div>
                   </div>
@@ -637,7 +685,7 @@ export default function UserRoles() {
                                   <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-slate-50/50 border border-slate-100/50">
                                     <Icon className="w-4 h-4 text-indigo-500" strokeWidth={2} />
                                   </div>
-                                  <span className="font-bold text-[13px] text-slate-700">{mod}</span>
+                                  <span className="font-bold text-[13px] text-slate-700">{config.label}</span>
                                 </div>
                               </td>
                               <td className="px-3 py-4"><div className="flex justify-center"><CheckBox checked={p.view} allowed={config.view} onChange={v => updatePermission(mod, 'view', v)} /></div></td>

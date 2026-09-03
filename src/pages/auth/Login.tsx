@@ -52,7 +52,7 @@ export default function Login() {
   };
 
   const testAccounts = [
-    { role: "Super Admin", email: "ashiskrout1@gmail.com", pass: "Admin@123" },
+    { role: "Administrator", email: "ashiskrout1@gmail.com", pass: "Admin@123" },
     { role: "HR Manager", email: "hrmanager@hireflow.com", pass: "HRManager@123" },
     { role: "Recruiter", email: "recruiter@hireflow.com", pass: "Recruiter@123" },
     { role: "Hiring Manager", email: "hiringmanager@hireflow.com", pass: "HiringManager@123" },

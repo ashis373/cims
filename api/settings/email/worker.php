@@ -14,7 +14,7 @@ require '../../vendor/autoload.php';
 
 // Allow execution without JWT if running directly from CLI (Cron Job)
 if (php_sapi_name() !== 'cli') {
-    $required_module = 'Email';
+$required_module = 'email_settings';
     $required_permission = 'can_view'; // or just general access
     require_once '../../auth_middleware.php';
 }
