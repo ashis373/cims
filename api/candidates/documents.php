@@ -4,22 +4,17 @@ header("Access-Control-Allow-Origin: $origin");
 header("Access-Control-Allow-Credentials: true");
 header("Access-Control-Allow-Methods: POST, DELETE, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
-
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit(0);
 }
-
 include '../db.php';
-$required_module = 'candidates';
-
 $method = $_SERVER['REQUEST_METHOD'];
 if ($method === 'POST') $required_permission = 'can_add';
 else if ($method === 'PUT') $required_permission = 'can_edit';
 else if ($method === 'DELETE') $required_permission = 'can_delete';
 else $required_permission = 'can_view';
-
 require_once '../auth_middleware.php';
-
+require_permission('candidates');
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_FILES['file']) && $_FILES['file']['error'] === UPLOAD_ERR_OK && isset($_POST['candidate_id'])) {
         $uploadDir = '../../uploads/candidates/documents/';
@@ -80,7 +75,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt = $conn->prepare("SELECT filePath FROM cims_candidate_documents WHERE id = ?");
         $stmt->execute([$data['id']]);
         $doc = $stmt->fetch(PDO::FETCH_ASSOC);
-
         if ($doc) {
             $filePath = '../../uploads/candidates/documents/' . $doc['filePath'];
             if (file_exists($filePath)) {

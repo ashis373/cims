@@ -69,25 +69,47 @@ if (isset($allowed_roles) && is_array($allowed_roles) && count($allowed_roles) >
     }
 }
 
-// Optional Module Permission Check
+// Backward compatibility: Optional Module Permission Check
 if (isset($required_module)) {
+    require_permission($required_module, isset($required_permission) ? str_replace('can_', '', $required_permission) : null);
+}
+
+function require_permission($module, $action = null) {
+    global $conn, $currentUser;
+    
+    if (!$action) {
+        $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+        switch ($method) {
+            case 'POST': $action = 'add'; break;
+            case 'PUT': $action = 'edit'; break;
+            case 'DELETE': $action = 'delete'; break;
+            case 'GET': default: $action = 'view'; break;
+        }
+    }
+    
     // Admins always bypass module checks
-    $stmt = $conn->prepare("SELECT r.role_name, r.id as role_id FROM cims_users u JOIN cims_roles r ON u.role_id = r.id WHERE u.id = ?");
+    global $moduleScope;
+    
+    $stmt = $conn->prepare("SELECT r.role_name, r.is_system_admin, r.id as role_id FROM cims_users u JOIN cims_roles r ON u.role_id = r.id WHERE u.id = ?");
     $stmt->execute([$currentUser]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
     
-    if ($user && $user['role_name'] !== 'Administrator') {
-        $permStmt = $conn->prepare("SELECT can_view, can_add, can_edit, can_delete FROM cims_permissions WHERE role_id = ? AND module_name = ?");
-        $permStmt->execute([$user['role_id'], $required_module]);
+    if ($user && $user['is_system_admin'] == 1) {
+        $moduleScope = 'All';
+    } elseif ($user) {
+        $permStmt = $conn->prepare("SELECT can_view, can_add, can_edit, can_delete, scope FROM cims_permissions WHERE role_id = ? AND module_name = ?");
+        $permStmt->execute([$user['role_id'], $module]);
         $perms = $permStmt->fetch(PDO::FETCH_ASSOC);
         
-        $reqPerm = isset($required_permission) ? $required_permission : 'can_view';
+        $reqPerm = 'can_' . $action;
         
         if (!$perms || ($perms[$reqPerm] !== 1 && $perms[$reqPerm] !== "1")) {
             http_response_code(403);
             echo json_encode(["status" => "error", "message" => "You do not have access to perform this action. Please contact the Administrator."]);
             exit;
         }
+        
+        $moduleScope = $perms['scope'] ?? 'Assigned';
     }
 }
 

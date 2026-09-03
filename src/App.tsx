@@ -133,14 +133,14 @@ function App() {
                       {/* Others */}
                       <Route path="/notifications/alerts" element={<Notifications />} />
                       {/* System Settings & Email (Admin/HR only) */}
-                      <Route path="/email-settings/templates" element={<PrivateRoute requiredModule="Email Settings"><EmailTemplates /></PrivateRoute>} />
-                      <Route path="/email-settings/send" element={<PrivateRoute requiredModule="Email Settings"><SendTemplate /></PrivateRoute>} />
-                      <Route path="/email-settings/smtp" element={<PrivateRoute requiredModule="Email Settings"><SmtpSettings /></PrivateRoute>} />
-                      <Route path="/email-settings/logs" element={<PrivateRoute requiredModule="Email Settings"><DeliveryLogs /></PrivateRoute>} />
+                      <Route path="/email-settings/templates" element={<PrivateRoute requiredModule="email_settings"><EmailTemplates /></PrivateRoute>} />
+                      <Route path="/email-settings/send" element={<PrivateRoute requiredModule="email_settings"><SendTemplate /></PrivateRoute>} />
+                      <Route path="/email-settings/smtp" element={<PrivateRoute requiredModule="email_settings"><SmtpSettings /></PrivateRoute>} />
+                      <Route path="/email-settings/logs" element={<PrivateRoute requiredModule="email_settings"><DeliveryLogs /></PrivateRoute>} />
                       <Route path="/system-settings/profile" element={<UserProfile />} />
                       <Route path="/system-settings/roles" element={<PrivateRoute allowedRoles={["Administrator"]}><UserRoles /></PrivateRoute>} />
-                      <Route path="/system-settings/departments" element={<PrivateRoute requiredModule="System Settings"><Departments /></PrivateRoute>} />
-                      <Route path="/system-settings/general" element={<PrivateRoute requiredModule="System Settings"><SystemSettings /></PrivateRoute>} />
+                      <Route path="/system-settings/departments" element={<PrivateRoute requiredModule="system_settings"><Departments /></PrivateRoute>} />
+                      <Route path="/system-settings/general" element={<PrivateRoute requiredModule="system_settings"><SystemSettings /></PrivateRoute>} />
                       <Route path="/system-settings/error-logs" element={<PrivateRoute allowedRoles={["Administrator"]}><ErrorLogs /></PrivateRoute>} />
 
                       <Route path="*" element={<NotFound />} />

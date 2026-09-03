@@ -1,0 +1,1 @@
+2026-09-03 14:44:54 PAYLOAD: {"type":"Technical","date":"2026-09-17","end_time":"","mode":"Offline","interviewers":"neha","meeting_link":"zoom","location":"","notes":"ok","status":"Completed","feedback":"","rating":0,"recommendation":"","comments":"","candidate_id":"bsh1m8x0mtk34fb5","application_id":223}

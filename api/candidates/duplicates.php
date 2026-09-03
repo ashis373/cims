@@ -4,20 +4,17 @@ header("Access-Control-Allow-Origin: $origin");
 header("Access-Control-Allow-Credentials: true");
 header("Access-Control-Allow-Methods: GET, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
-
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit(0);
 }
-
 include '../db.php';
-$required_module = 'candidates';
 $method = $_SERVER['REQUEST_METHOD'];
 if ($method === 'POST') $required_permission = 'can_add';
 else if ($method === 'PUT') $required_permission = 'can_edit';
 else if ($method === 'DELETE') $required_permission = 'can_delete';
 else $required_permission = 'can_view';
 require_once '../auth_middleware.php';
-
+require_permission('candidates');
 try {
     // 1. Exact Duplicates (Same Email or Phone)
     $stmtExact = $conn->query("
@@ -32,7 +29,6 @@ try {
         ORDER BY c.email, c.phone, c.updatedAt DESC
     ");
     $exactDuplicates = $stmtExact->fetchAll(PDO::FETCH_ASSOC);
-
     // 2. Possible Duplicates (Same Name)
     $stmtPossible = $conn->query("
         SELECT c.*, a.stage 
@@ -50,12 +46,10 @@ try {
     $filteredPossible = array_filter($possibleDuplicates, function($cand) use ($exactIds) {
         return !in_array($cand['id'], $exactIds);
     });
-
     $results = [
         'exact' => array_values($exactDuplicates),
         'possible' => array_values($filteredPossible)
     ];
-
     echo json_encode($results);
 } catch (PDOException $e) {
     http_response_code(500);

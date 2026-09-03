@@ -5,33 +5,24 @@ header("Access-Control-Allow-Credentials: true");
 header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
 header("Content-Type: application/json");
-
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit(0);
 }
-
 include '../db.php';
-$required_module = 'candidates';
-
 $method = $_SERVER['REQUEST_METHOD'];
 if ($method === 'POST') $required_permission = 'can_add';
 else if ($method === 'PUT') $required_permission = 'can_edit';
 else if ($method === 'DELETE') $required_permission = 'can_delete';
 else $required_permission = 'can_view';
-
 require_once '../auth_middleware.php';
-
+require_permission('candidates');
 require '../vendor/autoload.php';
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
-
-
-
 // Helper function to extract date
 function parseDate($dateStr) {
     return (isset($dateStr) && $dateStr) ? date('Y-m-d H:i:s', strtotime($dateStr)) : null;
 }
-
 if ($method === 'GET') {
     try {
         // Fetch candidates with primary application details
@@ -47,7 +38,6 @@ if ($method === 'GET') {
             echo json_encode([]);
             exit;
         }
-
         // Collect all IDs for batch querying
         $candidateIds = array_column($results, 'id');
         $inQuery = implode(',', array_fill(0, count($candidateIds), '?'));
@@ -74,7 +64,6 @@ if ($method === 'GET') {
                 'message' => $h['action'] . ($h['details'] ? ': ' . $h['details'] : '')
             ];
         }
-
         // 2. Batch fetch notes
         $stmtNotes = $conn->prepare("SELECT * FROM cims_candidate_notes WHERE candidate_id IN ($inQuery) ORDER BY createdAt DESC");
         $stmtNotes->execute($candidateIds);
@@ -84,7 +73,6 @@ if ($method === 'GET') {
             if ($n['createdAt']) $n['createdAt'] = str_replace(' ', 'T', $n['createdAt']);
             $notesByCand[$n['candidate_id']][] = $n; 
         }
-
         // 3. Batch fetch documents
         $stmtDocs = $conn->prepare("SELECT * FROM cims_candidate_documents WHERE candidate_id IN ($inQuery) ORDER BY uploadedAt DESC");
         $stmtDocs->execute($candidateIds);
@@ -94,7 +82,6 @@ if ($method === 'GET') {
             if ($d['uploadedAt']) $d['uploadedAt'] = str_replace(' ', 'T', $d['uploadedAt']);
             $docsByCand[$d['candidate_id']][] = $d; 
         }
-
         // 4. Batch fetch alerts (rejections)
         $stmtRej = $conn->prepare("SELECT * FROM cims_candidate_rejections WHERE candidate_id IN ($inQuery) ORDER BY recordedAt DESC");
         $stmtRej->execute($candidateIds);
@@ -104,7 +91,6 @@ if ($method === 'GET') {
             if ($r['recordedAt']) $r['recordedAt'] = str_replace(' ', 'T', $r['recordedAt']);
             $rejByCand[$r['candidate_id']][] = $r; 
         }
-
         // 5. Batch fetch applications
         $stmtApps = $conn->prepare("SELECT * FROM cims_applications WHERE candidate_id IN ($inQuery) ORDER BY appliedAt DESC");
         $stmtApps->execute($candidateIds);
@@ -114,7 +100,6 @@ if ($method === 'GET') {
             if ($a['appliedAt']) $a['appliedAt'] = str_replace(' ', 'T', $a['appliedAt']);
             $appsByCand[$a['candidate_id']][] = $a; 
         }
-
         // 6. Batch fetch interviews (via applications)
         $stmtInt = $conn->prepare("SELECT i.*, a.candidate_id FROM cims_candidate_interviews i JOIN cims_applications a ON i.application_id = a.id WHERE a.candidate_id IN ($inQuery) ORDER BY i.interviewDate DESC");
         $stmtInt->execute($candidateIds);
@@ -126,7 +111,6 @@ if ($method === 'GET') {
             elseif (!empty($i['createdAt'])) $i['createdAt'] = str_replace(' ', 'T', $i['createdAt']);
             $intByCand[$i['candidate_id']][] = $i; 
         }
-
         // 7. Batch fetch email logs
         $stmtEmail = $conn->prepare("SELECT * FROM cims_email_logs WHERE candidate_id IN ($inQuery) ORDER BY sent_at DESC");
         $stmtEmail->execute($candidateIds);
@@ -136,7 +120,6 @@ if ($method === 'GET') {
             if (!empty($e['sent_at'])) $e['sent_at'] = str_replace(' ', 'T', $e['sent_at']);
             $emailsByCand[$e['candidate_id']][] = $e;
         }
-
         // Hydrate results
         foreach ($results as &$row) {
             $cid = $row['id'];
@@ -180,10 +163,8 @@ if ($method === 'GET') {
         echo json_encode(["error" => "Invalid input"]);
         exit;
     }
-
     try {
         $conn->beginTransaction();
-
         $c = $data;
         $id = $c['id'];
         $userId = isset($payload['user_id']) ? $payload['user_id'] : null;
@@ -206,7 +187,6 @@ if ($method === 'GET') {
             echo json_encode(["error" => "A candidate with this email or phone already exists."]);
             exit;
         }
-
         // 1. Insert into cims_candidates table
         $stmtCand = $conn->prepare("INSERT INTO cims_candidates (
             id, name, email, phone, alternateMobile, location, preferredLocation, 
@@ -314,7 +294,6 @@ if ($method === 'GET') {
             echo json_encode(["error" => "Candidate not found"]);
             exit;
         }
-
         // Fetch old application stage
         $stmtAppOld = $conn->prepare("SELECT role_applied as role, stage FROM cims_applications WHERE candidate_id = ?");
         $stmtAppOld->execute([$id]);
@@ -488,3 +467,4 @@ if ($method === 'GET') {
     }
 }
 ?>
+

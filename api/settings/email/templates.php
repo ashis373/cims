@@ -4,23 +4,17 @@ header("Access-Control-Allow-Origin: $origin");
 header("Access-Control-Allow-Credentials: true");
 header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
-
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit(0);
 }
-
 include '../../db.php';
-
-$required_module = 'email_settings';
 $method = $_SERVER['REQUEST_METHOD'];
-
 if ($method === 'POST') $required_permission = 'can_add';
 else if ($method === 'PUT') $required_permission = 'can_edit';
 else if ($method === 'DELETE') $required_permission = 'can_delete';
 else $required_permission = 'can_view';
-
 require_once '../../auth_middleware.php';
-
+require_permission('email_settings');
 if ($method === 'GET') {
     try {
         $stmt = $conn->query("SELECT id, name, subject, body, category as type, is_active, sending_method, DATE_FORMAT(updated_at, '%Y-%m-%d') as updatedAt FROM cims_email_templates ORDER BY id DESC");

@@ -28,6 +28,26 @@ try {
     }
 
     if ($method === 'POST') {
+        if ($action === 'upload_photo') {
+            $id = $_POST['id'] ?? null;
+            if (!$id) { http_response_code(400); echo json_encode(['status' => 'error', 'message' => 'User ID is required']); exit; }
+            $file = $_FILES['photo'] ?? null;
+            if ($file) {
+                $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+                $uploadDir = '../../uploads/profiles/';
+                if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
+                $fileName = 'user_' . $id . '_' . time() . '.' . $ext;
+                $destPath = $uploadDir . $fileName;
+                if (move_uploaded_file($file['tmp_name'], $destPath)) {
+                    $photoUrl = '../../uploads/profiles/' . $fileName;
+                    $conn->prepare('UPDATE cims_users SET profile_photo=? WHERE id=?')->execute([$photoUrl, $id]);
+                    echo json_encode(['status' => 'success', 'photo_url' => $photoUrl]); exit;
+                }
+            }
+            http_response_code(400); echo json_encode(['status' => 'error', 'message' => 'Upload failed']); exit;
+        }
+
+
         $data = json_decode(file_get_contents("php://input"), true);
         if (empty($data['email']) || empty($data['password']) || empty($data['full_name']) || empty($data['role_id'])) {
             http_response_code(400);
@@ -61,7 +81,7 @@ try {
         $logStmt = $conn->prepare("INSERT INTO cims_audit_logs (user_id, action, module, details) VALUES (?, 'Create User', 'Users', ?)");
         $logStmt->execute([$_SESSION['user_id'], json_encode(['created_user_id' => $new_id, 'email' => $data['email']])]);
         
-        echo json_encode(["status" => "success", "message" => "User created successfully"]);
+        echo json_encode(["status" => "success", "message" => "User created successfully", "data" => ["id" => $new_id]]);
         exit;
     }
 
@@ -194,3 +214,5 @@ try {
     echo json_encode(["status" => "error", "message" => $e->getMessage()]);
 }
 ?>
+
+

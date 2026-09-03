@@ -4,63 +4,49 @@ header("Access-Control-Allow-Origin: $origin");
 header("Access-Control-Allow-Credentials: true");
 header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
-
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit(0);
 }
-
 include '../../db.php';
-
-$required_module = 'email_settings';
 $method = $_SERVER['REQUEST_METHOD'];
 if ($method === 'POST') $required_permission = 'can_add';
 else if ($method === 'PUT') $required_permission = 'can_edit';
 else if ($method === 'DELETE') $required_permission = 'can_delete';
 else $required_permission = 'can_view';
 require_once '../../auth_middleware.php';
-
+require_permission('email_settings');
 require_once 'mailer.php';
-
 $data = json_decode(file_get_contents("php://input"), true);
-
 if (!isset($data['candidate_id']) || !isset($data['stage'])) {
     echo json_encode(["success" => false, "message" => "Missing parameters"]);
     exit;
 }
-
 $candidate_id = $data['candidate_id'];
 $stage = $data['stage'];
-
 $stageToCategory = [
     'Interview Scheduled' => 'Interview',
     'Offer Released' => 'Offer',
     'Rejected' => 'Rejection'
 ];
-
 if (!isset($stageToCategory[$stage])) {
     echo json_encode(["success" => true, "method" => "None", "message" => "No template mapped for this stage"]);
     exit;
 }
-
 $category = $stageToCategory[$stage];
-
 try {
     // 1. Find active template for this category
     $stmt = $conn->prepare("SELECT id, subject, body, sending_method, is_active FROM cims_email_templates WHERE category = ? AND is_active = 1 LIMIT 1");
     $stmt->execute([$category]);
     $template = $stmt->fetch(PDO::FETCH_ASSOC);
-
     if (!$template) {
         echo json_encode(["success" => true, "method" => "None", "message" => "No active template found"]);
         exit;
     }
-
     // 2. Fetch Candidate details
     // Ensure we handle both string and int IDs if candidate_id is string like 'c123'
     $candStmt = $conn->prepare("SELECT * FROM cims_candidates WHERE id = ?");
     $candStmt->execute([$candidate_id]);
     $candidate = $candStmt->fetch(PDO::FETCH_ASSOC);
-
     if (!$candidate) {
         echo json_encode(["success" => false, "message" => "Candidate not found"]);
         exit;
@@ -70,18 +56,15 @@ try {
     // Actually the frontend passes local string IDs? Let's check candidate table structure.
     // If not found in cims_candidates, maybe the candidate hasn't been saved yet?
     // Wait, syncPut happens BEFORE we call trigger.php, so candidate should be there.
-
     // 3. Prevent Duplicates
     $recipient_email = $candidate['email'];
     $unique_hash = md5($template['id'] . "_" . $candidate_id);
-
     $checkStmt = $conn->prepare("SELECT id FROM cims_email_logs WHERE unique_hash = ?");
     $checkStmt->execute([$unique_hash]);
     if ($checkStmt->rowCount() > 0) {
         echo json_encode(["success" => false, "message" => "Email already sent previously."]);
         exit;
     }
-
     // 4. Replace Placeholders
     $subject = str_replace("{{company_name}}", "Hireflow Solutions", $template['subject']);
     $body = $template['body'];
@@ -90,7 +73,6 @@ try {
     $body = str_replace("{{role}}", $candidate['role'] ?? 'the position', $body);
     $subject = str_replace("{{candidate_name}}", $candidate['name'] ?? 'Candidate', $subject);
     $subject = str_replace("{{role}}", $candidate['role'] ?? 'the position', $subject);
-
     if ($template['sending_method'] === 'Automatic') {
         // Send email automatically
         $res = sendEventEmailDirect($conn, $template, $candidate, $subject, $body, $unique_hash);
@@ -114,7 +96,6 @@ try {
     http_response_code(500);
     echo json_encode(["success" => false, "message" => $e->getMessage()]);
 }
-
 // Helper to send directly without re-fetching template
 function sendEventEmailDirect($conn, $template, $candidate, $subject, $body, $unique_hash) {
     $recipient_email = $candidate['email'];
@@ -124,10 +105,8 @@ function sendEventEmailDirect($conn, $template, $candidate, $subject, $body, $un
     $smtp = $smtpStmt->fetch(PDO::FETCH_ASSOC);
     $fromName = $smtp['from_name'] ?? "ATS System";
     $fromEmail = $smtp['from_email'] ?? "no-reply@ats.local";
-
     $mailSent = true; // Simulated success
     $status = $mailSent ? 'Delivered' : 'Failed';
-
     $logStmt = $conn->prepare("
         INSERT INTO cims_email_logs (recipient_email, subject, body, template_id, candidate_id, status, unique_hash, created_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
@@ -141,7 +120,6 @@ function sendEventEmailDirect($conn, $template, $candidate, $subject, $body, $un
         $status,
         $unique_hash
     ]);
-
     return ["success" => $mailSent, "message" => "Email delivered automatically."];
 }
 ?>

@@ -4,27 +4,21 @@ header("Access-Control-Allow-Origin: $origin");
 header("Access-Control-Allow-Credentials: true");
 header("Access-Control-Allow-Methods: GET, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
-
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit(0);
 }
-
 include '../db.php';
-
-$required_module = 'candidates';
 $required_permission = 'can_view';
 require_once '../auth_middleware.php';
-
+require_permission('candidates');
 $id = $_GET['id'] ?? null;
 $params = [];
-
 $whereHist = "";
 $whereNotes = "";
 $whereInt = "";
 $whereRej = "";
 $whereApp = "";
 $whereEmail = "";
-
 if ($id) {
     $whereHist = "WHERE h.candidate_id = ?";
     $whereNotes = "WHERE n.candidate_id = ?";
@@ -35,7 +29,6 @@ if ($id) {
     // Since there are 6 union queries, we need the ID 6 times
     $params = [$id, $id, $id, $id, $id, $id];
 }
-
 try {
     // We use UNION ALL to combine the results directly in MySQL
     // Then we order by the timestamp descending in the final combined dataset
@@ -126,11 +119,9 @@ try {
         )
         ORDER BY timestamp DESC
     ";
-
     $stmt = $conn->prepare($query);
     $stmt->execute($params);
     $timeline = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
     echo json_encode($timeline);
 } catch (PDOException $e) {
     http_response_code(500);

@@ -5,24 +5,19 @@ header("Access-Control-Allow-Credentials: true");
 header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
 header("Content-Type: application/json");
-
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit(0);
 }
-
 include '../db.php';
-$required_module = 'system_settings';
-
 $method = $_SERVER['REQUEST_METHOD'];
 if ($method === 'POST') $required_permission = 'can_add';
 else if ($method === 'PUT') $required_permission = 'can_edit';
 else if ($method === 'DELETE') $required_permission = 'can_delete';
 else $required_permission = 'can_view';
-
 require_once '../auth_middleware.php';
-
-
-
+if ($method !== 'GET') {
+    require_permission('system_settings');
+}
 if ($method === 'GET') {
     try {
         $stmt = $conn->query("
@@ -113,3 +108,8 @@ if ($method === 'GET') {
     }
 }
 ?>
+
+
+
+
+

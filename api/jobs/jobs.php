@@ -5,24 +5,18 @@ header("Access-Control-Allow-Credentials: true");
 header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
 header("Content-Type: application/json");
-
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     exit();
 }
-
 require '../db.php';
-
-$required_module = 'job_openings';
 $method = $_SERVER['REQUEST_METHOD'];
-
 if ($method === 'POST') $required_permission = 'can_add';
 else if ($method === 'PUT') $required_permission = 'can_edit';
 else if ($method === 'DELETE') $required_permission = 'can_delete';
 else $required_permission = 'can_view';
-
 require_once '../auth_middleware.php';
-
+require_permission('job_openings');
 try {
     if ($method == 'GET') {
         $stmt = $conn->query("
@@ -67,7 +61,6 @@ try {
         $maxId = $stmt->fetchColumn() ?? 0;
         $jobId = "JOB-" . str_pad($maxId + 1, 3, "0", STR_PAD_LEFT);
         $date = date("M d, Y");
-
         $sql = "INSERT INTO cims_jobs (job_id, title, department, location, openings, applications, status, date, author, recruiter, job_type, work_mode, min_exp, max_exp, min_salary, max_salary, description, target_date, priority, internal_notes) VALUES (?, ?, ?, ?, ?, 0, 'Open', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         $stmt = $conn->prepare($sql);
         $stmt->execute([$jobId, $title, $department, $location, $openings, $date, $author, $recruiter, $job_type, $work_mode, $min_exp, $max_exp, $min_salary, $max_salary, $description, $target_date, $priority, $internal_notes]);
@@ -92,7 +85,6 @@ try {
             echo json_encode(["error" => "Missing job_id"]);
             exit;
         }
-
         $fields = [];
         $params = [];
         

@@ -5,24 +5,19 @@ header("Access-Control-Allow-Credentials: true");
 header("Content-Type: application/json; charset=UTF-8");
 header("Access-Control-Allow-Methods: POST, GET, PUT, DELETE, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
-
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     exit();
 }
-
 include '../db.php';
-
-$required_module = 'candidates';
 $method = $_SERVER['REQUEST_METHOD'];
 if ($method === 'POST') $required_permission = 'can_add';
 else if ($method === 'PUT') $required_permission = 'can_edit';
 else if ($method === 'DELETE') $required_permission = 'can_delete';
 else $required_permission = 'can_view';
 require_once '../auth_middleware.php';
-
+require_permission('candidates');
 $method = $_SERVER['REQUEST_METHOD'];
-
 if ($method === 'POST') {
     $data = json_decode(file_get_contents("php://input"), true);
     if (!$data || !isset($data['candidate_id']) || !isset($data['text'])) {
@@ -30,7 +25,6 @@ if ($method === 'POST') {
         echo json_encode(["error" => "Invalid input"]);
         exit;
     }
-
     try {
         $stmt = $conn->prepare("INSERT INTO cims_candidate_notes (candidate_id, text, createdBy) VALUES (?, ?, ?)");
         $stmt->execute([
@@ -50,7 +44,6 @@ if ($method === 'POST') {
         echo json_encode(["error" => "Invalid input"]);
         exit;
     }
-
     try {
         $stmt = $conn->prepare("UPDATE cims_candidate_notes SET text = ? WHERE id = ?");
         $stmt->execute([
@@ -69,7 +62,6 @@ if ($method === 'POST') {
         echo json_encode(["error" => "Invalid input"]);
         exit;
     }
-
     try {
         $stmt = $conn->prepare("DELETE FROM cims_candidate_notes WHERE id = ?");
         $stmt->execute([$data['id']]);

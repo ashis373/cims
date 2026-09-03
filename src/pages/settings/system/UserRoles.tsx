@@ -49,7 +49,7 @@ const moduleConfig: Record<string, PermissionConfig> = {
   "reports": { label: "Reports", view: true, add: true, edit: true, delete: true, scopes: ["All", "Assigned", "None"] },
   "alerts": { label: "Alerts Center", view: true, add: true, edit: true, delete: true, scopes: ["All", "Assigned", "None"] },
   "email_settings": { label: "Email Settings", view: true, add: true, edit: true, delete: true, scopes: ["All", "Assigned", "None"] },
-  "users_roles": { label: "Users & Roles", view: false, add: false, edit: false, delete: false, scopes: ["All", "None"] },
+  "users_roles": { label: "Users & Roles", view: false, add: false, edit: false, delete: false, scopes: ["All"] },
   "system_settings": { label: "System Settings", view: true, add: true, edit: true, delete: true, scopes: ["All", "Assigned", "None"] }
 };
 
@@ -82,6 +82,7 @@ export default function UserRoles() {
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
+  const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
 
   const [editingUser, setEditingUser] = useState<any>(null);
   const [formData, setFormData] = useState({
@@ -315,7 +316,26 @@ export default function UserRoles() {
 
       if (res.status === "success") {
         toast.success(res.message);
+        
+        // Handle photo upload if a file was selected
+        const userId = editingUser ? editingUser.id : res.data?.id;
+        if (selectedPhoto && userId) {
+          const fd = new FormData();
+          fd.append('photo', selectedPhoto);
+          fd.append('id', userId);
+          try {
+            await fetch(`${API_BASE_URL}/system/users.php?action=upload_photo`, {
+              method: 'POST',
+              credentials: 'include',
+              body: fd
+            });
+          } catch (e) {
+            toast.error("User saved, but failed to upload photo");
+          }
+        }
+        
         setIsUserModalOpen(false);
+        setSelectedPhoto(null);
         fetchUsers();
       } else {
         toast.error(res.message);
@@ -446,7 +466,7 @@ export default function UserRoles() {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         {user.profile_photo ? (
-                          <img src={user.profile_photo.startsWith('http') ? user.profile_photo : `${API_BASE_URL}/${user.profile_photo}`} alt={user.full_name || user.name} className="h-9 w-9 rounded-full object-cover border border-slate-200 shadow-sm" />
+                          <img src={user.profile_photo.startsWith('http') ? user.profile_photo : `${API_BASE_URL.replace('/api', '')}/${user.profile_photo.replace(/^(?:\.\.\/)+|^(?:\.\/)+/, '')}`} alt={user.full_name || user.name} className="h-9 w-9 rounded-full object-cover border border-slate-200 shadow-sm" />
                         ) : (
                           <div className="h-9 w-9 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-xs shrink-0 border border-indigo-200">
                             {(user.full_name || user.name || 'U').charAt(0).toUpperCase()}
@@ -736,9 +756,17 @@ export default function UserRoles() {
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {activeUsers.filter(u => u.role_id === editingRole.id).map(u => (
                       <div key={u.id} className="flex items-center gap-4 bg-white border border-slate-200 p-4 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
-                        <div className="h-10 w-10 rounded-full bg-indigo-50 text-indigo-700 flex items-center justify-center font-black text-sm shrink-0 border border-indigo-100 shadow-inner">
-                          {u.full_name?.charAt(0) || u.email?.charAt(0)}
-                        </div>
+                        {u.profile_photo ? (
+                          <img 
+                            src={u.profile_photo.startsWith('http') ? u.profile_photo : `${API_BASE_URL.replace('/api', '')}/${u.profile_photo.replace(/^(?:\.\.\/)+|^(?:\.\/)+/, '')}`} 
+                            alt={u.full_name || u.name} 
+                            className="h-10 w-10 rounded-full object-cover border border-slate-200 shadow-sm shrink-0" 
+                          />
+                        ) : (
+                          <div className="h-10 w-10 rounded-full bg-indigo-50 text-indigo-700 flex items-center justify-center font-black text-sm shrink-0 border border-indigo-100 shadow-inner">
+                            {u.full_name?.charAt(0) || u.email?.charAt(0)}
+                          </div>
+                        )}
                         <div className="min-w-0 flex-1">
                           <div className="text-sm font-bold text-slate-900 truncate">{u.full_name || u.name}</div>
                           <div className="text-xs font-medium text-slate-500 truncate">{u.email}</div>
@@ -780,10 +808,31 @@ export default function UserRoles() {
             </div>
             <form onSubmit={handleUserSubmit} className="p-6 space-y-4">
               <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">Profile Photo (Optional)</label>
+                <input 
+                  type="file" 
+                  accept="image/*"
+                  onChange={e => {
+                    if (e.target.files && e.target.files[0]) {
+                      const file = e.target.files[0];
+                      if (file.size > 2 * 1024 * 1024) {
+                        toast.error("File size must be less than 2MB");
+                        e.target.value = '';
+                        setSelectedPhoto(null);
+                        return;
+                      }
+                      setSelectedPhoto(file);
+                    }
+                  }}
+                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl bg-slate-50 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-[#1447E6]/10 file:text-[#1447E6] hover:file:bg-[#1447E6]/20 cursor-pointer"
+                />
+              </div>
+              <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1.5">Full Name</label>
                 <input 
-                  type="text" 
+                  type="text"
                   required
+                  maxLength={100}
                   value={formData.full_name}
                   onChange={e => setFormData({...formData, full_name: e.target.value})}
                   className="w-full h-11 px-4 rounded-xl border border-slate-200 focus:border-[#1447E6] focus:ring-2 focus:ring-[#1447E6]/10 text-sm font-medium"
@@ -792,8 +841,9 @@ export default function UserRoles() {
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1.5">Email Address</label>
                 <input 
-                  type="email" 
+                  type="email"
                   required
+                  maxLength={150}
                   value={formData.email}
                   onChange={e => setFormData({...formData, email: e.target.value})}
                   className="w-full h-11 px-4 rounded-xl border border-slate-200 focus:border-[#1447E6] focus:ring-2 focus:ring-[#1447E6]/10 text-sm font-medium"
@@ -802,9 +852,15 @@ export default function UserRoles() {
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1.5">Mobile Number</label>
                 <input 
-                  type="text" 
+                  type="text"
+                  maxLength={10}
+                  pattern="[0-9]{10}"
+                  title="Please enter exactly 10 digits"
                   value={formData.mobile}
-                  onChange={e => setFormData({...formData, mobile: e.target.value})}
+                  onChange={e => {
+                    const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                    setFormData({...formData, mobile: val});
+                  }}
                   className="w-full h-11 px-4 rounded-xl border border-slate-200 focus:border-[#1447E6] focus:ring-2 focus:ring-[#1447E6]/10 text-sm font-medium"
                 />
               </div>
@@ -909,3 +965,7 @@ export default function UserRoles() {
     </div>
   );
 }
+
+
+
+

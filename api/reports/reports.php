@@ -4,31 +4,24 @@ header("Access-Control-Allow-Origin: $origin");
 header("Access-Control-Allow-Credentials: true");
 header("Access-Control-Allow-Methods: GET, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
-
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit(0);
 }
-
 include '../db.php';
-
-$required_module = 'reports';
 $method = $_SERVER['REQUEST_METHOD'];
 if ($method === 'POST') $required_permission = 'can_add';
 else if ($method === 'PUT') $required_permission = 'can_edit';
 else if ($method === 'DELETE') $required_permission = 'can_delete';
 else $required_permission = 'can_view';
-
 require_once '../auth_middleware.php';
-
+require_permission('reports');
 try {
     $startDate = $_GET['startDate'] ?? null;
     $endDate = $_GET['endDate'] ?? null;
     $recruiterFilter = $_GET['recruiter'] ?? null;
     $positionFilter = $_GET['position'] ?? null;
-
     $whereClauses = ["1=1"];
     $params = [];
-
     if ($startDate) {
         $whereClauses[] = "a.appliedAt >= ?";
         $params[] = $startDate . " 00:00:00";
@@ -45,11 +38,8 @@ try {
         $whereClauses[] = "a.role_applied = ?";
         $params[] = $positionFilter;
     }
-
     $whereSql = implode(" AND ", $whereClauses);
-
     $reports = [];
-
     // Recruiter Performance (Total Applications, Offers, Joined, Rejected by Recruiter)
     $stmt = $conn->prepare("
         SELECT 
@@ -65,7 +55,6 @@ try {
     ");
     $stmt->execute($params);
     $reports['recruiter_performance'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
     // Funnel / Conversion Rates
     $stages = ['New Applicant', 'Shortlisted', 'Interview Scheduled', 'Offer Released', 'Joined'];
     $funnel = [];
@@ -81,7 +70,6 @@ try {
         ];
     }
     $reports['funnel'] = $funnel;
-
     // Rejection Reasons
     $stmtRej = $conn->prepare("
         SELECT cr.reason as name, COUNT(cr.id) as value
@@ -92,7 +80,6 @@ try {
     ");
     $stmtRej->execute($params);
     $reports['rejection_reasons'] = $stmtRej->fetchAll(PDO::FETCH_ASSOC);
-
     // No Join Stats
     $stmtNoJoin = $conn->prepare("
         SELECT a.stageReason as name, COUNT(a.id) as value
@@ -102,15 +89,12 @@ try {
     ");
     $stmtNoJoin->execute($params);
     $reports['no_join_stats'] = $stmtNoJoin->fetchAll(PDO::FETCH_ASSOC);
-
     // List of Recruiters & Positions for filter dropdowns
     $reports['filters'] = [
         'recruiters' => $conn->query("SELECT DISTINCT recruiter FROM cims_applications WHERE recruiter IS NOT NULL AND recruiter != ''")->fetchAll(PDO::FETCH_COLUMN),
         'positions' => $conn->query("SELECT DISTINCT role_applied FROM cims_applications WHERE role_applied IS NOT NULL AND role_applied != ''")->fetchAll(PDO::FETCH_COLUMN)
     ];
-
     echo json_encode($reports);
-
 } catch (PDOException $e) {
     http_response_code(500);
     echo json_encode(["error" => $e->getMessage()]);

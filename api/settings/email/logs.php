@@ -4,16 +4,13 @@ header("Access-Control-Allow-Origin: $origin");
 header("Access-Control-Allow-Credentials: true");
 header("Access-Control-Allow-Methods: GET, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
-
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit(0);
 }
-
 include '../../db.php';
-$required_module = 'email_settings';
 $required_permission = 'can_view';
 require_once '../../auth_middleware.php';
-
+require_permission('email_settings');
 try {
     // Fetch active queue items (Pending, Processing)
     $queueStmt = $conn->query("
@@ -36,7 +33,6 @@ try {
         ORDER BY q.created_at DESC
     ");
     $queueItems = $queueStmt->fetchAll(PDO::FETCH_ASSOC);
-
     // Fetch historical logs (Sent, Failed)
     $logStmt = $conn->query("
         SELECT 
@@ -58,13 +54,11 @@ try {
         LIMIT 100
     ");
     $logs = $logStmt->fetchAll(PDO::FETCH_ASSOC);
-
     // Merge and sort
     $allLogs = array_merge($queueItems, $logs);
     usort($allLogs, function($a, $b) {
         return $b['timestamp_sort'] <=> $a['timestamp_sort'];
     });
-
     echo json_encode(array_slice($allLogs, 0, 100));
 } catch (PDOException $e) {
     http_response_code(500);

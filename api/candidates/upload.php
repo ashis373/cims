@@ -4,16 +4,13 @@ header("Access-Control-Allow-Origin: $origin");
 header("Access-Control-Allow-Credentials: true");
 header("Access-Control-Allow-Methods: POST, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
-
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit(0);
 }
-
 include '../db.php';
-$required_module = 'candidates';
 $required_permission = 'can_add';
 require_once '../auth_middleware.php';
-
+require_permission('candidates');
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_FILES['resume']) && $_FILES['resume']['error'] === UPLOAD_ERR_OK) {
         $fileTmpPath = $_FILES['resume']['tmp_name'];

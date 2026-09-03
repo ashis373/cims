@@ -4,24 +4,19 @@ header("Access-Control-Allow-Origin: $origin");
 header("Access-Control-Allow-Credentials: true");
 header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
-
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit(0);
 }
-
 include '../../db.php';
 require '../../vendor/autoload.php';
-
 // Allow execution without JWT if running directly from CLI (Cron Job)
 if (php_sapi_name() !== 'cli') {
-$required_module = 'email_settings';
     $required_permission = 'can_view'; // or just general access
     require_once '../../auth_middleware.php';
+require_permission('email_settings');
 }
-
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
-
 // File-based lock to prevent overlapping Cron jobs
 $lockFile = __DIR__ . '/worker.lock';
 $lock = fopen($lockFile, 'c');
@@ -29,24 +24,18 @@ if (!flock($lock, LOCK_EX | LOCK_NB)) {
     echo json_encode(["success" => false, "message" => "Worker is already running."]);
     exit;
 }
-
 // Check if worker is enabled by admin
 $smtpStmt = $conn->query("SELECT * FROM cims_smtp_config LIMIT 1");
 $smtp = $smtpStmt->fetch(PDO::FETCH_ASSOC);
-
 if ($smtp && isset($smtp['worker_enabled']) && $smtp['worker_enabled'] == 0) {
     echo json_encode(["success" => true, "message" => "Worker is paused by admin."]);
     exit;
 }
-
 $workerId = uniqid('worker_', true);
-
 // Update last worker run time
 $conn->exec("UPDATE cims_smtp_config SET last_worker_run = CURRENT_TIMESTAMP");
-
 // Recover stale processing records (crashed workers > 10 mins ago)
 $conn->exec("UPDATE cims_email_queue SET status = 'Pending', worker_id = NULL WHERE status = 'Processing' AND started_at < DATE_SUB(CURRENT_TIMESTAMP, INTERVAL 10 MINUTE) AND attempts < max_attempts");
-
 // Safely claim up to 50 pending emails (or failed emails scheduled for now/past)
 $claimStmt = $conn->prepare("
     UPDATE cims_email_queue 
@@ -56,16 +45,13 @@ $claimStmt = $conn->prepare("
     LIMIT 50
 ");
 $claimStmt->execute([$workerId]);
-
 $fetchStmt = $conn->prepare("SELECT * FROM cims_email_queue WHERE status = 'Processing' AND worker_id = ?");
 $fetchStmt->execute([$workerId]);
 $emails = $fetchStmt->fetchAll(PDO::FETCH_ASSOC);
-
 if (empty($emails)) {
     echo json_encode(["success" => true, "message" => "No emails in queue."]);
     exit;
 }
-
 if (!$smtp || !$smtp['host']) {
     // Revert status to failed if SMTP is not configured
     $revertStmt = $conn->prepare("UPDATE cims_email_queue SET status = 'Failed', last_error = 'SMTP not configured', worker_id = NULL WHERE status = 'Processing' AND worker_id = ?");
@@ -73,15 +59,12 @@ if (!$smtp || !$smtp['host']) {
     echo json_encode(["success" => false, "message" => "SMTP not configured."]);
     exit;
 }
-
 $processedCount = 0;
 $failedCount = 0;
-
 foreach ($emails as $email) {
     $mail = new PHPMailer(true);
     $mailSent = false;
     $errorMsg = '';
-
     try {
         $mail->isSMTP();
         $mail->Host       = $smtp['host'];
@@ -91,19 +74,16 @@ foreach ($emails as $email) {
         if ($smtp['encryption'] === 'tls') $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
         elseif ($smtp['encryption'] === 'ssl') $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
         $mail->Port       = $smtp['port'];
-
         $mail->setFrom($smtp['from_email'], $smtp['from_name']);
         $mail->addAddress($email['recipient_email']);
         $mail->isHTML(true);
         $mail->Subject = $email['subject'];
         $mail->Body    = $email['body'];
-
         $mail->send();
         $mailSent = true;
     } catch (Exception $e) {
         $errorMsg = $mail->ErrorInfo ?: $e->getMessage();
     }
-
     if ($mailSent) {
         // Move to logs
         $logStmt = $conn->prepare("
@@ -154,7 +134,6 @@ foreach ($emails as $email) {
         $failedCount++;
     }
 }
-
 echo json_encode([
     "success" => true, 
     "message" => "Queue processed.",

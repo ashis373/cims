@@ -27,8 +27,6 @@ export default function CreateJob() {
         const data = await response.json();
         if (response.ok && Array.isArray(data)) {
           setDbDepartments(data.filter((d: any) => d.status !== 'Inactive'));
-        } else if (!response.ok && data.message) {
-          toast.error(data.message);
         }
       } catch (e) {
         console.error("Failed to fetch departments", e);
@@ -40,8 +38,6 @@ export default function CreateJob() {
         const data = await response.json();
         if (response.ok && Array.isArray(data)) {
           setRecruiters(data.filter((r: any) => r.status === "Active"));
-        } else if (!response.ok && data.message) {
-          toast.error(data.message);
         }
       } catch (e) {
         console.error("Failed to fetch recruiters", e);
@@ -90,7 +86,7 @@ export default function CreateJob() {
 
   const [formData, setFormData] = useState({
     title: "",
-    department: "software development",
+    department: "",
     location: "",
     openings: "" as number | string,
     author: "Admin",

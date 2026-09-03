@@ -4,23 +4,18 @@ header("Access-Control-Allow-Origin: $origin");
 header("Access-Control-Allow-Credentials: true");
 header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
-
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit(0);
 }
-
 include '../db.php';
-
-$required_module = 'offers';
 $method = $_SERVER['REQUEST_METHOD'];
 if ($method === 'POST') $required_permission = 'can_add';
 else if ($method === 'PUT') $required_permission = 'can_edit';
 else if ($method === 'DELETE') $required_permission = 'can_delete';
 else $required_permission = 'can_view';
 require_once '../auth_middleware.php';
-
+require_permission('offers');
 $method = $_SERVER['REQUEST_METHOD'];
-
 try {
     if ($method === 'GET') {
         $stmt = $conn->query("
@@ -72,9 +67,7 @@ try {
             echo json_encode(["error" => "Offer not found"]);
             exit;
         }
-
         $candidateId = $offer['candidate_id'];
-
         if ($action === 'mark_joined') {
             // Update offer
             $stmtUpdate = $conn->prepare("UPDATE cims_candidate_offers SET offerStatus = 'Joined' WHERE id = ?");
