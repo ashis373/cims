@@ -36,3 +36,7 @@ dist-ssr
 api/vendor/
 .env
 api/error.log
+
+# Candidate uploads
+uploads/candidates/photos/*
+uploads/candidates/resumes/*
