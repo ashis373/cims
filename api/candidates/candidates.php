@@ -332,27 +332,43 @@ if ($method === 'GET') {
             $stmt->execute($params);
         }
         
-        // 2. Update cims_applications table (assuming 1 active application per candidate for now)
-        $appFields = ['role', 'department', 'source', 'stage', 'recruiter'];
-        $appUpdateStrs = [];
-        $appParams = [];
-        
-        if (isset($data['role'])) {
-            $appUpdateStrs[] = "role_applied = ?";
-            $appParams[] = $data['role'];
-        }
-        foreach (['department', 'source', 'stage', 'recruiter'] as $f) {
-            if (isset($data[$f])) {
-                $appUpdateStrs[] = "$f = ?";
-                $appParams[] = $data[$f];
+        // 2. Update or Insert cims_applications table
+        if (isset($data['isNewApplication']) && $data['isNewApplication'] === true) {
+            $stmtApp = $conn->prepare("INSERT INTO cims_applications (
+                candidate_id, role_applied, department, source, stage, recruiter, appliedAt
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)");
+            $stmtApp->execute([
+                $id,
+                $data['role'] ?? '',
+                $data['department'] ?? '',
+                $data['source'] ?? 'Website',
+                'New Applicant',
+                $data['recruiter'] ?? '',
+                date('Y-m-d H:i:s')
+            ]);
+        } else {
+            $appFields = ['role', 'department', 'source', 'stage', 'recruiter'];
+            $appUpdateStrs = [];
+            $appParams = [];
+            
+            if (isset($data['role'])) {
+                $appUpdateStrs[] = "role_applied = ?";
+                $appParams[] = $data['role'];
             }
-        }
-        
-        if (!empty($appUpdateStrs)) {
-            $appParams[] = $id;
-            $appSql = "UPDATE cims_applications SET " . implode(", ", $appUpdateStrs) . " WHERE candidate_id = ?";
-            $stmt = $conn->prepare($appSql);
-            $stmt->execute($appParams);
+            foreach (['department', 'source', 'stage', 'recruiter'] as $f) {
+                if (isset($data[$f])) {
+                    $appUpdateStrs[] = "$f = ?";
+                    $appParams[] = $data[$f];
+                }
+            }
+            
+            if (!empty($appUpdateStrs)) {
+                $appParams[] = $id;
+                // Update the latest application if not a new application
+                $appSql = "UPDATE cims_applications SET " . implode(", ", $appUpdateStrs) . " WHERE candidate_id = ? ORDER BY appliedAt DESC LIMIT 1";
+                $stmt = $conn->prepare($appSql);
+                $stmt->execute($appParams);
+            }
         }
         
         // Handle Automatic Email Dispatch

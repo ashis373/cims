@@ -61,7 +61,7 @@ const empty = {
   phone: "",
   alternateMobile: "",
   role: "",
-  department: "software development" as Department,
+  department: "" as any,
   source: "Website" as Source,
   stage: "New Applicant" as Stage,
   resume: "",
@@ -96,7 +96,7 @@ export default function CandidateFormPage() {
 
   const [form, setForm] = useState(empty);
   const [dup, setDup] = useState<Candidate | null>(null);
-  const [dupType, setDupType] = useState<"EXACT" | "POSSIBLE" | null>(null);
+  const [dupType, setDupType] = useState<"EXACT" | "POSSIBLE" | "DIFFERENT_POSITION" | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [openJobs, setOpenJobs] = useState<any[]>([]);
   const [dbDepartments, setDbDepartments] = useState<any[]>([]);
@@ -199,36 +199,36 @@ export default function CandidateFormPage() {
     if (form.location && form.location.length > 50) newErrors.location = "Location cannot exceed 50 characters.";
     if (form.preferredLocation && form.preferredLocation.length > 50) newErrors.preferredLocation = "Preferred location cannot exceed 50 characters.";
 
-    if (!form.experience.trim()) newErrors.experience = "Total experience is required.";
-    else if (isNaN(Number(form.experience)) || Number(form.experience) < 0 || Number(form.experience) > 50) {
+
+    if (form.experience && (isNaN(Number(form.experience)) || Number(form.experience) < 0 || Number(form.experience) > 50)) {
       newErrors.experience = "Enter a valid total experience (0-50).";
     }
 
-    if (!form.relevantExperience.trim()) newErrors.relevantExperience = "Relevant experience is required.";
-    else if (isNaN(Number(form.relevantExperience)) || Number(form.relevantExperience) < 0 || Number(form.relevantExperience) > 50) {
-      newErrors.relevantExperience = "Enter a valid relevant experience (0-50).";
-    } else if (Number(form.relevantExperience) > Number(form.experience)) {
-      newErrors.relevantExperience = "Relevant experience cannot exceed total experience.";
+    if (form.relevantExperience) {
+      if (isNaN(Number(form.relevantExperience)) || Number(form.relevantExperience) < 0 || Number(form.relevantExperience) > 50) {
+        newErrors.relevantExperience = "Enter a valid relevant experience (0-50).";
+      } else if (form.experience && Number(form.relevantExperience) > Number(form.experience)) {
+        newErrors.relevantExperience = "Relevant experience cannot exceed total experience.";
+      }
     }
 
-    if (!form.currentCompany.trim()) newErrors.currentCompany = "Current company is required.";
-    if (!form.currentDesignation.trim()) newErrors.currentDesignation = "Current designation is required.";
-
-    if (!form.currentCtc.trim()) newErrors.currentCtc = "Current CTC is required.";
-    else if (isNaN(Number(form.currentCtc)) || Number(form.currentCtc) < 0) newErrors.currentCtc = "Enter a valid positive number for CTC.";
+    if (form.currentCtc && (isNaN(Number(form.currentCtc)) || Number(form.currentCtc) < 0)) {
+      newErrors.currentCtc = "Enter a valid positive number for CTC.";
+    }
 
     if (form.expectedCtc && (isNaN(Number(form.expectedCtc)) || Number(form.expectedCtc) < 0)) {
       newErrors.expectedCtc = "Enter a valid positive number for expected CTC.";
     }
 
-    if (!form.noticePeriod.trim()) newErrors.noticePeriod = "Notice period is required.";
-    else if (isNaN(Number(form.noticePeriod)) || Number(form.noticePeriod) < 0) {
+    if (form.noticePeriod && (isNaN(Number(form.noticePeriod)) || Number(form.noticePeriod) < 0)) {
       newErrors.noticePeriod = "Enter a valid positive number for notice period (days).";
     }
 
-    if (!form.role.trim()) newErrors.role = "Position applied for is required.";
-    if (!form.recruiter.trim()) newErrors.recruiter = "Recruiter is required.";
-    if (!form.resume.trim()) newErrors.resume = "Resume upload is required.";
+    if (!form.department) newErrors.department = "Department is required.";
+    if (!form.role) newErrors.role = "Position applied for is required.";
+    if (!form.recruiter) newErrors.recruiter = "Recruiter is required.";
+    if (!form.resume) newErrors.resume = "Resume upload is required.";
+  
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -242,7 +242,7 @@ export default function CandidateFormPage() {
     }
 
     if (!candidate) {
-      const existing = findDuplicate(form.email, form.phone, form.name);
+      const existing = findDuplicate(form.email, form.phone, form.name, form.role);
       if (existing) {
         setDup(existing.candidate);
         setDupType(existing.type);
@@ -547,11 +547,9 @@ export default function CandidateFormPage() {
                 htmlFor="experience"
                 className="flex items-center gap-1.5 text-muted-foreground mb-1.5"
               >
-                <Clock className="h-3.5 w-3.5" /> Total Experience (Years){" "}
-                <span className="text-destructive">*</span>
+                <Clock className="h-3.5 w-3.5" /> Total Experience (Years)
               </Label>
-              <Input
-                id="experience"
+              <Input id="experience"
                 value={form.experience}
                 onChange={(e) => handleNumericChange("experience", e.target.value)}
                 placeholder="e.g., 5"
@@ -564,8 +562,7 @@ export default function CandidateFormPage() {
                 htmlFor="relevantExperience"
                 className="flex items-center gap-1.5 text-muted-foreground mb-1.5"
               >
-                <Clock className="h-3.5 w-3.5" /> Relevant Experience (Years){" "}
-                <span className="text-destructive">*</span>
+                <Clock className="h-3.5 w-3.5" /> Relevant Experience (Years)
               </Label>
               <Input
                 id="relevantExperience"
@@ -581,8 +578,7 @@ export default function CandidateFormPage() {
                 htmlFor="currentCompany"
                 className="flex items-center gap-1.5 text-muted-foreground mb-1.5"
               >
-                <Building2 className="h-3.5 w-3.5" /> Current Company{" "}
-                <span className="text-destructive">*</span>
+                <Building2 className="h-3.5 w-3.5" /> Current Company
               </Label>
               <Input
                 id="currentCompany"
@@ -598,8 +594,7 @@ export default function CandidateFormPage() {
                 htmlFor="currentDesignation"
                 className="flex items-center gap-1.5 text-muted-foreground mb-1.5"
               >
-                <Briefcase className="h-3.5 w-3.5" /> Current Designation{" "}
-                <span className="text-destructive">*</span>
+                <Briefcase className="h-3.5 w-3.5" /> Current Designation
               </Label>
               <Input
                 id="currentDesignation"
@@ -615,8 +610,7 @@ export default function CandidateFormPage() {
                 htmlFor="currentCtc"
                 className="flex items-center gap-1.5 text-muted-foreground mb-1.5"
               >
-                <IndianRupee className="h-3.5 w-3.5" /> Current CTC (LPA){" "}
-                <span className="text-destructive">*</span>
+                <IndianRupee className="h-3.5 w-3.5" /> Current CTC (LPA)
               </Label>
               <Input
                 id="currentCtc"
@@ -648,8 +642,7 @@ export default function CandidateFormPage() {
                 htmlFor="noticePeriod"
                 className="flex items-center gap-1.5 text-muted-foreground mb-1.5"
               >
-                <Clock className="h-3.5 w-3.5" /> Notice Period (Days){" "}
-                <span className="text-destructive">*</span>
+                <Clock className="h-3.5 w-3.5" /> Notice Period (Days)
               </Label>
               <Input
                 id="noticePeriod"
@@ -782,7 +775,7 @@ export default function CandidateFormPage() {
                 return (
                   <Select 
                     key={`dept-${activeDepartment}`}
-                    value={activeDepartment} 
+                    value={activeDepartment || undefined} 
                     onValueChange={(v) => { set("department", v as Department); set("role", ""); }}
                   >
                     <SelectTrigger className={errors.department ? "border-destructive focus:ring-destructive" : ""}>
@@ -813,7 +806,7 @@ export default function CandidateFormPage() {
                 const activeRole = form.role || (candidate as any)?.role?.trim() || "";
                 const activeDepartment = form.department || (candidate as any)?.department?.trim() || "";
                 return (
-                  <Select key={`role-${activeRole}`} value={activeRole} onValueChange={(v) => set("role", v)}>
+                  <Select key={`role-${activeRole}`} value={activeRole || undefined} onValueChange={(v) => set("role", v)}>
                     <SelectTrigger className={errors.role ? "border-destructive focus:ring-destructive" : ""}>
                       <SelectValue placeholder="Select position" />
                     </SelectTrigger>
@@ -851,7 +844,7 @@ export default function CandidateFormPage() {
                 return (
                   <Select
                     key={`recruiter-${activeRecruiter}`}
-                    value={activeRecruiter}
+                    value={activeRecruiter || undefined}
                     onValueChange={(v) => set("recruiter", v)}
                   >
                     <SelectTrigger
@@ -900,7 +893,7 @@ export default function CandidateFormPage() {
         </Card>
 
         <div className="text-[12px] text-muted-foreground font-semibold px-2">
-          Note: <span className="text-destructive">*</span> indicates mandatory fields required for candidate registration and processing.
+          Note: <span className="text-destructive">*</span> indicates mandatory fields  for candidate registration and processing.
         </div>
         <div className="flex justify-end gap-3 pt-4 sticky bottom-6 bg-white/90 p-4 rounded-3xl border border-slate-100 backdrop-blur-md shadow-[0_8px_30px_rgba(0,0,0,0.12)]">
           <Button type="button" variant="ghost" className="font-bold rounded-xl" asChild>
@@ -924,7 +917,7 @@ export default function CandidateFormPage() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className={`text-lg ${dupType === "EXACT" ? "text-destructive" : "text-amber-600"}`}>
-              {dupType === "EXACT" ? "Exact Duplicate Candidate Found" : "Possible Duplicate Candidate Found"}
+              {dupType === "EXACT" ? "Exact Duplicate Candidate" : dupType === "DIFFERENT_POSITION" ? "Existing Candidate Found" : "Possible Duplicate Candidate Found"}
             </AlertDialogTitle>
 
             <div className="text-sm mt-3 space-y-3">
@@ -962,15 +955,15 @@ export default function CandidateFormPage() {
               )}
 
               <AlertDialogDescription className="pt-2 text-slate-600">
-                {dupType === "EXACT"
-                  ? "This candidate already exists. Would you like to add this as a new application on their existing profile?"
-                  : "Would you like to add this as a new application on their existing profile, or create a separate record?"}
+                {dupType === "EXACT" && "This candidate has already applied for this position."}
+                {dupType === "DIFFERENT_POSITION" && "This candidate already exists and is applying for a different position."}
+                {dupType === "POSSIBLE" && "Would you like to add this as a new application on their existing profile, or create a separate record?"}
               </AlertDialogDescription>
             </div>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            {dupType === "POSSIBLE" && (
+            {dupType === "POSSIBLE" && (() => { try { return JSON.parse(localStorage.getItem("cims_user") || "{}").role_name === 'Administrator'; } catch { return false; } })() && (
               <Button
                 variant="outline"
                 onClick={() => {
@@ -986,14 +979,14 @@ export default function CandidateFormPage() {
             <AlertDialogAction
               onClick={() => {
                 if (!dup) return;
-                reapply(dup.id, form.role, form.source);
-                toast.success("Application added to existing candidate");
+                reapply(dup.id, form.role, form.source, form.department, form.recruiter, dupType === "DIFFERENT_POSITION");
+                toast.success(dupType === "EXACT" ? "Application updated" : "Application added to existing candidate");
                 navigate(`/candidates/${dup.id}`);
                 setDup(null);
                 setDupType(null);
               }}
             >
-              Update existing
+              {dupType === "EXACT" ? "Update Existing only" : dupType === "DIFFERENT_POSITION" ? "Add New Application to Existing Profile" : "Update existing"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

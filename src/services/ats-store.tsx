@@ -43,8 +43,8 @@ interface Ctx {
   addNote: (id: string, note: string) => Promise<void>;
   addInterview: (id: string, iv: Omit<Interview, "id">) => Promise<void>;
   updateInterview: (candidateId: string, interviewId: string, patch: any) => Promise<void>;
-  findDuplicate: (email: string, phone: string, name: string) => { type: "EXACT" | "POSSIBLE", candidate: Candidate } | null;
-  reapply: (existingId: string, role: string, source: Source) => Promise<void>;
+  findDuplicate: (email: string, phone: string, name: string, role: string) => { type: "EXACT" | "POSSIBLE" | "DIFFERENT_POSITION", candidate: Candidate } | null;
+  reapply: (existingId: string, role: string, source: Source, department: string, recruiter: string, isNewApp?: boolean) => Promise<void>;
   undo: () => void;
   canUndo: boolean;
   isLoading: boolean;
@@ -325,10 +325,10 @@ export function AtsProvider({ children }: { children: ReactNode }) {
           throw error;
         }
       },
-      findDuplicate: (email, phone, name) => {
-        return findDuplicateHelper(candidates, email, phone, name);
+      findDuplicate: (email, phone, name, role) => {
+        return findDuplicateHelper(candidates, email, phone, name, role);
       },
-      reapply: async (id, role, source) => {
+      reapply: async (id, role, source, department, recruiter, isNewApp = false) => {
         const target = candidates.find((c) => c.id === id);
         if (!target) return;
         const t = now();
@@ -336,10 +336,13 @@ export function AtsProvider({ children }: { children: ReactNode }) {
           ...target,
           role,
           source,
+          department,
+          recruiter,
+          isNewApplication: isNewApp,
           stage: "New Applicant",
           updatedAt: t,
           appliedAt: t,
-          applications: [...target.applications, { appliedAt: t, role, source }],
+          applications: [...(target.applications || []), { appliedAt: t, role, source, department, recruiter }],
           activity: [
             ...target.activity,
             {

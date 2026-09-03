@@ -802,52 +802,40 @@ export default function CandidateProfile() {
                 <div className="overflow-x-auto flex-1">
                   <table className="w-full text-left text-[11px]">
                     <thead className="border-b border-slate-100 text-slate-400 font-bold">
-                      <tr>
-                        <th className="py-2.5 px-2">Stage</th>
-                        <th className="py-2.5 px-2">Interviewers</th>
-                        <th className="py-2.5 px-2">Date</th>
-                        <th className="py-2.5 px-2">Mode</th>
-                        <th className="py-2.5 px-2">Link/Location</th>
-                        <th className="py-2.5 px-2">Feedback</th>
-                        <th className="py-2.5 px-2 text-right">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-50 font-semibold text-slate-700">
-                      {candidate.interviewsList?.map((interview: any, i: number) => (
-                        <tr key={i} className="hover:bg-slate-50 cursor-pointer transition-colors" onClick={() => openEditInterview(interview)}>
-                          <td className="py-3 px-2 flex items-center gap-2">
-                            {interview.type}
-                            <Pencil className="h-3 w-3 text-slate-400 group-hover:text-blue-500" />
-                          </td>
-                          <td className="py-3 px-2">
-                            <div className="flex items-center gap-2">
-                              <span className="truncate max-w-[120px]">{interview.interviewers || "-"}</span>
-                            </div>
-                          </td>
-                          <td className="py-3 px-2 text-slate-500">{formatDateTime(interview.interviewDate)}</td>
-                          <td className="py-3 px-2">{interview.mode || "-"}</td>
-                          <td className="py-3 px-2 text-blue-600 truncate max-w-[150px]">{interview.meeting_link || interview.location || "-"}</td>
-                          <td className="py-3 px-2 truncate max-w-[150px]">{interview.feedback || "-"}</td>
-                          <td className="py-3 px-2 text-right">
-                            <Badge className={cn(
-                              "text-[9px] uppercase border-transparent",
-                              interview.status === 'Completed' ? "bg-emerald-100 text-emerald-600 hover:bg-emerald-100" :
-                                interview.status === 'Scheduled' ? "bg-blue-100 text-blue-600 hover:bg-blue-100" :
-                                  "bg-slate-100 text-slate-600 hover:bg-slate-100"
-                            )}>
-                              {interview.status}
-                            </Badge>
-                          </td>
-                        </tr>
-                      ))}
-                      {(!candidate.interviewsList || candidate.interviewsList.length === 0) && (
                         <tr>
-                          <td colSpan={7} className="py-6 text-center text-[11px] font-bold text-slate-400">
-                            No interviews scheduled yet.
-                          </td>
+                          <th className="py-2.5 px-2">Interview Type</th>
+                          <th className="py-2.5 px-2">Date & Time</th>
+                          <th className="py-2.5 px-2">Mode</th>
+                          <th className="py-2.5 px-2">Interviewer</th>
+                          <th className="py-2.5 px-2 text-right">Status</th>
                         </tr>
-                      )}
-                    </tbody>
+                      </thead>
+                      <tbody className="divide-y divide-slate-50 font-semibold text-slate-700">
+                        {candidate.interviewsList?.map((iv: any, i: number) => (
+                          <tr key={i} className="cursor-pointer hover:bg-slate-50 transition-colors" onClick={() => openEditInterview(iv)}>
+                            <td className="py-3 px-2 font-bold text-slate-900">{iv.type || "-"}</td>
+                            <td className="py-3 px-2 text-slate-500">{iv.interviewDate ? formatDateTime(iv.interviewDate) : "-"}</td>
+                            <td className="py-3 px-2 text-slate-500">{iv.mode || "-"}</td>
+                            <td className="py-3 px-2 text-slate-500">{iv.interviewers || "-"}</td>
+                            <td className="py-3 px-2 text-right">
+                              <Badge className={cn("text-[9px] font-bold uppercase border-transparent hover:opacity-80 px-2 py-0.5", 
+                                iv.status === "Scheduled" ? "bg-blue-50 text-blue-600" :
+                                iv.status === "Completed" ? "bg-emerald-50 text-emerald-600" :
+                                iv.status === "Cancelled" ? "bg-red-50 text-red-600" : "bg-slate-100 text-slate-600"
+                              )}>
+                                {iv.status}
+                              </Badge>
+                            </td>
+                          </tr>
+                        ))}
+                        {(!candidate.interviewsList || candidate.interviewsList.length === 0) && (
+                          <tr>
+                            <td colSpan={5} className="py-6 text-center text-[11px] font-bold text-slate-400">
+                              No interviews scheduled.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
                   </table>
                 </div>
               </Card>
@@ -857,36 +845,40 @@ export default function CandidateProfile() {
                 <h3 className="text-[13px] font-bold text-slate-900 mb-4">Application History</h3>
                 <div className="overflow-x-auto flex-1">
                   <table className="w-full text-left text-[11px]">
-                    <thead className="border-b border-slate-100 text-slate-400 font-bold">
-                      <tr>
-                        <th className="py-2.5 px-2">Role Applied</th>
-                        <th className="py-2.5 px-2">Source</th>
-                        <th className="py-2.5 px-2">Date</th>
-                        <th className="py-2.5 px-2 text-right">Stage</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-50 font-semibold text-slate-700">
-                      {candidate.applicationsList?.map((app: any, i: number) => (
-                        <tr key={i}>
-                          <td className="py-3 px-2 font-bold text-slate-900">{app.role_applied || "-"}</td>
-                          <td className="py-3 px-2 text-slate-500">{app.source || "-"}</td>
-                          <td className="py-3 px-2 text-slate-500">{formatDate(app.appliedAt)}</td>
-                          <td className="py-3 px-2 text-right">
-                            <Badge className="bg-orange-50 text-orange-600 text-[9px] uppercase border-transparent hover:bg-orange-100">
-                              {app.stage}
-                            </Badge>
-                          </td>
-                        </tr>
-                      ))}
-                      {(!candidate.applicationsList || candidate.applicationsList.length === 0) && (
+                      <thead className="border-b border-slate-100 text-slate-400 font-bold">
                         <tr>
-                          <td colSpan={4} className="py-6 text-center text-[11px] font-bold text-slate-400">
-                            No applications found.
-                          </td>
+                          <th className="py-2.5 px-2">Role Applied</th>
+                          <th className="py-2.5 px-2">Source</th>
+                          <th className="py-2.5 px-2">Application Date</th>
+                          <th className="py-2.5 px-2">Current Stage</th>
+                          <th className="py-2.5 px-2">Recruiter</th>
+                          <th className="py-2.5 px-2 text-right">Last Updated</th>
                         </tr>
-                      )}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody className="divide-y divide-slate-50 font-semibold text-slate-700">
+                        {candidate.applicationsList?.map((app: any, i: number) => (
+                          <tr key={i}>
+                            <td className="py-3 px-2 font-bold text-slate-900">{app.role_applied || app.role || "-"}</td>
+                            <td className="py-3 px-2 text-slate-500">{app.source || "-"}</td>
+                            <td className="py-3 px-2 text-slate-500">{formatDate(app.appliedAt)}</td>
+                            <td className="py-3 px-2">
+                              <Badge className="bg-orange-50 text-orange-600 text-[9px] uppercase border-transparent hover:bg-orange-100">
+                                {app.stage}
+                              </Badge>
+                            </td>
+                            <td className="py-3 px-2 text-slate-500">{app.recruiter || "-"}</td>
+                            <td className="py-3 px-2 text-right text-slate-500">{formatDate(app.appliedAt)}</td>
+                          </tr>
+                        ))}
+                        {(!candidate.applicationsList || candidate.applicationsList.length === 0) && (
+                          <tr>
+                            <td colSpan={6} className="py-6 text-center text-[11px] font-bold text-slate-400">
+                              No applications found.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
                 </div>
               </Card>
             </div>

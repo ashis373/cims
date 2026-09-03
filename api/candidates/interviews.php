@@ -62,9 +62,9 @@ if ($method === 'POST') {
             $stmtUpdC->execute([$now, $data['candidate_id']]);
         }
         // Log History
-        $stmtHist = $conn->prepare("INSERT INTO cims_candidate_history (candidate_id, action, details, createdAt) VALUES (?, ?, ?, ?)");
+        $stmtHist = $conn->prepare("INSERT INTO cims_candidate_history (candidate_id, action, details, createdAt, userId) VALUES (?, ?, ?, ?, ?)");
         $details = ($data['type'] ?? 'HR Round') . " scheduled for " . date('d M, h:i A', strtotime($date));
-        $stmtHist->execute([$data['candidate_id'], 'Interview Scheduled', $details, $now]);
+        $stmtHist->execute([$data['candidate_id'], 'Interview Scheduled', $details, $now, $_SESSION['user_id']]);
         $conn->commit();
         echo json_encode(["success" => true, "id" => $interviewId, "message" => "Interview scheduled successfully"]);
     } catch (Throwable $e) {
@@ -107,9 +107,9 @@ if ($method === 'POST') {
         // Log History
         $now = date('Y-m-d H:i:s');
         $statusStr = $data['status'] ?? 'Updated';
-        $stmtHist = $conn->prepare("INSERT INTO cims_candidate_history (candidate_id, action, details, createdAt) VALUES (?, ?, ?, ?)");
+        $stmtHist = $conn->prepare("INSERT INTO cims_candidate_history (candidate_id, action, details, createdAt, userId) VALUES (?, ?, ?, ?, ?)");
         $details = "Interview " . $statusStr . (isset($data['feedback']) ? " - Feedback added" : "");
-        $stmtHist->execute([$data['candidate_id'], 'Interview Updated', $details, $now]);
+        $stmtHist->execute([$data['candidate_id'], 'Interview Updated', $details, $now, $_SESSION['user_id']]);
         $conn->commit();
         echo json_encode(["success" => true, "message" => "Interview updated successfully"]);
     } catch (Throwable $e) {

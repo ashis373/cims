@@ -38,20 +38,38 @@ export function findDuplicateHelper(
   candidates: Candidate[],
   email: string,
   phone: string,
-  name: string
-): { type: "EXACT" | "POSSIBLE"; candidate: Candidate } | null {
+  name: string,
+  role: string
+): { type: "EXACT" | "POSSIBLE" | "DIFFERENT_POSITION"; candidate: Candidate } | null {
   const e = email.trim().toLowerCase();
   const p = phone.replace(/\s+/g, "");
   const n = name.trim().toLowerCase();
+  const r = role.trim().toLowerCase();
 
-  const exact = candidates.find(
-    (c) => (e && c.email.toLowerCase() === e) || (p && c.phone.replace(/\s+/g, "") === p)
+  const exactIdentity = candidates.find(
+    (c) => (e && c.email.toLowerCase() === e) && (p && c.phone.replace(/\s+/g, "") === p) && (n && c.name.trim().toLowerCase() === n)
   );
-  if (exact) return { type: "EXACT", candidate: exact };
+  
+  const strongIdentity = candidates.find(
+    (c) => (e && c.email.toLowerCase() === e) && (p && c.phone.replace(/\s+/g, "") === p)
+  );
+  
+  const matchIdentity = exactIdentity || strongIdentity;
 
-  if (n) {
-    const possible = candidates.find((c) => c.name.trim().toLowerCase() === n);
-    if (possible) return { type: "POSSIBLE", candidate: possible };
+  if (matchIdentity) {
+    const sameRole = matchIdentity.role.toLowerCase() === r;
+    if (sameRole) {
+      return { type: "EXACT", candidate: matchIdentity };
+    }
+    return { type: "DIFFERENT_POSITION", candidate: matchIdentity };
+  }
+
+  const possible = candidates.find(
+    (c) => (e && c.email.toLowerCase() === e) || (p && c.phone.replace(/\s+/g, "") === p) || (n && c.name.trim().toLowerCase() === n)
+  );
+
+  if (possible) {
+    return { type: "POSSIBLE", candidate: possible };
   }
 
   return null;
