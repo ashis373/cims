@@ -180,12 +180,14 @@ if ($method === 'GET') {
         }
         
         // Duplicate Check
-        $stmtCheck = $conn->prepare("SELECT id FROM cims_candidates WHERE email = ? OR (phone != '' AND phone = ?)");
-        $stmtCheck->execute([$c['email'], $c['phone'] ?? '']);
-        if ($stmtCheck->fetchColumn()) {
-            http_response_code(409);
-            echo json_encode(["error" => "A candidate with this email or phone already exists."]);
-            exit;
+        if (!isset($data['forceCreate']) || $data['forceCreate'] !== true) {
+            $stmtCheck = $conn->prepare("SELECT id FROM cims_candidates WHERE email = ?");
+            $stmtCheck->execute([$c['email']]);
+            if ($stmtCheck->fetchColumn()) {
+                http_response_code(409);
+                echo json_encode(["error" => "A candidate with this email already exists."]);
+                exit;
+            }
         }
         // 1. Insert into cims_candidates table
         $stmtCand = $conn->prepare("INSERT INTO cims_candidates (

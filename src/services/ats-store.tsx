@@ -110,8 +110,9 @@ export function AtsProvider({ children }: { children: ReactNode }) {
       setAll: (c) => mutate(() => c),
       add: async (input) => {
         const t = now();
-        const cand: Candidate = {
+        const cand = {
           id: uid(),
+          forceCreate: (input as any).forceCreate,
           name: input.name || "",
           email: input.email || "",
           phone: input.phone || "",
@@ -141,9 +142,9 @@ export function AtsProvider({ children }: { children: ReactNode }) {
           interviews: [],
           activity: [{ id: uid(), at: t, kind: "created", message: "Application received" }],
           applications: [
-            { appliedAt: input.appliedAt || t, role: input.role || "", source: input.source || "Website" },
+            { appliedAt: input.appliedAt || t, role: input.role || "", source: input.source || "Website", department: input.department || "", recruiter: input.recruiter || "" },
           ],
-        } as Candidate;
+        } as unknown as Candidate;
         try {
           await postCandidateAPI(cand);
           mutate((prev) => [cand, ...prev]);

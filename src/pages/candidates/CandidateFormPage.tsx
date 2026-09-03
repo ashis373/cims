@@ -250,10 +250,10 @@ export default function CandidateFormPage() {
       }
     }
 
-    persist();
+    persist(false);
   };
 
-  const persist = async () => {
+  const persist = async (forceCreate = false) => {
     const tags = (form.tags || "")
       .split(",")
       .map((t) => t.trim())
@@ -298,6 +298,7 @@ export default function CandidateFormPage() {
         navigate(`/candidates/${candidate.id}`);
       } else {
         const c = await add({
+          forceCreate,
           name: form.name,
           email: form.email,
           phone: form.phone,
@@ -970,7 +971,7 @@ export default function CandidateFormPage() {
                   if (!dup) return;
                   setDup(null);
                   setDupType(null);
-                  persist();
+                  persist(true);
                 }}
               >
                 Create new record
