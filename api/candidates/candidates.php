@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 $origin = isset($_SERVER['HTTP_ORIGIN']) ? $_SERVER['HTTP_ORIGIN'] : '*';
 header("Access-Control-Allow-Origin: $origin");
 header("Access-Control-Allow-Credentials: true");
@@ -475,10 +475,14 @@ if ($method === 'GET') {
                 if ($oldRaw !== $newRaw) {
                     $oldVal = $oldRaw ?: '—';
                     $newVal = $newRaw ?: '—';
-                    if ($key !== 'photo' && $key !== 'resume') {
-                        $changes[] = ['action' => 'Profile Updated', 'details' => "$label: $oldVal $arrow $newVal"];
+                    if ($key === 'resume') {
+                        $cleanName = preg_replace('/^\d+_/', '', $newRaw);
+                        if ($cleanName === '' || $cleanName === '-') $cleanName = 'Resume';
+                        $changes[] = ['action' => 'Resume Uploaded', 'details' => $cleanName . ' uploaded'];
+                    } elseif ($key === 'photo') {
+                        $changes[] = ['action' => 'Profile Updated', 'details' => 'Photo updated'];
                     } else {
-                        $changes[] = ['action' => 'Profile Updated', 'details' => "$label updated"];
+                        $changes[] = ['action' => 'Profile Updated', 'details' => "$label: $oldVal $arrow $newVal"];
                     }
                 }
             }
@@ -552,6 +556,11 @@ if ($method === 'GET') {
     }
 }
 ?>
+
+
+
+
+
 
 
 

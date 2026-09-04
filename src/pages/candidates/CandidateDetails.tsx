@@ -666,7 +666,7 @@ export default function CandidateProfile() {
                   ?.filter((item: any) => {
                     const msg = item.message.toLowerCase();
                     const action = msg.split(':')[0].trim();
-                    if (['profile updated', 'skills updated', 'note added', 'resume uploaded'].includes(action)) return false;
+                    if (['profile updated', 'skills updated', 'note added', 'resume uploaded', 'document added', 'document deleted'].includes(action)) return false;
                     if (action === 'candidate updated' && !msg.includes('status changed')) return false;
                     return true;
                   })
@@ -1243,7 +1243,7 @@ export default function CandidateProfile() {
             {candidate.activity?.filter((item: any) => {
               const msg = item.message.toLowerCase();
               const action = msg.split(':')[0].trim();
-              if (['profile updated', 'skills updated', 'note added', 'resume uploaded'].includes(action)) return false;
+              if (['profile updated', 'skills updated', 'note added', 'resume uploaded', 'document added', 'document deleted'].includes(action)) return false;
               if (action === 'candidate updated' && !msg.includes('status changed')) return false;
               return true;
             }).slice().reverse().map((item, i) => {
@@ -1697,6 +1697,7 @@ export default function CandidateProfile() {
     </div>
   );
 }
+
 
 
 

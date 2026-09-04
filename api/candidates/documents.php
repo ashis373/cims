@@ -60,6 +60,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $fileName,
                 'System'
             ]);
+            
+            $userId = isset($payload['user_id']) ? $payload['user_id'] : null;
+            $stmtHist = $conn->prepare("INSERT INTO cims_candidate_history (candidate_id, action, details, userId) VALUES (?, 'Document Added', ?, ?)");
+            $stmtHist->execute([$_POST['candidate_id'], $originalName . ' uploaded', $userId]);
+
             echo json_encode(["success" => true, "filename" => $fileName]);
         } else {
             http_response_code(500);
@@ -72,7 +77,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 } elseif ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
     $data = json_decode(file_get_contents("php://input"), true);
     if (isset($data['id'])) {
-        $stmt = $conn->prepare("SELECT filePath FROM cims_candidate_documents WHERE id = ?");
+        $stmt = $conn->prepare("SELECT candidate_id, name, filePath FROM cims_candidate_documents WHERE id = ?");
         $stmt->execute([$data['id']]);
         $doc = $stmt->fetch(PDO::FETCH_ASSOC);
         if ($doc) {
@@ -82,6 +87,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             $delStmt = $conn->prepare("DELETE FROM cims_candidate_documents WHERE id = ?");
             if ($delStmt->execute([$data['id']])) {
+                $userId = isset($payload['user_id']) ? $payload['user_id'] : null;
+                $stmtHist = $conn->prepare("INSERT INTO cims_candidate_history (candidate_id, action, details, userId) VALUES (?, 'Document Deleted', ?, ?)");
+                $stmtHist->execute([$doc['candidate_id'], $doc['name'] . ' deleted', $userId]);
+                
                 echo json_encode(["success" => true]);
             } else {
                 http_response_code(500);
