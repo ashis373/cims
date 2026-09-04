@@ -200,16 +200,8 @@ export default function CandidateFormPage() {
     if (form.preferredLocation && form.preferredLocation.length > 50) newErrors.preferredLocation = "Preferred location cannot exceed 50 characters.";
 
 
-    if (form.experience && (isNaN(Number(form.experience)) || Number(form.experience) < 0 || Number(form.experience) > 50)) {
-      newErrors.experience = "Enter a valid total experience (0-50).";
-    }
-
-    if (form.relevantExperience) {
-      if (isNaN(Number(form.relevantExperience)) || Number(form.relevantExperience) < 0 || Number(form.relevantExperience) > 50) {
-        newErrors.relevantExperience = "Enter a valid relevant experience (0-50).";
-      } else if (form.experience && Number(form.relevantExperience) > Number(form.experience)) {
-        newErrors.relevantExperience = "Relevant experience cannot exceed total experience.";
-      }
+    if (!form.experience) {
+      newErrors.experience = "Total experience is required.";
     }
 
     if (form.currentCtc && (isNaN(Number(form.currentCtc)) || Number(form.currentCtc) < 0)) {
@@ -548,14 +540,26 @@ export default function CandidateFormPage() {
                 htmlFor="experience"
                 className="flex items-center gap-1.5 text-muted-foreground mb-1.5"
               >
-                <Clock className="h-3.5 w-3.5" /> Total Experience (Years)
+                <Clock className="h-3.5 w-3.5" /> Total Experience (Years) <span className="text-destructive">*</span>
               </Label>
-              <Input id="experience"
+              <select
+                id="experience"
                 value={form.experience}
-                onChange={(e) => handleNumericChange("experience", e.target.value)}
-                placeholder="e.g., 5"
-                className={errors.experience ? "border-destructive focus-visible:ring-destructive" : ""}
-              />
+                onChange={(e) => set("experience", e.target.value)}
+                className={cn(
+                  "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+                  errors.experience ? "border-destructive focus-visible:ring-destructive" : ""
+                )}
+              >
+                <option value="">Select Experience</option>
+                <option value="Fresher">Fresher</option>
+                <option value="1-2 Years">1-2 Years</option>
+                <option value="2-4 Years">2-4 Years</option>
+                <option value="4-6 Years">4-6 Years</option>
+                <option value="6-8 Years">6-8 Years</option>
+                <option value="8-10 Years">8-10 Years</option>
+                <option value="10+ Years">10+ Years</option>
+              </select>
               <ErrorMsg msg={errors.experience} />
             </div>
             <div>
@@ -565,13 +569,24 @@ export default function CandidateFormPage() {
               >
                 <Clock className="h-3.5 w-3.5" /> Relevant Experience (Years)
               </Label>
-              <Input
+              <select
                 id="relevantExperience"
                 value={form.relevantExperience}
-                onChange={(e) => handleNumericChange("relevantExperience", e.target.value)}
-                placeholder="e.g., 4"
-                className={errors.relevantExperience ? "border-destructive focus-visible:ring-destructive" : ""}
-              />
+                onChange={(e) => set("relevantExperience", e.target.value)}
+                className={cn(
+                  "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+                  errors.relevantExperience ? "border-destructive focus-visible:ring-destructive" : ""
+                )}
+              >
+                <option value="">Select Relevant Experience</option>
+                <option value="Fresher">Fresher</option>
+                <option value="1-2 Years">1-2 Years</option>
+                <option value="2-4 Years">2-4 Years</option>
+                <option value="4-6 Years">4-6 Years</option>
+                <option value="6-8 Years">6-8 Years</option>
+                <option value="8-10 Years">8-10 Years</option>
+                <option value="10+ Years">10+ Years</option>
+              </select>
               <ErrorMsg msg={errors.relevantExperience} />
             </div>
             <div>
