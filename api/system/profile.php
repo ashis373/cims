@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 if (isset($_SERVER['HTTP_ORIGIN'])) { header("Access-Control-Allow-Origin: {$_SERVER['HTTP_ORIGIN']}"); }
 header('Access-Control-Allow-Credentials: true');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
@@ -11,7 +11,7 @@ require_once '../auth_middleware.php';
 
 
 
-$user_id = $_SESSION['user_id'];
+$user_id = $currentUser;
 $method = $_SERVER['REQUEST_METHOD'];
 $action = $_GET['action'] ?? '';
 
@@ -114,3 +114,4 @@ try {
     echo json_encode(["status" => "error", "message" => $e->getMessage()]);
 }
 ?>
+

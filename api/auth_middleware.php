@@ -116,4 +116,3 @@ function require_permission($module, $action = null) {
 
 ?>
 
-

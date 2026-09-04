@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 if (isset($_SERVER['HTTP_ORIGIN'])) { header("Access-Control-Allow-Origin: {$_SERVER['HTTP_ORIGIN']}"); }
 header('Access-Control-Allow-Credentials: true');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
@@ -79,7 +79,7 @@ try {
         
         $new_id = $conn->lastInsertId();
         $logStmt = $conn->prepare("INSERT INTO cims_audit_logs (user_id, action, module, details) VALUES (?, 'Create User', 'Users', ?)");
-        $logStmt->execute([$_SESSION['user_id'], json_encode(['created_user_id' => $new_id, 'email' => $data['email']])]);
+        $logStmt->execute([$currentUser, json_encode(['created_user_id' => $new_id, 'email' => $data['email']])]);
         
         echo json_encode(["status" => "success", "message" => "User created successfully", "data" => ["id" => $new_id]]);
         exit;
@@ -105,7 +105,7 @@ try {
             $stmt->execute([$hashedPassword, $id]);
             
             $logStmt = $conn->prepare("INSERT INTO cims_audit_logs (user_id, action, module, details) VALUES (?, 'Reset Password', 'Users', ?)");
-            $logStmt->execute([$_SESSION['user_id'], json_encode(['target_user_id' => $id])]);
+            $logStmt->execute([$currentUser, json_encode(['target_user_id' => $id])]);
             
             echo json_encode(["status" => "success", "message" => "Password reset successfully"]);
             exit;
@@ -143,7 +143,7 @@ try {
             $stmt->execute([$new_status, $id]);
             
             $logStmt = $conn->prepare("INSERT INTO cims_audit_logs (user_id, action, module, details) VALUES (?, 'Toggle Status', 'Users', ?)");
-            $logStmt->execute([$_SESSION['user_id'], json_encode(['target_user_id' => $id, 'new_status' => $new_status])]);
+            $logStmt->execute([$currentUser, json_encode(['target_user_id' => $id, 'new_status' => $new_status])]);
             
             echo json_encode(["status" => "success", "message" => "Status updated"]);
             exit;
@@ -163,7 +163,7 @@ try {
         ]);
         
         $logStmt = $conn->prepare("INSERT INTO cims_audit_logs (user_id, action, module, details) VALUES (?, 'Update User', 'Users', ?)");
-        $logStmt->execute([$_SESSION['user_id'], json_encode(['target_user_id' => $id, 'role_id' => $data['role_id']])]);
+        $logStmt->execute([$currentUser, json_encode(['target_user_id' => $id, 'role_id' => $data['role_id']])]);
         
         echo json_encode(["status" => "success", "message" => "User updated successfully"]);
         exit;
@@ -203,7 +203,7 @@ try {
         $stmt->execute([$id]);
         
         $logStmt = $conn->prepare("INSERT INTO cims_audit_logs (user_id, action, module, details) VALUES (?, 'Delete User', 'Users', ?)");
-        $logStmt->execute([$_SESSION['user_id'], json_encode(['target_user_id' => $id])]);
+        $logStmt->execute([$currentUser, json_encode(['target_user_id' => $id])]);
         
         echo json_encode(["status" => "success", "message" => "User deleted successfully"]);
         exit;
@@ -214,5 +214,6 @@ try {
     echo json_encode(["status" => "error", "message" => $e->getMessage()]);
 }
 ?>
+
 
 

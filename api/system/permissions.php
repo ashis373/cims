@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 if (isset($_SERVER['HTTP_ORIGIN'])) { header("Access-Control-Allow-Origin: {$_SERVER['HTTP_ORIGIN']}"); }
 header('Access-Control-Allow-Credentials: true');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
@@ -55,7 +55,7 @@ try {
         $conn->commit();
         
         $logStmt = $conn->prepare("INSERT INTO cims_audit_logs (user_id, action, module, details) VALUES (?, 'Update Permissions', 'Roles', ?)");
-        $logStmt->execute([$_SESSION['user_id'], json_encode(['role_id' => $role_id])]);
+        $logStmt->execute([$currentUser, json_encode(['role_id' => $role_id])]);
         
         echo json_encode(["status" => "success", "message" => "Permissions updated"]);
     }
@@ -67,3 +67,4 @@ try {
     echo json_encode(["status" => "error", "message" => $e->getMessage()]);
 }
 ?>
+

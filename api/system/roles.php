@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 if (isset($_SERVER['HTTP_ORIGIN'])) { header("Access-Control-Allow-Origin: {$_SERVER['HTTP_ORIGIN']}"); }
 header('Access-Control-Allow-Credentials: true');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
@@ -30,7 +30,7 @@ try {
         $new_id = $conn->lastInsertId();
         
         $logStmt = $conn->prepare("INSERT INTO cims_audit_logs (user_id, action, module, details) VALUES (?, 'Create Role', 'Roles', ?)");
-        $logStmt->execute([$_SESSION['user_id'], json_encode(['role_id' => $new_id, 'role_name' => $data['role_name']])]);
+        $logStmt->execute([$currentUser, json_encode(['role_id' => $new_id, 'role_name' => $data['role_name']])]);
         
         echo json_encode(["status" => "success", "message" => "Role created", "id" => $new_id]);
     } 
@@ -40,7 +40,7 @@ try {
         $stmt->execute([$data['role_name'], $data['description'], $data['id']]);
         
         $logStmt = $conn->prepare("INSERT INTO cims_audit_logs (user_id, action, module, details) VALUES (?, 'Update Role', 'Roles', ?)");
-        $logStmt->execute([$_SESSION['user_id'], json_encode(['role_id' => $data['id']])]);
+        $logStmt->execute([$currentUser, json_encode(['role_id' => $data['id']])]);
         
         echo json_encode(["status" => "success", "message" => "Role updated"]);
     }
@@ -66,7 +66,7 @@ try {
         $stmt->execute([$id]);
         
         $logStmt = $conn->prepare("INSERT INTO cims_audit_logs (user_id, action, module, details) VALUES (?, 'Delete Role', 'Roles', ?)");
-        $logStmt->execute([$_SESSION['user_id'], json_encode(['role_id' => $id, 'role_name' => $roleName])]);
+        $logStmt->execute([$currentUser, json_encode(['role_id' => $id, 'role_name' => $roleName])]);
         
         echo json_encode(["status" => "success", "message" => "Role deleted successfully"]);
     }
@@ -75,3 +75,4 @@ try {
     echo json_encode(["status" => "error", "message" => $e->getMessage()]);
 }
 ?>
+
