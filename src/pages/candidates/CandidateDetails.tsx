@@ -712,11 +712,12 @@ export default function CandidateProfile() {
                               {i === 0 ? "Current" : "Completed"}
                             </Badge>
                           </div>
-                          {detail && (
-                            <div className="text-[10px] text-slate-500 mt-1 font-medium bg-slate-50 p-1.5 rounded-md border border-slate-100 inline-block">
-                              {detail}
+                          <div className="text-[10px] text-slate-500 mt-1.5 font-medium bg-slate-50 p-2 rounded-lg border border-slate-100 block">
+                            {detail && <div className="mb-1 text-slate-600 font-semibold">{detail}</div>}
+                            <div className="font-semibold text-slate-500">
+                              By: {item.author || (item.message.toLowerCase().includes("application received") || item.message.toLowerCase().includes("created") ? "System" : (currentUser?.name || "Administrator"))}
                             </div>
-                          )}
+                          </div>
                         </div>
                       </div>
                     )
@@ -1281,12 +1282,13 @@ export default function CandidateProfile() {
                         {i === 0 ? "Current" : "Completed"}
                       </Badge>
                     </div>
-                    {detail && (
-                      <div className="text-[10px] text-slate-500 mt-1 font-medium bg-slate-50 p-1.5 rounded-md border border-slate-100 inline-block">
-                        {detail}
-                      </div>
-                    )}
-                  </div>
+                    <div className="text-[10px] text-slate-500 mt-1.5 font-medium bg-slate-50 p-2 rounded-lg border border-slate-100 block">
+                            {detail && <div className="mb-1 text-slate-600 font-semibold">{detail}</div>}
+                            <div className="font-semibold text-slate-500">
+                              By: {item.author || (item.message.toLowerCase().includes("application received") || item.message.toLowerCase().includes("created") ? "System" : (currentUser?.name || "Administrator"))}
+                            </div>
+                          </div>
+                        </div>
                 </div>
               )
             })}
@@ -1686,3 +1688,5 @@ export default function CandidateProfile() {
     </div>
   );
 }
+
+

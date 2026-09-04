@@ -449,17 +449,22 @@ if ($method === 'GET') {
         }
         
         // 3. Log history
+        $action = 'Candidate Updated';
+        $details = 'Profile edited';
+        
+        if (isset($data['stage']) && $data['stage'] !== $oldStage) {
+            $details = "Status changed: " . ($oldStage ?? "New Applicant") . " ? " . $data['stage'];
+        }
+
         if (isset($data['activity']) && is_array($data['activity'])) {
-            // Find the newest activity and insert it
             $latest = end($data['activity']);
             if ($latest && isset($latest['message'])) {
-                $stmtHist = $conn->prepare("INSERT INTO cims_candidate_history (candidate_id, action, details, userId) VALUES (?, ?, ?, ?)");
-                $stmtHist->execute([$id, 'Candidate Updated', $latest['message'], $userId]);
+                $details = $latest['message'];
             }
-        } else {
-            $stmtHist = $conn->prepare("INSERT INTO cims_candidate_history (candidate_id, action, userId) VALUES (?, ?, ?)");
-            $stmtHist->execute([$id, 'Candidate Updated', $userId]);
         }
+        
+        $stmtHist = $conn->prepare("INSERT INTO cims_candidate_history (candidate_id, action, details, userId) VALUES (?, ?, ?, ?)");
+        $stmtHist->execute([$id, $action, $details, $userId]);
         
         // 4. Update or Add Notes
         if (isset($data['notes']) && trim($data['notes']) !== '') {
@@ -503,4 +508,5 @@ if ($method === 'GET') {
     }
 }
 ?>
+
 

@@ -32,6 +32,11 @@ if ($method === 'POST') {
             $data['text'],
             $data['createdBy'] ?? 'System'
         ]);
+        
+        $userId = isset($payload['user_id']) ? $payload['user_id'] : null;
+        $stmtHist = $conn->prepare("INSERT INTO cims_candidate_history (candidate_id, action, details, userId) VALUES (?, 'Note Added', ?, ?)");
+        $stmtHist->execute([$data['candidate_id'], $data['text'], $userId]);
+        
         echo json_encode(["success" => true, "id" => $conn->lastInsertId()]);
     } catch (PDOException $e) {
         http_response_code(500);
@@ -72,3 +77,4 @@ if ($method === 'POST') {
     }
 }
 ?>
+
