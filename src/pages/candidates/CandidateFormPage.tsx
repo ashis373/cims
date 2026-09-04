@@ -146,8 +146,8 @@ export default function CandidateFormPage() {
         notes: candidate.notes || "",
         tags: candidate.tags.join(", "),
         skills: candidate.skills?.join(", ") || "",
-        experience: candidate.experience ? String(candidate.experience).replace(/[^\d.]/g, '') : "",
-        relevantExperience: candidate.relevantExperience ? String(candidate.relevantExperience).replace(/[^\d.]/g, '') : "",
+        experience: candidate.experience || "",
+        relevantExperience: candidate.relevantExperience || "",
         currentCompany: candidate.currentCompany || "",
         currentDesignation: candidate.currentDesignation || "",
         currentCtc: candidate.currentCtc ? String(candidate.currentCtc).replace(/[^\d.]/g, '') : "",
@@ -269,8 +269,8 @@ export default function CandidateFormPage() {
               .split(",")
               .map((s) => s.trim())
               .filter(Boolean),
-            experience: form.experience + " Years",
-            relevantExperience: form.relevantExperience + " Years",
+            experience: form.experience,
+            relevantExperience: form.relevantExperience,
             currentCompany: form.currentCompany,
             currentDesignation: form.currentDesignation,
             currentCtc: form.currentCtc + " LPA",
@@ -305,8 +305,8 @@ export default function CandidateFormPage() {
             .split(",")
             .map((s) => s.trim())
             .filter(Boolean),
-          experience: form.experience + " Years",
-          relevantExperience: form.relevantExperience + " Years",
+          experience: form.experience,
+          relevantExperience: form.relevantExperience,
           currentCompany: form.currentCompany,
           currentDesignation: form.currentDesignation,
           currentCtc: form.currentCtc + " LPA",

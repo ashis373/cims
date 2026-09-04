@@ -1190,8 +1190,8 @@ export default function CandidateProfile() {
               <h4 className="text-[11px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-100 pb-2">Professional Details</h4>
               <DetailItem label="Position Applied" value={candidate.role} />
               <DetailItem label="Department" value={candidate.department || "-"} />
-              <DetailItem label="Total Experience" value={candidate.experience ? `${candidate.experience} Years` : "-"} />
-              <DetailItem label="Relevant Experience" value={candidate.relevantExperience ? `${candidate.relevantExperience} Years` : "-"} />
+              <DetailItem label="Total Experience" value={candidate.experience || "-"} />
+              <DetailItem label="Relevant Experience" value={candidate.relevantExperience || "-"} />
               <DetailItem label="Current Company" value={candidate.currentCompany || "-"} />
               <DetailItem label="Current Designation" value={candidate.currentDesignation || "-"} />
             </div>

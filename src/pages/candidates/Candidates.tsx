@@ -116,6 +116,7 @@ export default function CandidatesPage() {
   const [recruiterFilter, setRecruiterFilter] = useState("All Recruiters");
   const [departmentFilter, setDepartmentFilter] = useState("All Departments");
   const [dateFilter, setDateFilter] = useState("All Time");
+  const [experienceFilter, setExperienceFilter] = useState("All Experience");
   const [deleteCandidateId, setDeleteCandidateId] = useState<string | null>(null);
 
   const initialFilter = new URLSearchParams(location.search).get("filter") || "All";
@@ -285,7 +286,13 @@ export default function CandidatesPage() {
         return true;
       })();
 
-      return matchQ && matchQuick && matchStage && matchPosition && matchSource && matchRecruiter && matchDepartment && matchDate;
+      const matchExperience = (() => {
+        if (!experienceFilter || experienceFilter === "All Experience") return true;
+        const exp = c.experience || "";
+        return exp.includes(experienceFilter) || exp.replace(" Years Years", " Years").replace("Fresher Years", "Fresher") === experienceFilter;
+      })();
+
+      return matchQ && matchQuick && matchStage && matchPosition && matchSource && matchRecruiter && matchDepartment && matchDate && matchExperience;
     });
 
     result.sort((a, b) => {
@@ -301,7 +308,7 @@ export default function CandidatesPage() {
     });
 
     return result;
-  }, [candidates, q, quickFilter, stageFilter, positionFilter, sourceFilter, recruiterFilter, departmentFilter, dateFilter, sortOrder]);
+  }, [candidates, q, quickFilter, stageFilter, positionFilter, sourceFilter, recruiterFilter, departmentFilter, dateFilter, experienceFilter, sortOrder]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
   const safePage = Math.min(page, totalPages);
@@ -315,6 +322,7 @@ export default function CandidatesPage() {
     setRecruiterFilter("All Recruiters");
     setDepartmentFilter("All Departments");
     setDateFilter("All Time");
+    setExperienceFilter("All Experience");
     setQuickFilter("All");
   };
 
@@ -386,7 +394,7 @@ export default function CandidatesPage() {
           pctTone="text-emerald-500"
           borderTone="border-blue-500"
         />
-        <TopStat
+        {/* <TopStat
           title="Active Candidates"
           value={analytics.active}
           pct={8}
@@ -394,7 +402,7 @@ export default function CandidatesPage() {
           tone="bg-teal-50 text-teal-600"
           pctTone="text-emerald-500"
           borderTone="border-teal-500"
-        />
+        /> */}
         <TopStat
           title="Interview Scheduled"
           value={analytics.intSched}
@@ -524,6 +532,21 @@ export default function CandidatesPage() {
                 <option value="Today">Today</option>
                 <option value="Last 7 Days">Last 7 Days</option>
                 <option value="This Month">This Month</option>
+              </select>
+
+              <select
+                className="h-9 w-[130px] rounded-lg border border-slate-200 bg-white px-3 text-xs shadow-sm font-semibold text-slate-700"
+                value={experienceFilter}
+                onChange={(e) => setExperienceFilter(e.target.value)}
+              >
+                <option value="All Experience">All Experience</option>
+                <option value="Fresher">Fresher</option>
+                <option value="1-2 Years">1-2 Years</option>
+                <option value="2-4 Years">2-4 Years</option>
+                <option value="4-6 Years">4-6 Years</option>
+                <option value="6-8 Years">6-8 Years</option>
+                <option value="8-10 Years">8-10 Years</option>
+                <option value="10+ Years">10+ Years</option>
               </select>
 
               <Button
@@ -666,7 +689,7 @@ export default function CandidatesPage() {
                           </span>
                         </td>
                         <td className="px-4 py-3 font-medium text-slate-700">
-                          {c.experience || "—"}
+                          {c.experience ? c.experience.replace(" Years Years", " Years").replace("Fresher Years", "Fresher") : "—"}
                         </td>
                         <td className="px-4 py-3 font-medium text-slate-700">
                           {c.currentCompany || "—"}
@@ -784,7 +807,7 @@ export default function CandidatesPage() {
                       <div className="space-y-2.5 mb-5 flex-1">
                         <div className="flex items-center text-[11px] text-slate-600">
                           <Briefcase className="h-3.5 w-3.5 mr-2.5 text-slate-400 shrink-0" />
-                          <span className="truncate font-medium">{c.currentCompany || "No Company"} <span className="text-slate-400 font-normal">({c.experience || "Fresher"})</span></span>
+                          <span className="truncate font-medium">{c.currentCompany || "No Company"} <span className="text-slate-400 font-normal">({c.experience ? c.experience.replace(" Years Years", " Years").replace("Fresher Years", "Fresher") : "Fresher"})</span></span>
                         </div>
                         <div className="flex items-center text-[11px] text-slate-600">
                           <Mail className="h-3.5 w-3.5 mr-2.5 text-slate-400 shrink-0" />

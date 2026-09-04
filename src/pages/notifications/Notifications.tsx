@@ -222,10 +222,6 @@ export default function Notifications() {
             <span className={cn("text-[13px]", activeTab === "Critical" ? "font-extrabold" : "font-bold")}>Critical</span>
             {criticalAlerts > 0 && <Badge className={cn("border-transparent rounded-full px-2 text-[10px]", activeTab === "Critical" ? "bg-red-50 text-red-500 hover:bg-red-50" : "bg-red-50 text-red-500 hover:bg-red-50")}>{criticalAlerts}</Badge>}
           </div>
-          <div onClick={() => {setActiveTab("Mentions"); setCurrentPage(1);}} className={cn("flex items-center gap-2 py-3 border-b-2 cursor-pointer transition-colors -mb-3", activeTab === "Mentions" ? "border-indigo-600 text-indigo-600" : "border-transparent text-slate-500 hover:text-slate-800")}>
-            <span className={cn("text-[13px]", activeTab === "Mentions" ? "font-extrabold" : "font-bold")}>Mentions</span>
-            {mentionsAlerts > 0 && <Badge className={cn("border-transparent rounded-full px-2 text-[10px]", activeTab === "Mentions" ? "bg-slate-100 text-slate-600 hover:bg-slate-100" : "bg-slate-100 text-slate-600 hover:bg-slate-100")}>{mentionsAlerts}</Badge>}
-          </div>
         </div>
 
         <div className="flex items-center gap-3 w-full lg:w-auto mt-4 lg:mt-0">
