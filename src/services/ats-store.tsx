@@ -212,7 +212,7 @@ export function AtsProvider({ children }: { children: ReactNode }) {
           try {
             const triggerRes = await fetch(`${API_BASE_URL}/settings/email/trigger.php`, {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('token') },
               body: JSON.stringify({ candidate_id: id, stage })
             }).then(r => r.json());
             
@@ -395,3 +395,4 @@ export function useAts() {
 
 export { PIPELINE_STAGES };
 export { DEPARTMENTS } from "@/types/ats-types";
+

@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 $origin = isset($_SERVER['HTTP_ORIGIN']) ? $_SERVER['HTTP_ORIGIN'] : '*';
 header("Access-Control-Allow-Origin: $origin");
 header("Access-Control-Allow-Credentials: true");
@@ -100,26 +100,27 @@ try {
 function sendEventEmailDirect($conn, $template, $candidate, $subject, $body, $unique_hash) {
     $recipient_email = $candidate['email'];
     
-    // SMTP Config
-    $smtpStmt = $conn->query("SELECT from_name, from_email FROM cims_smtp_config LIMIT 1");
-    $smtp = $smtpStmt->fetch(PDO::FETCH_ASSOC);
-    $fromName = $smtp['from_name'] ?? "ATS System";
-    $fromEmail = $smtp['from_email'] ?? "no-reply@ats.local";
-    $mailSent = true; // Simulated success
-    $status = $mailSent ? 'Delivered' : 'Failed';
-    $logStmt = $conn->prepare("
-        INSERT INTO cims_email_logs (recipient_email, subject, body, template_id, candidate_id, status, unique_hash, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
+    // Check if already in queue
+    $checkStmt = $conn->prepare("SELECT id FROM cims_email_queue WHERE unique_hash = ?");
+    $checkStmt->execute([$unique_hash]);
+    if ($checkStmt->rowCount() > 0) {
+        return ["success" => true, "message" => "Email already queued."];
+    }
+
+    $queueStmt = $conn->prepare("
+        INSERT INTO cims_email_queue (candidate_id, recipient_email, template_id, subject, body, sending_method, unique_hash, status) 
+        VALUES (?, ?, ?, ?, ?, 'Automatic', ?, 'Pending')
     ");
-    $logStmt->execute([
+    
+    $res = $queueStmt->execute([
+        $candidate['id'],
         $recipient_email,
+        $template['id'],
         $subject,
         $body,
-        $template['id'],
-        $candidate['id'],
-        $status,
         $unique_hash
     ]);
-    return ["success" => $mailSent, "message" => "Email delivered automatically."];
+    
+    return ["success" => $res, "message" => $res ? "Email queued automatically." : "Failed to queue email."];
 }
 ?>
