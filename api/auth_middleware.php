@@ -113,7 +113,7 @@ function require_permission($module, $action = null) {
     }
 }
 
-// To maintain compatibility with older scripts that might use $_SESSION
-$_SESSION = $_SESSION ?? [];
-$_SESSION['user_id'] = $currentUser;
+
 ?>
+
+

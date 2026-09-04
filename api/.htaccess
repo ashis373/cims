@@ -1,3 +1,13 @@
-<Files "error.log">
+﻿Options -Indexes
+
+# Prevent access to sensitive files
+<FilesMatch "^\.|\.(log|ini|env|md|json|lock)$">
     Require all denied
-</Files>
+</FilesMatch>
+
+# Ensure Authorization headers are passed to PHP for JWT processing
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteCond %{HTTP:Authorization} ^(.*)
+    RewriteRule .* - [e=HTTP_AUTHORIZATION:%1]
+</IfModule>
