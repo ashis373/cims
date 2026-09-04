@@ -367,11 +367,20 @@ export function AppLayout({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
+    const handleAlertsRead = () => setUnreadCount(0);
+    window.addEventListener('ALERTS_READ', handleAlertsRead);
+    return () => window.removeEventListener('ALERTS_READ', handleAlertsRead);
+  }, []);
+
+  useEffect(() => {
     const fetchNotifications = async () => {
       try {
         const res = await fetch(`${API_BASE_URL}/notifications/notifications.php`);
         const data = await res.json();
-        const count = data.filter((a: any) => a.unread).length;
+        const lastRead = localStorage.getItem('cims_last_alerts_read');
+        const lastReadTime = lastRead ? new Date(lastRead).getTime() : 0;
+        
+        const count = data.filter((a: any) => new Date(a.timeRaw).getTime() > lastReadTime).length;
         setUnreadCount(count);
       } catch (err) {
         console.error("Failed to load notifications", err);
@@ -502,9 +511,9 @@ export function AppLayout({ children }: { children: ReactNode }) {
               Add Candidate
             </Link>
             <Link to="/notifications/alerts" className="relative flex items-center justify-center h-10 w-10 rounded-full bg-white border border-slate-200 hover:bg-slate-50 transition-colors shadow-sm">
-              <Bell className="h-4 w-4 text-slate-600" />
+              <span className="text-[17px] hover:animate-bounce origin-bottom">🔔</span>
               {unreadCount > 0 && (
-                <span className="absolute top-1 right-1 flex h-4 min-w-[16px] px-1 items-center justify-center rounded-full bg-rose-500 text-[9px] font-bold text-white ring-2 ring-white">
+                <span className="absolute -top-1 -right-1 flex h-4 min-w-[16px] px-1 items-center justify-center rounded-full bg-[#FF3B30] text-[10px] font-black text-white ring-2 ring-white shadow-sm">
                   {unreadCount}
                 </span>
               )}

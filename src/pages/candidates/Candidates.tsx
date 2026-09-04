@@ -115,6 +115,7 @@ export default function CandidatesPage() {
   const [sourceFilter, setSourceFilter] = useState("All Sources");
   const [recruiterFilter, setRecruiterFilter] = useState("All Recruiters");
   const [departmentFilter, setDepartmentFilter] = useState("All Departments");
+  const [dateFilter, setDateFilter] = useState("All Time");
   const [deleteCandidateId, setDeleteCandidateId] = useState<string | null>(null);
 
   const initialFilter = new URLSearchParams(location.search).get("filter") || "All";
@@ -270,7 +271,21 @@ export default function CandidatesPage() {
       const matchDepartment =
         !departmentFilter || departmentFilter === "All Departments" || c.department === departmentFilter;
 
-      return matchQ && matchQuick && matchStage && matchPosition && matchSource && matchRecruiter && matchDepartment;
+      const matchDate = (() => {
+        if (!dateFilter || dateFilter === "All Time") return true;
+        const cDate = new Date(c.createdAt || c.appliedAt || 0).getTime();
+        const now = new Date().getTime();
+        if (dateFilter === "Today") {
+          return (now - cDate) < 24 * 60 * 60 * 1000;
+        } else if (dateFilter === "Last 7 Days") {
+          return (now - cDate) < 7 * 24 * 60 * 60 * 1000;
+        } else if (dateFilter === "This Month") {
+          return (now - cDate) < 30 * 24 * 60 * 60 * 1000;
+        }
+        return true;
+      })();
+
+      return matchQ && matchQuick && matchStage && matchPosition && matchSource && matchRecruiter && matchDepartment && matchDate;
     });
 
     result.sort((a, b) => {
@@ -286,7 +301,7 @@ export default function CandidatesPage() {
     });
 
     return result;
-  }, [candidates, q, quickFilter, stageFilter, positionFilter, sourceFilter, recruiterFilter, departmentFilter, sortOrder]);
+  }, [candidates, q, quickFilter, stageFilter, positionFilter, sourceFilter, recruiterFilter, departmentFilter, dateFilter, sortOrder]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
   const safePage = Math.min(page, totalPages);
@@ -299,6 +314,7 @@ export default function CandidatesPage() {
     setSourceFilter("All Sources");
     setRecruiterFilter("All Recruiters");
     setDepartmentFilter("All Departments");
+    setDateFilter("All Time");
     setQuickFilter("All");
   };
 
@@ -497,6 +513,17 @@ export default function CandidatesPage() {
                     {d}
                   </option>
                 ))}
+              </select>
+
+              <select
+                className="h-9 w-[130px] rounded-lg border border-slate-200 bg-white px-3 text-xs shadow-sm font-semibold text-slate-700"
+                value={dateFilter}
+                onChange={(e) => setDateFilter(e.target.value)}
+              >
+                <option value="All Time">All Time</option>
+                <option value="Today">Today</option>
+                <option value="Last 7 Days">Last 7 Days</option>
+                <option value="This Month">This Month</option>
               </select>
 
               <Button

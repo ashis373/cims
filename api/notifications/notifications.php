@@ -5,68 +5,43 @@ header("Access-Control-Allow-Credentials: true");
 header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
 header("Content-Type: application/json");
+
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     exit;
 }
+
 include '../db.php';
+require_once '../auth_middleware.php';
+
+// Auth checks
 $method = $_SERVER['REQUEST_METHOD'];
 if ($method === 'POST') $required_permission = 'can_add';
 else if ($method === 'PUT') $required_permission = 'can_edit';
 else if ($method === 'DELETE') $required_permission = 'can_delete';
 else $required_permission = 'can_view';
-require_once '../auth_middleware.php';
 require_permission('alerts');
+
 try {
     $alerts = [];
     $idCounter = 1;
-    // Helper to add alert
-    $addAlert = function($type, $title, $candidateName, $timeStr) use (&$alerts, &$idCounter) {
+    
+    // Add alert helper
+    $addAlert = function($type, $category, $title, $candidateName, $timeStr, $priority) use (&$alerts, &$idCounter) {
         $alerts[] = [
             "id" => $idCounter++,
-            "type" => $type,
+            "type" => $type,         // For icon selection
+            "category" => $category, // 'Critical', 'Action Required', 'Attention', 'Information', 'Success'
             "title" => $title,
             "candidate" => $candidateName,
             "timeRaw" => $timeStr,
-            "unread" => true
+            "unread" => true,
+            "priority" => $priority  // 'Critical', 'High', 'Medium', 'Low'
         ];
     };
-    // 1. Interview pending/upcoming
-    $stmt = $conn->query("
-        SELECT c.name, c.updatedAt 
-        FROM cims_candidates c 
-        JOIN cims_applications a ON c.id = a.candidate_id 
-        WHERE a.stage LIKE '%Interview%' AND c.isBlacklisted = 0 AND c.isActive = 1 
-        ORDER BY c.updatedAt DESC LIMIT 5
-    ");
-    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-        $addAlert("interview", "Interview feedback pending", $row['name'], $row['updatedAt']);
-    }
-    
-    // 2. Offer acceptance pending
-    $stmt = $conn->query("
-        SELECT c.name, c.updatedAt 
-        FROM cims_candidates c 
-        JOIN cims_applications a ON c.id = a.candidate_id 
-        WHERE a.stage = 'Offer Released' AND c.isBlacklisted = 0 AND c.isActive = 1 
-        ORDER BY c.updatedAt DESC LIMIT 5
-    ");
-    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-        $addAlert("offer", "Offer acceptance pending", $row['name'], $row['updatedAt']);
-    }
-    // 3. Joining date approaching
-    $stmt = $conn->query("
-        SELECT c.name, c.updatedAt 
-        FROM cims_candidates c 
-        JOIN cims_applications a ON c.id = a.candidate_id 
-        WHERE a.stage = 'Joined' AND c.isBlacklisted = 0 AND c.isActive = 1 
-        ORDER BY c.updatedAt DESC LIMIT 5
-    ");
-    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-        $timeRaw = $row['updatedAt'];
-        $addAlert("joining", "Joining date approaching", $row['name'], $timeRaw);
-    }
-    // 4. Duplicates detected
+
+    // --- CRITICAL ---
+    // 1. Duplicate Candidate
     $stmt = $conn->query("
         SELECT name, email, COUNT(*) as cnt, MAX(updatedAt) as last_updated
         FROM cims_candidates 
@@ -76,19 +51,157 @@ try {
         ORDER BY last_updated DESC LIMIT 5
     ");
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-        $addAlert("duplicate", "Duplicate candidate detected", $row['name'], $row['last_updated']);
+        $addAlert("duplicate", "Critical", "Duplicate candidate detected", $row['name'], $row['last_updated'], "Critical");
     }
-    // Sort all alerts by time descending
+
+    // 2. Email failure
+    try {
+        $stmt = $conn->query("
+            SELECT candidate_id, subject, sent_at, error_message
+            FROM cims_email_logs
+            WHERE status = 'Failed'
+            ORDER BY sent_at DESC LIMIT 5
+        ");
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $c_stmt = $conn->prepare("SELECT name FROM cims_candidates WHERE id = ?");
+            $c_stmt->execute([$row['candidate_id']]);
+            $candidateName = $c_stmt->fetchColumn() ?: 'Unknown';
+            $addAlert("email_failed", "Critical", "Email delivery failed", $candidateName, $row['sent_at'], "Critical");
+        }
+    } catch (Exception $e) {}
+
+    // --- ACTION REQUIRED ---
+    // 1. Interview feedback pending (Assuming stage contains Interview, updated more than 1 day ago)
+    $stmt = $conn->query("
+        SELECT c.name, c.updatedAt 
+        FROM cims_candidates c 
+        JOIN cims_applications a ON c.id = a.candidate_id 
+        WHERE a.stage LIKE '%Interview%' AND c.isBlacklisted = 0 AND c.isActive = 1 
+        AND c.updatedAt < DATE_SUB(NOW(), INTERVAL 1 DAY)
+        ORDER BY c.updatedAt DESC LIMIT 5
+    ");
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        $addAlert("interview_feedback", "Action Required", "Interview feedback pending", $row['name'], $row['updatedAt'], "High");
+    }
+
+    // 2. Offer acceptance pending (Offer Released more than 2 days ago)
+    $stmt = $conn->query("
+        SELECT c.name, c.updatedAt 
+        FROM cims_candidates c 
+        JOIN cims_applications a ON c.id = a.candidate_id 
+        WHERE a.stage = 'Offer Released' AND c.isBlacklisted = 0 AND c.isActive = 1 
+        AND c.updatedAt < DATE_SUB(NOW(), INTERVAL 2 DAY)
+        ORDER BY c.updatedAt ASC LIMIT 5
+    ");
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        $addAlert("offer_pending", "Action Required", "Offer acceptance pending", $row['name'], $row['updatedAt'], "High");
+    }
+
+    // 3. Missing candidate info (No email or no phone)
+    $stmt = $conn->query("
+        SELECT name, createdAt 
+        FROM cims_candidates 
+        WHERE (email = '' OR email IS NULL OR phone = '' OR phone IS NULL)
+        AND isBlacklisted = 0 AND isActive = 1 
+        ORDER BY createdAt DESC LIMIT 5
+    ");
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        $addAlert("missing_info", "Action Required", "Missing candidate information", $row['name'], $row['createdAt'], "Medium");
+    }
+
+
+    // --- ATTENTION ---
+    // 1. Candidate stuck in stage (same stage for > 14 days)
+    $stmt = $conn->query("
+        SELECT c.name, a.stage, c.updatedAt 
+        FROM cims_candidates c 
+        JOIN cims_applications a ON c.id = a.candidate_id 
+        WHERE c.updatedAt < DATE_SUB(NOW(), INTERVAL 14 DAY) 
+        AND a.stage NOT IN ('Rejected', 'Hired', 'Joined', 'Offer Accepted', 'New Applicant')
+        AND c.isBlacklisted = 0 AND c.isActive = 1 
+        ORDER BY c.updatedAt ASC LIMIT 5
+    ");
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        $addAlert("stuck_stage", "Attention", "Candidate stuck in " . $row['stage'], $row['name'], $row['updatedAt'], "Medium");
+    }
+
+    // 2. Joining approaching (Joined/Offer Accepted stage)
+    $stmt = $conn->query("
+        SELECT c.name, c.updatedAt 
+        FROM cims_candidates c 
+        JOIN cims_applications a ON c.id = a.candidate_id 
+        WHERE a.stage = 'Offer Accepted' OR a.stage = 'Joined'
+        AND c.isBlacklisted = 0 AND c.isActive = 1 
+        ORDER BY c.updatedAt DESC LIMIT 5
+    ");
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        $addAlert("joining", "Attention", "Joining date approaching", $row['name'], $row['updatedAt'], "Medium");
+    }
+
+    // --- INFORMATION ---
+    // 1. New candidate
+    $stmt = $conn->query("
+        SELECT name, createdAt 
+        FROM cims_candidates 
+        WHERE createdAt > DATE_SUB(NOW(), INTERVAL 2 DAY)
+        AND isBlacklisted = 0 AND isActive = 1 
+        ORDER BY createdAt DESC LIMIT 5
+    ");
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        $addAlert("new_candidate", "Information", "New candidate added", $row['name'], $row['createdAt'], "Low");
+    }
+
+    // 2. Blacklisted
+    $stmt = $conn->query("
+        SELECT name, updatedAt 
+        FROM cims_candidates 
+        WHERE isBlacklisted = 1
+        ORDER BY updatedAt DESC LIMIT 3
+    ");
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        $addAlert("blacklisted", "Information", "Candidate blacklisted", $row['name'], $row['updatedAt'], "High");
+    }
+
+    // --- SUCCESS ---
+    // 1. Offer accepted
+    $stmt = $conn->query("
+        SELECT c.name, c.updatedAt 
+        FROM cims_candidates c 
+        JOIN cims_applications a ON c.id = a.candidate_id 
+        WHERE a.stage = 'Offer Accepted' 
+        AND c.updatedAt > DATE_SUB(NOW(), INTERVAL 7 DAY)
+        ORDER BY c.updatedAt DESC LIMIT 5
+    ");
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        $addAlert("offer_accepted", "Success", "Offer accepted", $row['name'], $row['updatedAt'], "Low");
+    }
+
+    // 2. Joined
+    $stmt = $conn->query("
+        SELECT c.name, c.updatedAt 
+        FROM cims_candidates c 
+        JOIN cims_applications a ON c.id = a.candidate_id 
+        WHERE a.stage = 'Joined' 
+        AND c.updatedAt > DATE_SUB(NOW(), INTERVAL 7 DAY)
+        ORDER BY c.updatedAt DESC LIMIT 5
+    ");
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        $addAlert("joined", "Success", "Candidate joined successfully", $row['name'], $row['updatedAt'], "Low");
+    }
+
+
+    // ---------------------------------------------------------
+    // Format Time and Sort
+    // ---------------------------------------------------------
+
     usort($alerts, function($a, $b) {
         return strtotime($b['timeRaw']) - strtotime($a['timeRaw']);
     });
-    // Format 'time' field as "X ago"
+
     foreach ($alerts as &$alert) {
         $time_ago = strtotime($alert['timeRaw']);
         if (!$time_ago) $time_ago = time();
         $time_difference = time() - $time_ago;
-        
-        // Ensure difference isn't negative
         if ($time_difference < 0) {
             $time_difference = 0;
         }
@@ -105,15 +218,12 @@ try {
         } else {
             $alert['time'] = "$days days ago";
         }
-        
-        // Remove raw time field before sending to client
-        unset($alert['timeRaw']);
+        // unset($alert['timeRaw']);
     }
+
     echo json_encode($alerts);
 } catch (PDOException $e) {
     http_response_code(500);
     echo json_encode(["error" => $e->getMessage()]);
 }
 ?>
-
-
