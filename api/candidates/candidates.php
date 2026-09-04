@@ -27,9 +27,8 @@ if ($method === 'GET') {
     try {
         // Fetch candidates with primary application details
         $stmt = $conn->query("
-            SELECT c.*, a.stage, a.role_applied as role, a.department, a.source, a.recruiter, a.appliedAt 
+            SELECT c.* 
             FROM cims_candidates c 
-            LEFT JOIN cims_applications a ON c.id = a.candidate_id 
             ORDER BY c.updatedAt DESC
         ");
         $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -123,6 +122,25 @@ if ($method === 'GET') {
         // Hydrate results
         foreach ($results as &$row) {
             $cid = $row['id'];
+            
+            $apps = $appsByCand[$cid] ?? [];
+            if (!empty($apps)) {
+                $latestApp = $apps[0];
+                $row['stage'] = $latestApp['stage'] ?? null;
+                $row['role'] = $latestApp['role_applied'] ?? null;
+                $row['department'] = $latestApp['department'] ?? null;
+                $row['source'] = $latestApp['source'] ?? null;
+                $row['recruiter'] = $latestApp['recruiter'] ?? null;
+                $row['appliedAt'] = $latestApp['appliedAt'] ?? null;
+            } else {
+                $row['stage'] = null;
+                $row['role'] = null;
+                $row['department'] = null;
+                $row['source'] = null;
+                $row['recruiter'] = null;
+                $row['appliedAt'] = null;
+            }
+
             $row['tags'] = json_decode($row['tags'] ?? '[]');
             $row['skills'] = json_decode($row['skills'] ?? '[]');
             $row['interviews'] = json_decode($row['interviews'] ?? '[]');

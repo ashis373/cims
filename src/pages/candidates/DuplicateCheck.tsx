@@ -30,12 +30,13 @@ export default function DuplicateCheck() {
   const [searchQuery, setSearchQuery] = useState("");
   const [compareCandidates, setCompareCandidates] = useState<any[] | null>(null);
   const [mergeDialogOpen, setMergeDialogOpen] = useState(false);
+  const [deleteCandidate, setDeleteCandidate] = useState<any | null>(null);
 
   const handleCompare = (c: any, isExact: boolean) => {
     const list = isExact ? data?.exact || [] : data?.possible || [];
     const matches = list.filter((x: any) => x.id !== c.id && (
-      (isExact && ((c.email && x.email === c.email) || (c.phone && x.phone === c.phone))) ||
-      (!isExact && (c.name && x.name === c.name))
+      (isExact && ((c.email && x.email?.toLowerCase() === c.email?.toLowerCase()) || (c.phone && x.phone === c.phone))) ||
+      (!isExact && (c.name && x.name?.toLowerCase() === c.name?.toLowerCase()))
     ));
     if (matches.length > 0) {
       setCompareCandidates([c, matches[0]]);
@@ -53,6 +54,18 @@ export default function DuplicateCheck() {
     setCompareCandidates(null);
     setMergeDialogOpen(false);
   };
+
+  const executeDelete = async () => {
+    if (!deleteCandidate) return;
+    await remove([deleteCandidate.id]);
+    toast.success("Candidate deleted");
+    setData((prev: any) => prev ? { 
+      exact: prev.exact.filter((x: any) => x.id !== deleteCandidate.id), 
+      possible: prev.possible.filter((x: any) => x.id !== deleteCandidate.id) 
+    } : null);
+    setDeleteCandidate(null);
+  };
+
   const { remove } = useAts();
   const navigate = useNavigate();
 
@@ -103,36 +116,51 @@ export default function DuplicateCheck() {
               <Button onClick={() => setCompareCandidates(null)} variant="outline" className="rounded-xl h-9 text-[12px] font-bold">
                 <ArrowRight className="h-4 w-4 mr-1 rotate-180" /> Back
               </Button>
-              <Button onClick={() => setCompareCandidates(null)} variant="ghost" className="rounded-xl h-9 text-[12px] font-bold text-slate-500 hover:text-slate-700 hover:bg-slate-100">
-                Dismiss Duplicate
-              </Button>
+
               <Button onClick={() => setMergeDialogOpen(true)} className="rounded-xl h-9 text-[12px] font-bold bg-blue-600 hover:bg-blue-700 text-white">
                 Merge Candidates
               </Button>
             </div>
           </div>
           
-          <div className="overflow-x-auto rounded-xl border border-slate-100">
+          <div className="overflow-x-auto rounded-xl border border-slate-100 shadow-sm">
             <table className="w-full text-left text-[13px]">
-              <thead className="bg-slate-50/50 text-slate-500 font-bold border-b border-slate-100">
+              <thead className="bg-slate-50/80 text-slate-500 font-bold border-b border-slate-100">
                 <tr>
-                  <th className="py-3 px-4 w-1/4">Field</th>
-                  <th className="py-3 px-4 w-[37.5%] border-l border-slate-100 bg-blue-50/30 text-blue-900">Candidate A</th>
-                  <th className="py-3 px-4 w-[37.5%] border-l border-slate-100 bg-amber-50/30 text-amber-900">Candidate B</th>
+                  <th className="py-3 px-4 w-[20%]">Field</th>
+                  <th className="py-3 px-4 w-[40%] border-l border-slate-100 bg-blue-50/30 text-blue-900">Candidate A (Current)</th>
+                  <th className="py-3 px-4 w-[40%] border-l border-slate-100 bg-amber-50/30 text-amber-900">Candidate B (Duplicate)</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-slate-700 font-medium">
-                {['name', 'email', 'phone', 'currentCompany', 'role', 'recruiter', 'stage', 'updatedAt'].map(field => (
-                  <tr key={field} className="hover:bg-slate-50/50">
-                    <td className="py-3 px-4 text-slate-500 capitalize">{field === 'role' ? 'Position' : field === 'updatedAt' ? 'Created Date' : field}</td>
-                    <td className="py-3 px-4 border-l border-slate-100">
-                      {field === 'updatedAt' ? formatDate(compareCandidates[0][field]) : (compareCandidates[0][field] || '-')}
-                    </td>
-                    <td className={"py-3 px-4 border-l border-slate-100 " + (compareCandidates[0][field] !== compareCandidates[1][field] ? 'bg-amber-50/50 font-bold text-amber-900' : '')}>
-                      {field === 'updatedAt' ? formatDate(compareCandidates[1][field]) : (compareCandidates[1][field] || '-')}
-                    </td>
-                  </tr>
-                ))}
+                {['name', 'email', 'phone', 'location', 'experience', 'currentCompany', 'department', 'role', 'recruiter', 'source', 'stage', 'createdAt', 'updatedAt'].map(field => {
+                  const valA = compareCandidates[0][field];
+                  const valB = compareCandidates[1][field];
+                  const isSame = valA && valB && (valA === valB || (typeof valA === 'string' && typeof valB === 'string' && valA.toLowerCase() === valB.toLowerCase()));
+                  const isDate = field === 'updatedAt' || field === 'createdAt';
+                  const displayA = isDate ? formatDate(valA) : (valA || '-');
+                  const displayB = isDate ? formatDate(valB) : (valB || '-');
+
+                  return (
+                    <tr key={field} className="hover:bg-slate-50/30 transition-colors">
+                      <td className="py-3 px-4 text-slate-500 font-bold capitalize">
+                        {field === 'role' ? 'Position' : field === 'updatedAt' ? 'Last Updated' : field === 'createdAt' ? 'Applied On' : field}
+                      </td>
+                      <td className={"py-3 px-4 border-l border-slate-100 " + (isSame ? 'bg-emerald-50/40 text-emerald-700 font-bold' : '')}>
+                        <div className="flex items-center gap-2">
+                          {displayA}
+                          {isSame && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 ml-auto" />}
+                        </div>
+                      </td>
+                      <td className={"py-3 px-4 border-l border-slate-100 " + (isSame ? 'bg-emerald-50/40 text-emerald-700 font-bold' : 'bg-amber-50/30 text-amber-800')}>
+                        <div className="flex items-center gap-2">
+                          {displayB}
+                          {isSame && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 ml-auto" />}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -204,9 +232,6 @@ export default function DuplicateCheck() {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          <Button className="h-10 px-4 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-[13px] font-bold shadow-sm">
-            Run Scan Now
-          </Button>
         </div>
       </div>
 
@@ -282,7 +307,7 @@ export default function DuplicateCheck() {
                            <Button onClick={() => handleCompare(c, true)} variant="outline" size="sm" className="h-8 text-[11px] font-bold rounded-lg border-slate-200 text-slate-600 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200">
                              <Merge className="h-3.5 w-3.5 mr-1" /> Compare
                            </Button>
-                           <Button onClick={() => { if(confirm("Are you sure you want to delete this duplicate candidate?")) { remove([c.id]).then(() => { toast.success("Candidate deleted"); setData(prev => prev ? { exact: prev.exact.filter(x => x.id !== c.id), possible: prev.possible.filter(x => x.id !== c.id) } : null); }); } }} variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600">
+                           <Button onClick={() => setDeleteCandidate(c)} variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600">
                              <Trash2 className="h-4 w-4" />
                            </Button>
                          </div>
@@ -368,10 +393,10 @@ export default function DuplicateCheck() {
                       <td className="py-4 px-6 text-right">
                          <div className="flex items-center justify-end gap-2">
                            <Button onClick={() => handleCompare(c, false)} variant="outline" size="sm" className="h-8 text-[11px] font-bold rounded-lg border-slate-200 text-slate-600 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-200">
-                             Compare
+                             <Merge className="h-3.5 w-3.5 mr-1" /> Compare
                            </Button>
-                           <Button onClick={() => { setData(prev => prev ? { ...prev, possible: prev.possible.filter(x => x.id !== c.id) } : null); toast.success("Dismissed possible duplicate"); }} variant="ghost" size="sm" className="h-8 text-[11px] font-bold rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100">
-                             Dismiss
+                           <Button onClick={() => setDeleteCandidate(c)} variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600">
+                             <Trash2 className="h-4 w-4" />
                            </Button>
                          </div>
                       </td>
@@ -414,6 +439,28 @@ export default function DuplicateCheck() {
             <AlertDialogCancel className="rounded-xl font-bold">Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={executeMerge} className="rounded-xl font-bold bg-blue-600 hover:bg-blue-700">
               Yes, Merge Profiles
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!deleteCandidate} onOpenChange={(open) => !open && setDeleteCandidate(null)}>
+        <AlertDialogContent className="rounded-3xl max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-xl font-bold flex items-center gap-2 text-slate-900">
+              <Trash2 className="h-5 w-5 text-red-500" />
+              Delete Duplicate Candidate
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-[14px] text-slate-600 font-medium pt-2 leading-relaxed">
+              Are you sure you want to delete <strong>{deleteCandidate?.name}</strong>?
+              <br/><br/>
+              This action cannot be undone. This candidate's record will be <strong className="text-destructive">permanently removed</strong> from the system.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="mt-4">
+            <AlertDialogCancel className="rounded-xl font-bold">Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={executeDelete} className="rounded-xl font-bold bg-red-600 hover:bg-red-700 text-white border-0">
+              Yes, Delete Candidate
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
