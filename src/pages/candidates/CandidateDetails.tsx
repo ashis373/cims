@@ -665,7 +665,10 @@ export default function CandidateProfile() {
                 {candidate.activity
                   ?.filter((item: any) => {
                     const msg = item.message.toLowerCase();
-                    return msg.includes('created') || msg.includes('application received') || msg.includes('status changed') || msg.includes('interview') || msg.includes('offer');
+                    const action = msg.split(':')[0].trim();
+                    if (['profile updated', 'skills updated', 'note added', 'resume uploaded'].includes(action)) return false;
+                    if (action === 'candidate updated' && !msg.includes('status changed')) return false;
+                    return true;
                   })
                   .slice().reverse().slice(0, 4).map((item: any, i: number) => {
                     let title = item.message.split(':')[0] || "Update";
@@ -1237,7 +1240,13 @@ export default function CandidateProfile() {
             </DialogTitle>
           </DialogHeader>
           <div className="mt-6 space-y-6 relative before:absolute before:inset-0 before:ml-4 before:-translate-x-px before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-slate-100 before:to-transparent">
-            {candidate.activity.slice().reverse().map((item, i) => {
+            {candidate.activity?.filter((item: any) => {
+              const msg = item.message.toLowerCase();
+              const action = msg.split(':')[0].trim();
+              if (['profile updated', 'skills updated', 'note added', 'resume uploaded'].includes(action)) return false;
+              if (action === 'candidate updated' && !msg.includes('status changed')) return false;
+              return true;
+            }).slice().reverse().map((item, i) => {
               let title = item.message.split(':')[0] || "Update";
               let detail = item.message.includes(':') ? item.message.substring(item.message.indexOf(':') + 1).trim() : null;
               if (item.message.includes('Status changed:')) {
@@ -1688,5 +1697,7 @@ export default function CandidateProfile() {
     </div>
   );
 }
+
+
 
 

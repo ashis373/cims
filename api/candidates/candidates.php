@@ -449,22 +449,66 @@ if ($method === 'GET') {
         }
         
         // 3. Log history
-        $action = 'Candidate Updated';
-        $details = 'Profile edited';
-        
-        if (isset($data['stage']) && $data['stage'] !== $oldStage) {
-            $details = "Status changed: " . ($oldStage ?? "New Applicant") . " ? " . $data['stage'];
-        }
+        $changes = [];
+        $fieldMap = [
+            'name' => 'Name', 'email' => 'Email', 'phone' => 'Phone', 'alternateMobile' => 'Alternate Mobile',
+            'location' => 'Current Location', 'preferredLocation' => 'Preferred Location', 'experience' => 'Total Experience',
+            'relevantExperience' => 'Relevant Experience', 'currentCompany' => 'Current Company', 'currentDesignation' => 'Current Designation',
+            'currentCtc' => 'Current CTC', 'expectedCtc' => 'Expected CTC', 'noticePeriod' => 'Notice Period',
+            'resume' => 'Resume', 'linkedInProfile' => 'LinkedIn Profile', 'isBlacklisted' => 'Blacklisted Status', 'isActive' => 'Active Status', 'photo' => 'Photo'
+        ];
+        $arrow = json_decode('"\u2192"');
+        foreach ($fieldMap as $key => $label) {
+            if (array_key_exists($key, $data)) {
+                $oldRaw = $existing[$key];
+                $newRaw = $data[$key];
+                
+                // normalize booleans
+                if ($key === 'isBlacklisted' || $key === 'isActive') {
+                    $oldRaw = (bool)$oldRaw ? 'Yes' : 'No';
+                    $newRaw = (bool)$newRaw ? 'Yes' : 'No';
+                } else {
+                    $oldRaw = trim((string)$oldRaw);
+                    $newRaw = trim((string)$newRaw);
+                }
 
-        if (isset($data['activity']) && is_array($data['activity'])) {
-            $latest = end($data['activity']);
-            if ($latest && isset($latest['message'])) {
-                $details = $latest['message'];
+                if ($oldRaw !== $newRaw) {
+                    $oldVal = $oldRaw ?: '—';
+                    $newVal = $newRaw ?: '—';
+                    if ($key !== 'photo' && $key !== 'resume') {
+                        $changes[] = ['action' => 'Profile Updated', 'details' => "$label: $oldVal $arrow $newVal"];
+                    } else {
+                        $changes[] = ['action' => 'Profile Updated', 'details' => "$label updated"];
+                    }
+                }
             }
         }
-        
+        if (isset($data['skills'])) {
+            $newSkills = is_array($data['skills']) ? implode(', ', $data['skills']) : $data['skills'];
+            $oldSkillsArr = json_decode($existing['skills'] ?? '[]');
+            $oldSkills = is_array($oldSkillsArr) ? implode(', ', $oldSkillsArr) : $existing['skills'];
+            if (trim($newSkills) !== trim($oldSkills)) {
+                $oldVal = trim($oldSkills) ?: '—';
+                $newVal = trim($newSkills) ?: '—';
+                $changes[] = ['action' => 'Skills Updated', 'details' => "Skills: $oldVal $arrow $newVal"];
+            }
+        }
+        if (isset($data['stage']) && $data['stage'] !== $oldStage) {
+            $oldVal = $oldStage ?: 'New Applicant';
+            $changes[] = ['action' => 'Status Changed', 'details' => "$oldVal $arrow {$data['stage']}"];
+        }
+
+        if (empty($changes) && isset($data['activity']) && is_array($data['activity'])) {
+            $latest = end($data['activity']);
+            if ($latest && isset($latest['message'])) {
+                $changes[] = ['action' => 'Candidate Updated', 'details' => $latest['message']];
+            }
+        }
+
         $stmtHist = $conn->prepare("INSERT INTO cims_candidate_history (candidate_id, action, details, userId) VALUES (?, ?, ?, ?)");
-        $stmtHist->execute([$id, $action, $details, $userId]);
+        foreach ($changes as $c) {
+            $stmtHist->execute([$id, $c['action'], $c['details'], $userId]);
+        }
         
         // 4. Update or Add Notes
         if (isset($data['notes']) && trim($data['notes']) !== '') {
@@ -508,5 +552,6 @@ if ($method === 'GET') {
     }
 }
 ?>
+
 
 
