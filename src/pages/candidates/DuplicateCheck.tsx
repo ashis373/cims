@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { 
-  AlertCircle, FileWarning, User, Mail, Phone, Calendar, 
-  ArrowRight, ShieldAlert, CheckCircle2, Search, Trash2, Merge 
+import {
+  AlertCircle, FileWarning, Mail, Phone,
+  ArrowLeft, ArrowRight, ShieldAlert, CheckCircle2, Search, Trash2,
+  CircleAlert, Eye, GitCompareArrows, MapPin, BriefcaseBusiness
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { API_BASE_URL } from "@/config/api";
@@ -24,45 +25,95 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+type DuplicateCandidate = {
+  id: string;
+  name: string;
+  email?: string | null;
+  phone?: string | null;
+  location?: string | null;
+  experience?: string | null;
+  currentCompany?: string | null;
+  currentDesignation?: string | null;
+  department?: string | null;
+  role?: string | null;
+  recruiter?: string | null;
+  source?: string | null;
+  stage?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+};
+
+type DuplicateData = { exact: DuplicateCandidate[]; possible: DuplicateCandidate[] };
+type Comparison = { primary: DuplicateCandidate; matches: DuplicateCandidate[]; isExact: boolean };
+
+const normalizeEmail = (value?: string | null) => value?.trim().toLowerCase() || "";
+const normalizePhone = (value?: string | null) => value?.replace(/\D/g, "") || "";
+const normalizeName = (value?: string | null) => value?.trim().replace(/\s+/g, " ").toLowerCase() || "";
+
+const getMatchReasons = (first: DuplicateCandidate, second: DuplicateCandidate) => {
+  const reasons: string[] = [];
+  const firstEmail = normalizeEmail(first.email);
+  const secondEmail = normalizeEmail(second.email);
+  const firstPhone = normalizePhone(first.phone);
+  const secondPhone = normalizePhone(second.phone);
+
+  if (firstEmail && firstEmail === secondEmail) reasons.push("Same email");
+  if (firstPhone && firstPhone === secondPhone) reasons.push("Same phone");
+  if (normalizeName(first.name) && normalizeName(first.name) === normalizeName(second.name)) reasons.push("Same name");
+
+  return reasons;
+};
+
+const comparisonFields = [
+  ["name", "Full name"],
+  ["email", "Email address"],
+  ["phone", "Phone number"],
+  ["role", "Position"],
+  ["department", "Department"],
+  ["currentCompany", "Current company"],
+  ["currentDesignation", "Current designation"],
+  ["experience", "Experience"],
+  ["location", "Location"],
+  ["recruiter", "Recruiter"],
+  ["source", "Source"],
+  ["stage", "Current stage"],
+  ["createdAt", "Created on"],
+  ["updatedAt", "Last updated"],
+] as const;
+
 export default function DuplicateCheck() {
-  const [data, setData] = useState<{ exact: any[]; possible: any[] } | null>(null);
+  const [data, setData] = useState<DuplicateData | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [compareCandidates, setCompareCandidates] = useState<any[] | null>(null);
-  const [mergeDialogOpen, setMergeDialogOpen] = useState(false);
-  const [deleteCandidate, setDeleteCandidate] = useState<any | null>(null);
+  const [comparison, setComparison] = useState<Comparison | null>(null);
+  const [selectedMatchId, setSelectedMatchId] = useState<string | null>(null);
+  const [deleteCandidate, setDeleteCandidate] = useState<DuplicateCandidate | null>(null);
 
-  const handleCompare = (c: any, isExact: boolean) => {
+  const handleCompare = (c: DuplicateCandidate, isExact: boolean) => {
     const list = isExact ? data?.exact || [] : data?.possible || [];
-    const matches = list.filter((x: any) => x.id !== c.id && (
-      (isExact && ((c.email && x.email?.toLowerCase() === c.email?.toLowerCase()) || (c.phone && x.phone === c.phone))) ||
-      (!isExact && (c.name && x.name?.toLowerCase() === c.name?.toLowerCase()))
-    ));
+    const matches = list.filter((x) => x.id !== c.id && getMatchReasons(c, x).length > 0);
+
     if (matches.length > 0) {
-      setCompareCandidates([c, matches[0]]);
+      setComparison({ primary: c, matches, isExact });
+      setSelectedMatchId(matches[0].id);
     } else {
       toast.error("Could not find the matching duplicate in the list.");
     }
-  };
-
-  const executeMerge = async () => {
-    if(!compareCandidates) return;
-    const [candA, candB] = compareCandidates;
-    await remove([candB.id]);
-    toast.success("Candidates merged successfully!");
-    setData((prev: any) => prev ? { exact: prev.exact.filter((x: any) => x.id !== candB.id), possible: prev.possible.filter((x: any) => x.id !== candB.id) } : null);
-    setCompareCandidates(null);
-    setMergeDialogOpen(false);
   };
 
   const executeDelete = async () => {
     if (!deleteCandidate) return;
     await remove([deleteCandidate.id]);
     toast.success("Candidate deleted");
-    setData((prev: any) => prev ? { 
-      exact: prev.exact.filter((x: any) => x.id !== deleteCandidate.id), 
-      possible: prev.possible.filter((x: any) => x.id !== deleteCandidate.id) 
+    setData((prev) => prev ? {
+      exact: prev.exact.filter((x) => x.id !== deleteCandidate.id),
+      possible: prev.possible.filter((x) => x.id !== deleteCandidate.id)
     } : null);
+    setComparison((prev) => {
+      if (!prev) return null;
+      const matches = prev.matches.filter((x) => x.id !== deleteCandidate.id);
+      return matches.length ? { ...prev, matches } : null;
+    });
     setDeleteCandidate(null);
   };
 
@@ -89,125 +140,298 @@ export default function DuplicateCheck() {
       });
   }, []);
 
-  const formatDate = (d: string) => {
+  const formatDate = (d?: string | null) => {
     if (!d) return "-";
     return new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
   };
 
-  const exactFiltered = data?.exact?.filter(c => 
-    c.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    c.email?.toLowerCase().includes(searchQuery.toLowerCase())
+  const comparedCandidate = comparison?.matches.find((candidate) => candidate.id === selectedMatchId) || comparison?.matches[0] || null;
+  const matchReasons = comparison && comparedCandidate ? getMatchReasons(comparison.primary, comparedCandidate) : [];
+  const candidateCompleteness = (candidate: DuplicateCandidate) => comparisonFields.filter(([key]) => {
+    const value = candidate[key as keyof DuplicateCandidate];
+    return value !== null && value !== undefined && value !== "";
+  }).length;
+
+  const normalizedSearch = searchQuery.trim().toLowerCase();
+  const exactFiltered = data?.exact?.filter(c =>
+    c.name.toLowerCase().includes(normalizedSearch) ||
+    c.email?.toLowerCase().includes(normalizedSearch) ||
+    c.phone?.toLowerCase().includes(normalizedSearch)
   ) || [];
 
-  const possibleFiltered = data?.possible?.filter(c => 
-    c.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    c.email?.toLowerCase().includes(searchQuery.toLowerCase())
+  const possibleFiltered = data?.possible?.filter(c =>
+    c.name.toLowerCase().includes(normalizedSearch) ||
+    c.email?.toLowerCase().includes(normalizedSearch) ||
+    c.phone?.toLowerCase().includes(normalizedSearch)
   ) || [];
+
+  const renderDuplicateSection = (
+    title: string,
+    description: string,
+    candidates: DuplicateCandidate[],
+    isExact: boolean,
+  ) => {
+    const palette = isExact
+      ? {
+          accent: "red",
+          icon: <AlertCircle className="h-5 w-5" />,
+          iconClass: "bg-red-100 text-red-600",
+          countClass: "bg-red-100 text-red-700",
+          cardClass: "border-red-100",
+          lineClass: "from-red-500 to-rose-400",
+          actionClass: "border-red-200 text-red-700 hover:border-red-300 hover:bg-red-50",
+        }
+      : {
+          accent: "amber",
+          icon: <FileWarning className="h-5 w-5" />,
+          iconClass: "bg-amber-100 text-amber-600",
+          countClass: "bg-amber-100 text-amber-700",
+          cardClass: "border-amber-100",
+          lineClass: "from-amber-500 to-orange-400",
+          actionClass: "border-amber-200 text-amber-700 hover:border-amber-300 hover:bg-amber-50",
+        };
+
+    return (
+      <Card className={`overflow-hidden rounded-3xl border bg-white shadow-[0_10px_30px_-24px_rgba(15,23,42,0.4)] ${palette.cardClass}`}>
+        <div className={`h-1 bg-gradient-to-r ${palette.lineClass}`} />
+        <div className="flex flex-col gap-4 border-b border-slate-100 bg-gradient-to-b from-slate-50/80 to-white p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+          <div className="flex items-start gap-3">
+            <div className={`rounded-2xl p-3 ${palette.iconClass}`}>{palette.icon}</div>
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="text-lg font-bold text-slate-950">{title}</h2>
+                <Badge className={`border-0 px-2.5 py-1 text-xs font-bold ${palette.countClass}`}>{candidates.length} records</Badge>
+              </div>
+              <p className="mt-1 max-w-2xl text-sm text-slate-600">{description}</p>
+            </div>
+          </div>
+          <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-500">
+            {isExact ? "Review before contacting" : "Manual review required"}
+          </div>
+        </div>
+
+        {candidates.length ? (
+          <div className="grid gap-4 p-5 sm:grid-cols-2 sm:p-6 xl:grid-cols-3">
+            {candidates.map((candidate) => {
+              const related = candidates.filter((other) => other.id !== candidate.id && getMatchReasons(candidate, other).length > 0);
+              const matchSignals = [...new Set(related.flatMap((other) => getMatchReasons(candidate, other)))];
+
+              return (
+                <article key={candidate.id} className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md">
+                  <div className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${palette.lineClass}`} />
+                  <div className="flex items-start justify-between gap-3 pt-1">
+                    <button type="button" onClick={() => navigate(`/candidates/${candidate.id}`)} className="flex min-w-0 items-center gap-3 text-left">
+                      <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-sm font-black ${isExact ? "bg-red-50 text-red-700" : "bg-amber-50 text-amber-700"}`}>
+                        {candidate.name?.charAt(0)?.toUpperCase() || "U"}
+                      </div>
+                      <div className="min-w-0">
+                        <h3 className="truncate font-bold text-slate-950 group-hover:text-blue-700">{candidate.name}</h3>
+                        <p className="mt-0.5 truncate text-[11px] font-medium text-slate-500">ID: {candidate.id}</p>
+                      </div>
+                    </button>
+                    <Button onClick={() => setDeleteCandidate(candidate)} variant="ghost" size="icon" className="h-8 w-8 shrink-0 rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600" aria-label={`Delete ${candidate.name}`}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+
+                  <div className="mt-4 flex flex-wrap gap-1.5">
+                    {matchSignals.map((signal) => (
+                      <Badge key={signal} variant="outline" className={`border px-2 py-0.5 text-[10px] font-bold ${isExact ? "border-red-200 bg-red-50 text-red-700" : "border-amber-200 bg-amber-50 text-amber-700"}`}>
+                        {signal}
+                      </Badge>
+                    ))}
+                    <Badge variant="outline" className="border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-bold text-slate-600">
+                      {related.length} matching record{related.length === 1 ? "" : "s"}
+                    </Badge>
+                  </div>
+
+                  <div className="mt-4 space-y-2 rounded-xl bg-slate-50 p-3 text-xs">
+                    <p className="flex min-w-0 items-center gap-2 text-slate-700"><Mail className="h-3.5 w-3.5 shrink-0 text-slate-400" /><span className="truncate">{candidate.email || "No email address"}</span></p>
+                    <p className="flex min-w-0 items-center gap-2 text-slate-700"><Phone className="h-3.5 w-3.5 shrink-0 text-slate-400" /><span className="truncate">{candidate.phone || "No phone number"}</span></p>
+                  </div>
+
+                  <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
+                    <div className="rounded-lg border border-slate-100 p-2.5">
+                      <span className="block text-[10px] font-bold uppercase tracking-wide text-slate-400">Stage</span>
+                      <span className="mt-1 block truncate font-bold text-slate-700">{candidate.stage || "New Applicant"}</span>
+                    </div>
+                    <div className="rounded-lg border border-slate-100 p-2.5">
+                      <span className="block text-[10px] font-bold uppercase tracking-wide text-slate-400">Updated</span>
+                      <span className="mt-1 block font-bold text-slate-700">{formatDate(candidate.updatedAt)}</span>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 flex gap-2">
+                    <Button onClick={() => handleCompare(candidate, isExact)} variant="outline" className={`h-9 flex-1 rounded-xl text-xs font-bold ${palette.actionClass}`}>
+                      <GitCompareArrows className="mr-1.5 h-3.5 w-3.5" /> Compare records
+                    </Button>
+                    <Button onClick={() => navigate(`/candidates/${candidate.id}`)} variant="outline" size="icon" className="h-9 w-9 rounded-xl border-slate-200 text-slate-600 hover:bg-slate-50" aria-label={`Open ${candidate.name}`}>
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="flex min-h-56 flex-col items-center justify-center p-8 text-center">
+            <div className="rounded-full bg-emerald-50 p-3 text-emerald-600"><CheckCircle2 className="h-7 w-7" /></div>
+            <h3 className="mt-3 font-bold text-slate-800">{searchQuery ? "No matching records" : "No duplicates found"}</h3>
+            <p className="mt-1 text-sm text-slate-500">{searchQuery ? "Try a different name, email address, or phone number." : "This section is currently clear."}</p>
+          </div>
+        )}
+      </Card>
+    );
+  };
 
   return (
     <div className="flex flex-col gap-6 w-full pb-10">
-      {compareCandidates && (
-        <Card className="p-6 bg-white shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] rounded-3xl border border-slate-100 mb-6">
-          <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
-            <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-              <Merge className="h-5 w-5 text-blue-500" /> Compare Candidates
-            </h2>
-            <div className="flex gap-2">
-              <Button onClick={() => setCompareCandidates(null)} variant="outline" className="rounded-xl h-9 text-[12px] font-bold">
-                <ArrowRight className="h-4 w-4 mr-1 rotate-180" /> Back
-              </Button>
-
-              <Button onClick={() => setMergeDialogOpen(true)} className="rounded-xl h-9 text-[12px] font-bold bg-blue-600 hover:bg-blue-700 text-white">
-                Merge Candidates
+      {comparison && comparedCandidate && (
+        <Card className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_14px_40px_-24px_rgba(15,23,42,0.38)]">
+          <div className="border-b border-slate-100 bg-gradient-to-r from-blue-50 via-white to-amber-50 p-5 sm:p-6">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <div className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-blue-600">
+                  <GitCompareArrows className="h-4 w-4" /> Duplicate pair review
+                </div>
+                <h2 className="text-xl font-bold tracking-tight text-slate-950">Compare candidate records</h2>
+                <p className="mt-1 text-sm text-slate-600">Review the match signals and the highlighted differences before taking any action.</p>
+              </div>
+              <Button onClick={() => setComparison(null)} variant="outline" className="h-10 rounded-xl border-slate-200 bg-white font-bold text-slate-700">
+                <ArrowLeft className="mr-2 h-4 w-4" /> Back to results
               </Button>
             </div>
-          </div>
-          
-          <div className="overflow-x-auto rounded-xl border border-slate-100 shadow-sm">
-            <table className="w-full text-left text-[13px]">
-              <thead className="bg-slate-50/80 text-slate-500 font-bold border-b border-slate-100">
-                <tr>
-                  <th className="py-3 px-4 w-[20%]">Field</th>
-                  <th className="py-3 px-4 w-[40%] border-l border-slate-100 bg-blue-50/30 text-blue-900">Candidate A (Current)</th>
-                  <th className="py-3 px-4 w-[40%] border-l border-slate-100 bg-amber-50/30 text-amber-900">Candidate B (Duplicate)</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 text-slate-700 font-medium">
-                {['name', 'email', 'phone', 'location', 'experience', 'currentCompany', 'department', 'role', 'recruiter', 'source', 'stage', 'createdAt', 'updatedAt'].map(field => {
-                  const valA = compareCandidates[0][field];
-                  const valB = compareCandidates[1][field];
-                  const isSame = valA && valB && (valA === valB || (typeof valA === 'string' && typeof valB === 'string' && valA.toLowerCase() === valB.toLowerCase()));
-                  const isDate = field === 'updatedAt' || field === 'createdAt';
-                  const displayA = isDate ? formatDate(valA) : (valA || '-');
-                  const displayB = isDate ? formatDate(valB) : (valB || '-');
 
+            <div className="mt-5 flex flex-wrap items-center gap-2">
+              <span className="text-xs font-semibold text-slate-500">Matched because:</span>
+              {matchReasons.map((reason) => (
+                <Badge key={reason} className="gap-1 border-0 bg-red-100 px-2.5 py-1 text-xs font-bold text-red-700 hover:bg-red-100">
+                  <CheckCircle2 className="h-3.5 w-3.5" /> {reason}
+                </Badge>
+              ))}
+              <Badge variant="outline" className="border-slate-200 bg-white px-2.5 py-1 text-xs font-bold text-slate-600">
+                {comparison.isExact ? "Exact duplicate" : "Possible duplicate"}
+              </Badge>
+            </div>
+          </div>
+
+          {comparison.matches.length > 1 && (
+            <div className="border-b border-slate-100 bg-slate-50/70 px-5 py-4 sm:px-6">
+              <div className="mb-3 flex items-center gap-2 text-sm font-bold text-slate-800">
+                <CircleAlert className="h-4 w-4 text-amber-500" />
+                Choose a record to compare with {comparison.primary.name}
+              </div>
+              <div className="flex gap-3 overflow-x-auto pb-1">
+                {comparison.matches.map((candidate) => {
+                  const selected = candidate.id === comparedCandidate.id;
+                  const reasons = getMatchReasons(comparison.primary, candidate);
                   return (
-                    <tr key={field} className="hover:bg-slate-50/30 transition-colors">
-                      <td className="py-3 px-4 text-slate-500 font-bold capitalize">
-                        {field === 'role' ? 'Position' : field === 'updatedAt' ? 'Last Updated' : field === 'createdAt' ? 'Applied On' : field}
-                      </td>
-                      <td className={"py-3 px-4 border-l border-slate-100 " + (isSame ? 'bg-emerald-50/40 text-emerald-700 font-bold' : '')}>
-                        <div className="flex items-center gap-2">
-                          {displayA}
-                          {isSame && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 ml-auto" />}
-                        </div>
-                      </td>
-                      <td className={"py-3 px-4 border-l border-slate-100 " + (isSame ? 'bg-emerald-50/40 text-emerald-700 font-bold' : 'bg-amber-50/30 text-amber-800')}>
-                        <div className="flex items-center gap-2">
-                          {displayB}
-                          {isSame && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 ml-auto" />}
-                        </div>
-                      </td>
-                    </tr>
+                    <button
+                      key={candidate.id}
+                      type="button"
+                      onClick={() => setSelectedMatchId(candidate.id)}
+                      className={`min-w-[230px] rounded-xl border p-3 text-left transition-all ${selected ? "border-blue-500 bg-blue-50 ring-2 ring-blue-100" : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"}`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <span className="font-bold text-slate-900">{candidate.name}</span>
+                        {selected && <CheckCircle2 className="h-4 w-4 shrink-0 text-blue-600" />}
+                      </div>
+                      <span className="mt-1 block truncate text-xs text-slate-500">{candidate.email || candidate.phone || "No contact detail"}</span>
+                      <span className="mt-2 block text-[11px] font-semibold text-slate-500">{reasons.join(" · ")}</span>
+                    </button>
                   );
                 })}
-              </tbody>
-            </table>
+              </div>
+            </div>
+          )}
+
+          <div className="grid gap-4 p-5 sm:p-6 lg:grid-cols-[1fr_auto_1fr]">
+            {[
+              { candidate: comparison.primary, label: "Selected record", tone: "blue" },
+              { candidate: comparedCandidate, label: "Possible duplicate", tone: "amber" },
+            ].map(({ candidate, label, tone }, index) => (
+              <div key={candidate.id} className={`rounded-2xl border p-4 ${tone === "blue" ? "border-blue-200 bg-blue-50/55" : "border-amber-200 bg-amber-50/55"}`}>
+                <div className="flex items-start gap-3">
+                  <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-sm font-black ${tone === "blue" ? "bg-blue-600 text-white" : "bg-amber-500 text-white"}`}>
+                    {candidate.name?.charAt(0)?.toUpperCase() || "U"}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-xs font-bold uppercase tracking-wide text-slate-500">{label}</span>
+                      <Badge className={`border-0 text-[10px] ${tone === "blue" ? "bg-blue-100 text-blue-700" : "bg-amber-100 text-amber-700"}`}>{candidate.stage || "New Applicant"}</Badge>
+                    </div>
+                    <h3 className="mt-1 truncate text-lg font-bold text-slate-950">{candidate.name}</h3>
+                    <p className="mt-1 text-xs text-slate-600">{candidateCompleteness(candidate)}/{comparisonFields.length} key fields completed</p>
+                  </div>
+                </div>
+                <div className="mt-4 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
+                  <span className="flex min-w-0 items-center gap-1.5 truncate"><Mail className="h-3.5 w-3.5 shrink-0" /> {candidate.email || "No email"}</span>
+                  <span className="flex min-w-0 items-center gap-1.5 truncate"><Phone className="h-3.5 w-3.5 shrink-0" /> {candidate.phone || "No phone"}</span>
+                  <span className="flex min-w-0 items-center gap-1.5 truncate"><BriefcaseBusiness className="h-3.5 w-3.5 shrink-0" /> {candidate.role || "No position"}</span>
+                  <span className="flex min-w-0 items-center gap-1.5 truncate"><MapPin className="h-3.5 w-3.5 shrink-0" /> {candidate.location || "No location"}</span>
+                </div>
+                <div className="mt-4 flex gap-2">
+                  <Button variant="outline" size="sm" onClick={() => navigate(`/candidates/${candidate.id}`)} className="h-8 rounded-lg bg-white text-xs font-bold">
+                    <Eye className="mr-1.5 h-3.5 w-3.5" /> Open record
+                  </Button>
+                  {index === 1 && (
+                    <Button variant="outline" size="sm" onClick={() => setDeleteCandidate(candidate)} className="h-8 rounded-lg border-red-200 bg-white text-xs font-bold text-red-600 hover:bg-red-50 hover:text-red-700">
+                      <Trash2 className="mr-1.5 h-3.5 w-3.5" /> Delete duplicate
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ))}
+            <div className="hidden items-center justify-center lg:flex"><ArrowRight className="h-6 w-6 text-slate-300" /></div>
           </div>
 
-          {/* Application History Comparison */}
-          <div className="mt-8 border-t border-slate-100 pt-6">
-            <h3 className="text-[15px] font-bold text-slate-900 mb-4 flex items-center gap-2">
-              <FileWarning className="h-4 w-4 text-slate-500" /> Application History Comparison
-            </h3>
-            
-            <div className="grid grid-cols-2 gap-6">
-              {/* Candidate A History */}
-              <div className="border border-slate-100 rounded-xl overflow-hidden bg-blue-50/10">
-                <div className="bg-blue-50/50 p-3 border-b border-slate-100 text-[13px] font-bold text-blue-900 flex justify-between items-center">
-                  Candidate A <Badge variant="outline" className="text-[10px] bg-white text-blue-600 border-blue-200">Current</Badge>
-                </div>
-                <div className="p-4 space-y-3">
-                   <div className="text-[12px] font-medium text-slate-700 bg-white p-3 rounded-lg border border-slate-100 flex items-center justify-between shadow-sm">
-                      <div className="flex flex-col">
-                        <span className="font-bold text-slate-900">{compareCandidates[0].role || "-"}</span>
-                        <span className="text-slate-500 text-[11px] mt-0.5">{compareCandidates[0].source}</span>
-                      </div>
-                      <Badge className="bg-blue-50 text-blue-600 border-transparent text-[10px] hover:bg-blue-100">{compareCandidates[0].stage}</Badge>
-                   </div>
-                </div>
+          <div className="border-t border-slate-100 px-5 py-5 sm:px-6">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h3 className="font-bold text-slate-900">Field-by-field comparison</h3>
+                <p className="mt-0.5 text-xs text-slate-500">Green fields match. Amber fields need a human review.</p>
               </div>
-
-              {/* Candidate B History */}
-              <div className="border border-slate-100 rounded-xl overflow-hidden bg-amber-50/10">
-                <div className="bg-amber-50/50 p-3 border-b border-slate-100 text-[13px] font-bold text-amber-900 flex justify-between items-center">
-                  Candidate B <Badge variant="outline" className="text-[10px] bg-white text-amber-600 border-amber-200">Duplicate</Badge>
-                </div>
-                <div className="p-4 space-y-3">
-                   <div className="text-[12px] font-medium text-slate-700 bg-white p-3 rounded-lg border border-slate-100 flex items-center justify-between shadow-sm border-l-4 border-l-amber-400">
-                      <div className="flex flex-col">
-                        <span className="font-bold text-slate-900">{compareCandidates[1].role || "-"}</span>
-                        <span className="text-slate-500 text-[11px] mt-0.5">{compareCandidates[1].source}</span>
-                      </div>
-                      <Badge className="bg-amber-50 text-amber-600 border-transparent text-[10px] hover:bg-amber-100">{compareCandidates[1].stage}</Badge>
-                   </div>
-                </div>
+              <div className="flex items-center gap-3 text-xs font-semibold text-slate-500">
+                <span className="flex items-center gap-1"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /> Same</span>
+                <span className="flex items-center gap-1"><CircleAlert className="h-3.5 w-3.5 text-amber-500" /> Different</span>
               </div>
+            </div>
+            <div className="overflow-x-auto rounded-xl border border-slate-200">
+              <table className="w-full min-w-[760px] text-left text-[13px]">
+                <thead className="bg-slate-50 text-xs font-bold uppercase tracking-wide text-slate-500">
+                  <tr>
+                    <th className="w-[22%] px-4 py-3">Field</th>
+                    <th className="w-[39%] border-l border-slate-200 px-4 py-3 text-blue-800">Selected record</th>
+                    <th className="w-[39%] border-l border-slate-200 px-4 py-3 text-amber-800">Possible duplicate</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {comparisonFields.map(([field, label]) => {
+                    const valueA = comparison.primary[field];
+                    const valueB = comparedCandidate[field];
+                    const isDate = field === "createdAt" || field === "updatedAt";
+                    const same = Boolean(valueA && valueB) && typeof valueA === "string" && typeof valueB === "string" && (field === "email" ? normalizeEmail(valueA) === normalizeEmail(valueB) : field === "phone" ? normalizePhone(valueA) === normalizePhone(valueB) : valueA.trim().toLowerCase() === valueB.trim().toLowerCase());
+                    const displayA = isDate ? formatDate(valueA || "") : valueA || "—";
+                    const displayB = isDate ? formatDate(valueB || "") : valueB || "—";
+                    return (
+                      <tr key={field} className={same ? "bg-emerald-50/25" : "bg-white"}>
+                        <td className="px-4 py-3 font-bold text-slate-600">{label}</td>
+                        <td className={`border-l border-slate-100 px-4 py-3 ${same ? "font-semibold text-emerald-800" : "text-slate-700"}`}>
+                          <span className="flex items-center gap-2">{displayA}{same && <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-500" />}</span>
+                        </td>
+                        <td className={`border-l border-slate-100 px-4 py-3 ${same ? "font-semibold text-emerald-800" : "bg-amber-50/45 text-amber-950"}`}>
+                          <span className="flex items-center gap-2">{displayB}{same ? <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-500" /> : <CircleAlert className="h-3.5 w-3.5 shrink-0 text-amber-500" />}</span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           </div>
         </Card>
       )}
-      {!compareCandidates && (
+      {!comparison && (
         <>
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-3xl shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] border border-slate-100">
@@ -218,7 +442,7 @@ export default function DuplicateCheck() {
           <div>
             <h1 className="text-[22px] font-bold tracking-tight text-slate-900">Duplicate Check</h1>
             <p className="text-slate-500 text-[13px] font-medium mt-1">
-              Review and merge candidates with identical or highly similar details.
+              Spot duplicate signals quickly, compare the records side by side, then review the correct action.
             </p>
           </div>
         </div>
@@ -241,208 +465,25 @@ export default function DuplicateCheck() {
           <Skeleton className="h-[300px] w-full rounded-3xl" />
         </div>
       ) : (
-        <div className="space-y-8">
-          {/* Exact Duplicates */}
-          <Card className="p-0 overflow-hidden bg-white shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] rounded-3xl border-0 border-t-[3px] border-t-red-500 relative group">
-            <div className="absolute top-0 right-0 -mt-8 -mr-8 w-32 h-32 bg-gradient-to-br from-red-500/10 to-transparent rounded-full blur-3xl pointer-events-none" />
-            
-            <div className="p-6 border-b border-slate-100 flex items-center justify-between relative z-10 bg-gradient-to-b from-red-50/30 to-transparent">
-              <div className="flex items-center gap-3">
-                <div className="bg-red-100 p-2 rounded-xl text-red-600">
-                  <AlertCircle className="h-5 w-5" />
-                </div>
-                <div>
-                  <h2 className="text-[15px] font-bold text-slate-900 flex items-center gap-2">
-                    Exact Duplicates
-                    <Badge variant="secondary" className="bg-red-100 text-red-700 hover:bg-red-100 border-transparent text-[11px] font-bold px-2 py-0.5 rounded-md">
-                      {exactFiltered.length} Found
-                    </Badge>
-                  </h2>
-                  <p className="text-[12px] font-medium text-slate-500 mt-0.5">Profiles sharing the exact same Email Address or Phone Number.</p>
-                </div>
-              </div>
+        <div className="space-y-6">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="rounded-2xl border border-red-100 bg-gradient-to-br from-red-50 to-white p-4">
+              <div className="flex items-center justify-between"><span className="text-xs font-bold uppercase tracking-wide text-red-600">Exact matches</span><AlertCircle className="h-4 w-4 text-red-500" /></div>
+              <p className="mt-2 text-3xl font-black tracking-tight text-slate-950">{exactFiltered.length}</p>
+              <p className="mt-1 text-xs text-slate-600">Same email address or phone number.</p>
             </div>
-
-            <div className="overflow-x-auto relative z-10">
-              <table className="w-full text-left text-[13px]">
-                <thead className="bg-slate-50/50 text-slate-500 font-bold border-b border-slate-100">
-                  <tr>
-                    <th className="py-4 px-6">Candidate Details</th>
-                    <th className="py-4 px-6">Contact Info</th>
-                    <th className="py-4 px-6">Current Stage</th>
-                    <th className="py-4 px-6">Last Updated</th>
-                    <th className="py-4 px-6 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 text-slate-700 font-medium bg-white">
-                  {exactFiltered.map((c, i) => (
-                    <tr key={i} className="hover:bg-slate-50/80 transition-colors group/row">
-                      <td className="py-4 px-6">
-                        <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center font-bold text-[12px] text-slate-600 shrink-0 border border-slate-200">
-                            {c.name?.charAt(0) || 'U'}
-                          </div>
-                          <div className="flex flex-col">
-                            <span className="font-bold text-slate-900">{c.name}</span>
-                            <span className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5"><User className="h-3 w-3" /> ID: #{c.id}</span>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="py-4 px-6">
-                        <div className="flex flex-col gap-1 text-[12px]">
-                          <span className="flex items-center gap-1.5 text-slate-600"><Mail className="h-3.5 w-3.5 text-slate-400" /> {c.email}</span>
-                          <span className="flex items-center gap-1.5 text-slate-600"><Phone className="h-3.5 w-3.5 text-slate-400" /> {c.phone || "-"}</span>
-                        </div>
-                      </td>
-                      <td className="py-4 px-6">
-                        <Badge className="bg-slate-100 text-slate-700 hover:bg-slate-200 border-transparent font-bold text-[11px] px-2.5 py-1">
-                          {c.stage || "New Applicant"}
-                        </Badge>
-                      </td>
-                      <td className="py-4 px-6 text-slate-500">
-                        <span className="flex items-center gap-1.5"><Calendar className="h-3.5 w-3.5" /> {formatDate(c.updatedAt)}</span>
-                      </td>
-                      <td className="py-4 px-6 text-right">
-                         <div className="flex items-center justify-end gap-2">
-                           <Button onClick={() => handleCompare(c, true)} variant="outline" size="sm" className="h-8 text-[11px] font-bold rounded-lg border-slate-200 text-slate-600 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200">
-                             <Merge className="h-3.5 w-3.5 mr-1" /> Compare
-                           </Button>
-                           <Button onClick={() => setDeleteCandidate(c)} variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600">
-                             <Trash2 className="h-4 w-4" />
-                           </Button>
-                         </div>
-                      </td>
-                    </tr>
-                  ))}
-                  {exactFiltered.length === 0 && (
-                    <tr>
-                      <td colSpan={5} className="py-12 text-center text-slate-400">
-                        <div className="flex flex-col items-center gap-2">
-                          <CheckCircle2 className="h-8 w-8 text-emerald-400" />
-                          <p className="font-bold text-slate-600 text-[14px]">Clean Data!</p>
-                          <p className="text-[12px]">No exact duplicates found based on your filters.</p>
-                        </div>
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+            <div className="rounded-2xl border border-amber-100 bg-gradient-to-br from-amber-50 to-white p-4">
+              <div className="flex items-center justify-between"><span className="text-xs font-bold uppercase tracking-wide text-amber-700">Possible matches</span><FileWarning className="h-4 w-4 text-amber-500" /></div>
+              <p className="mt-2 text-3xl font-black tracking-tight text-slate-950">{possibleFiltered.length}</p>
+              <p className="mt-1 text-xs text-slate-600">Same name; contact details differ.</p>
             </div>
-          </Card>
-
-          {/* Possible Duplicates */}
-          <Card className="p-0 overflow-hidden bg-white shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] rounded-3xl border-0 border-t-[3px] border-t-amber-500 relative group">
-            <div className="absolute top-0 right-0 -mt-8 -mr-8 w-32 h-32 bg-gradient-to-br from-amber-500/10 to-transparent rounded-full blur-3xl pointer-events-none" />
-            
-            <div className="p-6 border-b border-slate-100 flex items-center justify-between relative z-10 bg-gradient-to-b from-amber-50/30 to-transparent">
-              <div className="flex items-center gap-3">
-                <div className="bg-amber-100 p-2 rounded-xl text-amber-600">
-                  <FileWarning className="h-5 w-5" />
-                </div>
-                <div>
-                  <h2 className="text-[15px] font-bold text-slate-900 flex items-center gap-2">
-                    Possible Duplicates
-                    <Badge variant="secondary" className="bg-amber-100 text-amber-700 hover:bg-amber-100 border-transparent text-[11px] font-bold px-2 py-0.5 rounded-md">
-                      {possibleFiltered.length} Found
-                    </Badge>
-                  </h2>
-                  <p className="text-[12px] font-medium text-slate-500 mt-0.5">Profiles sharing the exact same Name, but different contact details.</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="overflow-x-auto relative z-10">
-              <table className="w-full text-left text-[13px]">
-                <thead className="bg-slate-50/50 text-slate-500 font-bold border-b border-slate-100">
-                  <tr>
-                    <th className="py-4 px-6">Candidate Details</th>
-                    <th className="py-4 px-6">Contact Info</th>
-                    <th className="py-4 px-6">Current Stage</th>
-                    <th className="py-4 px-6">Last Updated</th>
-                    <th className="py-4 px-6 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 text-slate-700 font-medium bg-white">
-                  {possibleFiltered.map((c, i) => (
-                    <tr key={i} className="hover:bg-slate-50/80 transition-colors group/row">
-                      <td className="py-4 px-6">
-                        <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center font-bold text-[12px] text-slate-600 shrink-0 border border-slate-200">
-                            {c.name?.charAt(0) || 'U'}
-                          </div>
-                          <div className="flex flex-col">
-                            <span className="font-bold text-slate-900">{c.name}</span>
-                            <span className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5"><User className="h-3 w-3" /> ID: #{c.id}</span>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="py-4 px-6">
-                        <div className="flex flex-col gap-1 text-[12px]">
-                          <span className="flex items-center gap-1.5 text-slate-600"><Mail className="h-3.5 w-3.5 text-slate-400" /> {c.email}</span>
-                          <span className="flex items-center gap-1.5 text-slate-600"><Phone className="h-3.5 w-3.5 text-slate-400" /> {c.phone || "-"}</span>
-                        </div>
-                      </td>
-                      <td className="py-4 px-6">
-                        <Badge className="bg-slate-100 text-slate-700 hover:bg-slate-200 border-transparent font-bold text-[11px] px-2.5 py-1">
-                          {c.stage || "New Applicant"}
-                        </Badge>
-                      </td>
-                      <td className="py-4 px-6 text-slate-500">
-                        <span className="flex items-center gap-1.5"><Calendar className="h-3.5 w-3.5" /> {formatDate(c.updatedAt)}</span>
-                      </td>
-                      <td className="py-4 px-6 text-right">
-                         <div className="flex items-center justify-end gap-2">
-                           <Button onClick={() => handleCompare(c, false)} variant="outline" size="sm" className="h-8 text-[11px] font-bold rounded-lg border-slate-200 text-slate-600 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-200">
-                             <Merge className="h-3.5 w-3.5 mr-1" /> Compare
-                           </Button>
-                           <Button onClick={() => setDeleteCandidate(c)} variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600">
-                             <Trash2 className="h-4 w-4" />
-                           </Button>
-                         </div>
-                      </td>
-                    </tr>
-                  ))}
-                  {possibleFiltered.length === 0 && (
-                    <tr>
-                      <td colSpan={5} className="py-12 text-center text-slate-400">
-                        <div className="flex flex-col items-center gap-2">
-                          <CheckCircle2 className="h-8 w-8 text-emerald-400" />
-                          <p className="font-bold text-slate-600 text-[14px]">Looking Good!</p>
-                          <p className="text-[12px]">No possible name duplicates found.</p>
-                        </div>
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </Card>
+          </div>
+          {renderDuplicateSection("Exact duplicates", "Profiles sharing the same email address or phone number. Check these first to prevent duplicate follow-ups.", exactFiltered, true)}
+          {renderDuplicateSection("Possible duplicates", "Profiles with the same name but different contact details. Compare before deciding whether they are the same person.", possibleFiltered, false)}
         </div>
       )}
             </>
       )}
-
-      <AlertDialog open={mergeDialogOpen} onOpenChange={setMergeDialogOpen}>
-        <AlertDialogContent className="rounded-3xl max-w-md">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-xl font-bold flex items-center gap-2 text-slate-900">
-              <Merge className="h-5 w-5 text-blue-600" />
-              Confirm Merge Action
-            </AlertDialogTitle>
-            <AlertDialogDescription className="text-[14px] text-slate-600 font-medium pt-2 leading-relaxed">
-              Are you sure you want to merge <strong>Candidate B ({compareCandidates?.[1]?.name})</strong> into <strong>Candidate A ({compareCandidates?.[0]?.name})</strong>?
-              <br/><br/>
-              This action will keep Candidate A's details intact but will <strong className="text-destructive">permanently delete</strong> Candidate B from the system.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="mt-4">
-            <AlertDialogCancel className="rounded-xl font-bold">Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={executeMerge} className="rounded-xl font-bold bg-blue-600 hover:bg-blue-700">
-              Yes, Merge Profiles
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       <AlertDialog open={!!deleteCandidate} onOpenChange={(open) => !open && setDeleteCandidate(null)}>
         <AlertDialogContent className="rounded-3xl max-w-md">

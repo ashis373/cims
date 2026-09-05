@@ -16,28 +16,56 @@ else $required_permission = 'can_view';
 require_once '../auth_middleware.php';
 require_permission('candidates');
 try {
-    // 1. Exact Duplicates (Same Email or Phone)
+    // Return one row per candidate. The previous LEFT JOIN returned a row for
+    // every application, which made candidates with multiple applications look
+    // like duplicates of themselves in the comparison screen.
+    $latestApplicationFields = "
+        (SELECT a.stage FROM cims_applications a WHERE a.candidate_id = c.id ORDER BY a.appliedAt DESC, a.id DESC LIMIT 1) AS stage,
+        (SELECT a.role_applied FROM cims_applications a WHERE a.candidate_id = c.id ORDER BY a.appliedAt DESC, a.id DESC LIMIT 1) AS role,
+        (SELECT a.department FROM cims_applications a WHERE a.candidate_id = c.id ORDER BY a.appliedAt DESC, a.id DESC LIMIT 1) AS department,
+        (SELECT a.recruiter FROM cims_applications a WHERE a.candidate_id = c.id ORDER BY a.appliedAt DESC, a.id DESC LIMIT 1) AS recruiter
+    ";
+
+    // 1. Exact duplicates: ignore blank values and compare normalised email/phone values.
+    // This avoids treating every empty email as an exact duplicate and catches case/format variants.
     $stmtExact = $conn->query("
-        SELECT c.*, a.stage 
-        FROM cims_candidates c 
-        LEFT JOIN cims_applications a ON c.id = a.candidate_id 
-        WHERE c.email IN (
-            SELECT email FROM cims_candidates GROUP BY email HAVING COUNT(*) > 1
-        ) OR (c.phone != '' AND c.phone IN (
-            SELECT phone FROM cims_candidates WHERE phone != '' GROUP BY phone HAVING COUNT(*) > 1
-        ))
-        ORDER BY c.email, c.phone, c.updatedAt DESC
+        SELECT c.*, $latestApplicationFields
+        FROM cims_candidates c
+        WHERE (
+            NULLIF(TRIM(c.email), '') IS NOT NULL
+            AND LOWER(TRIM(c.email)) IN (
+                SELECT LOWER(TRIM(email))
+                FROM cims_candidates
+                WHERE NULLIF(TRIM(email), '') IS NOT NULL
+                GROUP BY LOWER(TRIM(email))
+                HAVING COUNT(*) > 1
+            )
+        ) OR (
+            NULLIF(TRIM(c.phone), '') IS NOT NULL
+            AND REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(c.phone, ' ', ''), '-', ''), '(', ''), ')', ''), '+', '') IN (
+                SELECT REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(phone, ' ', ''), '-', ''), '(', ''), ')', ''), '+', '')
+                FROM cims_candidates
+                WHERE NULLIF(TRIM(phone), '') IS NOT NULL
+                GROUP BY REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(phone, ' ', ''), '-', ''), '(', ''), ')', ''), '+', '')
+                HAVING COUNT(*) > 1
+            )
+        )
+        ORDER BY LOWER(TRIM(c.email)), c.updatedAt DESC
     ");
     $exactDuplicates = $stmtExact->fetchAll(PDO::FETCH_ASSOC);
-    // 2. Possible Duplicates (Same Name)
+    // 2. Possible duplicates: same non-blank name, case and whitespace insensitive.
     $stmtPossible = $conn->query("
-        SELECT c.*, a.stage 
-        FROM cims_candidates c 
-        LEFT JOIN cims_applications a ON c.id = a.candidate_id 
-        WHERE c.name IN (
-            SELECT name FROM cims_candidates GROUP BY name HAVING COUNT(*) > 1
+        SELECT c.*, $latestApplicationFields
+        FROM cims_candidates c
+        WHERE NULLIF(TRIM(c.name), '') IS NOT NULL
+        AND LOWER(TRIM(c.name)) IN (
+            SELECT LOWER(TRIM(name))
+            FROM cims_candidates
+            WHERE NULLIF(TRIM(name), '') IS NOT NULL
+            GROUP BY LOWER(TRIM(name))
+            HAVING COUNT(*) > 1
         )
-        ORDER BY c.name, c.updatedAt DESC
+        ORDER BY LOWER(TRIM(c.name)), c.updatedAt DESC
     ");
     $possibleDuplicates = $stmtPossible->fetchAll(PDO::FETCH_ASSOC);
     
