@@ -20,6 +20,12 @@ if ($method === 'GET') {
     try {
         $stmt = $conn->query("SELECT * FROM cims_smtp_config LIMIT 1");
         $config = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($config) {
+            $config['password_configured'] = !empty($config['password']);
+            unset($config['password']); // Never send password to frontend
+        }
+        
         echo json_encode($config);
     } catch (PDOException $e) {
         http_response_code(500);
@@ -30,12 +36,23 @@ if ($method === 'GET') {
     
     if ($data) {
         try {
+            // Check existing config to handle password update correctly
+            $stmt = $conn->query("SELECT password FROM cims_smtp_config LIMIT 1");
+            $existing = $stmt->fetch(PDO::FETCH_ASSOC);
+            $existingPassword = $existing ? $existing['password'] : '';
+            
+            // If a new password is provided, encrypt it. Otherwise, keep existing.
+            $passwordToSave = $existingPassword;
+            if (!empty($data['password'])) {
+                $passwordToSave = encrypt_data($data['password']);
+            }
+            
             $stmt = $conn->prepare("UPDATE cims_smtp_config SET host=?, port=?, username=?, password=?, encryption=?, from_name=?, from_email=? WHERE id = 1");
             $stmt->execute([
                 $data['host'],
                 $data['port'],
                 $data['username'],
-                $data['password'],
+                $passwordToSave,
                 $data['encryption'],
                 $data['from_name'],
                 $data['from_email']

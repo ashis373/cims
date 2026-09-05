@@ -161,6 +161,33 @@ function validate_jwt($jwt) {
     }
     return false;
 }
+
+// ============================================================
+// DATA ENCRYPTION & DECRYPTION (AES-256-CBC)
+// ============================================================
+// Used for securely storing sensitive data like SMTP passwords
+// in the database.
+// ============================================================
+function encrypt_data($data) {
+    if (empty($data)) return $data;
+    $method = 'AES-256-CBC';
+    $key = hash('sha256', JWT_SECRET, true); // derive a 256-bit key
+    $ivLength = openssl_cipher_iv_length($method);
+    $iv = openssl_random_pseudo_bytes($ivLength);
+    $encrypted = openssl_encrypt($data, $method, $key, OPENSSL_RAW_DATA, $iv);
+    return base64_encode($iv . $encrypted);
+}
+
+function decrypt_data($data) {
+    if (empty($data)) return $data;
+    $method = 'AES-256-CBC';
+    $key = hash('sha256', JWT_SECRET, true);
+    $decoded = base64_decode($data);
+    $ivLength = openssl_cipher_iv_length($method);
+    if (strlen($decoded) < $ivLength) return $data; // not properly encrypted
+    $iv = substr($decoded, 0, $ivLength);
+    $encrypted = substr($decoded, $ivLength);
+    $decrypted = openssl_decrypt($encrypted, $method, $key, OPENSSL_RAW_DATA, $iv);
+    return $decrypted !== false ? $decrypted : $data;
+}
 ?>
-
-

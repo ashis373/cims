@@ -8,6 +8,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit(0);
 }
 include '../../db.php';
+require_once __DIR__ . '/../../jwt_utils.php';
 require '../../vendor/autoload.php';
 // Allow execution without JWT if running directly from CLI (Cron Job)
 if (php_sapi_name() !== 'cli') {
@@ -70,7 +71,7 @@ foreach ($emails as $email) {
         $mail->Host       = $smtp['host'];
         $mail->SMTPAuth   = true;
         $mail->Username   = $smtp['username'];
-        $mail->Password   = $smtp['password'];
+        $mail->Password   = decrypt_data($smtp['password']);
         if ($smtp['encryption'] === 'tls') $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
         elseif ($smtp['encryption'] === 'ssl') $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
         $mail->Port       = $smtp['port'];

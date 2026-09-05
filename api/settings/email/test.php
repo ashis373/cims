@@ -50,7 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $mail->Host       = $smtp['host'];
             $mail->SMTPAuth   = true;
             $mail->Username   = $smtp['username'];
-            $mail->Password   = $smtp['password'];
+            $mail->Password   = decrypt_data($smtp['password']);
             
             if ($smtp['encryption'] === 'tls') {
                 $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;

@@ -55,7 +55,7 @@ function sendEventEmail($conn, $trigger_event, $candidateData, $attachments = []
                 $mail->Host       = $smtp['host'];
                 $mail->SMTPAuth   = true;
                 $mail->Username   = $smtp['username'];
-                $mail->Password   = $smtp['password'];
+                $mail->Password   = decrypt_data($smtp['password']);
                 if ($smtp['encryption'] === 'tls') $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
                 elseif ($smtp['encryption'] === 'ssl') $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS;
                 $mail->Port       = $smtp['port'];
