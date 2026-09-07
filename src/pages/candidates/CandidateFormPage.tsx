@@ -958,9 +958,6 @@ export default function CandidateFormPage() {
 
                 <div className="text-slate-500">Current Status</div>
                 <div className="font-medium text-slate-900">{dup?.stage}</div>
-
-                <div className="text-slate-500">Historical Records</div>
-                <div className="font-medium text-slate-900">{dup?.activity?.length || 0} recorded events</div>
               </div>
 
               {dup?.isBlacklisted && (
@@ -989,7 +986,7 @@ export default function CandidateFormPage() {
                   persist(true);
                 }}
               >
-                Create new record
+                Create New Record
               </Button>
             )}
             <AlertDialogAction
@@ -1002,7 +999,7 @@ export default function CandidateFormPage() {
                 setDupType(null);
               }}
             >
-              {dupType === "EXACT" ? "Update Existing only" : dupType === "DIFFERENT_POSITION" ? "Add New Application to Existing Profile" : "Update existing"}
+              {dupType === "EXACT" ? "Update Existing Only" : dupType === "DIFFERENT_POSITION" ? "Add New Application to Existing Profile" : "Update Existing"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

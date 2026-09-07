@@ -33,6 +33,7 @@ const NoJoiners = lazy(() => import("@/pages/offers/NoJoiners"));
 const Rejected = lazy(() => import("@/pages/rejection/Rejected"));
 const Blacklisted = lazy(() => import("@/pages/rejection/Blacklisted"));
 const ReportsPerformance = lazy(() => import("@/pages/reports/ReportsPerformance"));
+const PipelineReport = lazy(() => import("@/pages/reports/PipelineReport"));
 const Notifications = lazy(() => import("@/pages/notifications/Notifications"));
 const UserProfile = lazy(() => import("@/pages/settings/system/UserProfile"));
 const UserRoles = lazy(() => import("@/pages/settings/system/UserRoles"));
@@ -132,12 +133,6 @@ function App() {
                       <Route path="/rejections/blacklisted" element={<Blacklisted />} />
 
                       {/* Reports */}
-                      <Route path="/reports/candidate" element={<Reports />} />
-                      {/* <Route path="/reports/recruiter-performance" element={<ReportsPerformance />} /> */}
-                      <Route path="/reports/hiring" element={<ReportsPerformance />} />
-                      {/* <Route path="/reports/rejection-analysis" element={<ReportsPerformance />} /> */}
-                      <Route path="/reports/blacklist" element={<Blacklisted />} />
-                      <Route path="/reports/no-joiners" element={<NoJoiners />} />
                       <Route path="/reports" element={<Reports />} />
 
                       {/* Others */}

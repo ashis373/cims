@@ -168,10 +168,15 @@ export default function CandidateTimeline() {
   // Group by Date
   const groupedTimeline = useMemo(() => {
     const groups: Record<string, any[]> = {};
+    
+    // Determine the reference date for "Today" based on the newest event to handle dummy data dates
+    const referenceDate = filteredTimeline.length > 0 ? new Date(filteredTimeline[0].timestamp) : new Date();
+    const todayStr = referenceDate.toDateString();
+
     paginatedTimeline.forEach(item => {
       const date = new Date(item.timestamp);
-      const isToday = new Date().toDateString() === date.toDateString();
-      const isYesterday = new Date(Date.now() - 86400000).toDateString() === date.toDateString();
+      const isToday = todayStr === date.toDateString();
+      const isYesterday = new Date(referenceDate.getTime() - 86400000).toDateString() === date.toDateString();
 
       let prefix = "";
       if (isToday) prefix = "TODAY • ";
@@ -183,7 +188,7 @@ export default function CandidateTimeline() {
       groups[dateStr].push(item);
     });
     return groups;
-  }, [paginatedTimeline]);
+  }, [paginatedTimeline, filteredTimeline]);
 
   return (
     <div className="flex flex-col gap-6 w-full pb-10 bg-[#FAFAFA] min-h-screen">

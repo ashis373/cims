@@ -169,12 +169,6 @@ const nav = [
     icon: BarChart3,
     roles: ["Administrator", "HR Manager"],
     module: "reports",
-    children: [
-      { to: "/reports/candidate", label: "Candidate Report", roles: ["Administrator", "HR Manager"], module: "reports" },
-      // { to: "/reports/recruiter-performance", label: "Recruiter Performance", roles: ["Administrator", "HR Manager"], module: "reports" },
-      // { to: "/reports/hiring", label: "Hiring Report", roles: ["Administrator", "HR Manager"], module: "reports" },
-      // { to: "/reports/rejection-analysis", label: "Rejection Analysis", roles: ["Administrator", "HR Manager"], module: "reports" },
-    ],
   },
   {
     to: "/notifications",

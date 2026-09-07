@@ -2,7 +2,7 @@ import * as XLSX from "xlsx";
 import type { Candidate } from "@/types/ats-types";
 
 function flatten(c: Candidate) {
-  const nextIv = [...c.interviews].sort((a, b) => +new Date(b.date) - +new Date(a.date))[0];
+  const nextIv = [...(c.interviews || [])].sort((a, b) => +new Date(b.date) - +new Date(a.date))[0];
   return {
     Name: c.name,
     Email: c.email,
@@ -11,11 +11,11 @@ function flatten(c: Candidate) {
     Department: c.department,
     Source: c.source,
     Stage: c.stage,
-    Tags: c.tags.join(", "),
-    "Applied At": new Date(c.appliedAt).toLocaleDateString(),
-    "Last Updated": new Date(c.updatedAt).toLocaleDateString(),
-    "Applications Count": c.applications.length,
-    "Interviews Count": c.interviews.length,
+    Tags: (c.tags || []).join(", "),
+    "Applied At": c.appliedAt ? new Date(c.appliedAt).toLocaleDateString() : "",
+    "Last Updated": c.updatedAt ? new Date(c.updatedAt).toLocaleDateString() : "",
+    "Applications Count": c.applications?.length || 0,
+    "Interviews Count": c.interviews?.length || 0,
     "Latest Interview": nextIv ? `${nextIv.type} – ${new Date(nextIv.date).toLocaleString()}` : "",
     "Latest Outcome": nextIv?.outcome || "",
     Notes: c.notes || "",
