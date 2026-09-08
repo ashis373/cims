@@ -362,15 +362,29 @@ export default function CandidateFormPage() {
   };
 
   return (
-    <div className="w-full space-y-6">
-      <div className="flex items-center gap-3">
-        <Link
-          to={candidate ? `/candidates/${candidate.id}` : "/candidates"}
-          className="text-sm text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back
-        </Link>
+    <div className="w-full space-y-6 pb-12">
+      {/* Top Banner (Dark Teal / Cyan Gradient) */}
+      <div className="relative overflow-hidden rounded-[28px] bg-gradient-to-r from-[#000C22] via-[#0B2524] to-[#0D2823] shadow-lg border border-teal-900/40 p-8 sm:p-10 text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+        <div className="flex items-center gap-5 relative z-10">
+          <Link to={candidate ? `/candidates/${candidate.id}` : "/candidates"}>
+            <Button variant="outline" size="icon" className="h-14 w-14 rounded-2xl bg-white/10 border border-white/20 text-white hover:bg-white/20 hover:text-white shadow-sm">
+              <ArrowLeft className="h-6 w-6" />
+            </Button>
+          </Link>
+          <div>
+            <h1 className="text-3xl sm:text-4xl font-black tracking-tight mb-2 text-white">
+              {candidate ? "Edit Candidate" : "Add Candidate"}
+            </h1>
+            <p className="text-[#60C042] text-[14px] sm:text-[15px] font-medium max-w-xl leading-relaxed">
+              {candidate ? "Update profile, background, and application details." : "Register a new candidate profile into your recruitment pipeline."}
+            </p>
+          </div>
+        </div>
+        <div className="relative z-10 shrink-0 group cursor-pointer self-center sm:self-auto">
+          <span className="text-7xl drop-shadow-2xl inline-block origin-bottom hover:animate-bounce cursor-default select-none">
+            👤
+          </span>
+        </div>
       </div>
 
       <form onSubmit={submit} className="space-y-6" noValidate>
@@ -939,7 +953,7 @@ export default function CandidateFormPage() {
           </Button>
           <Button
             type="submit"
-            className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/20 font-bold rounded-xl"
+            className="btn-primary hover:opacity-95 text-white shadow-lg font-bold rounded-xl px-6 h-11 transition-all"
           >
             {candidate ? "Save changes" : "Add candidate"}
           </Button>

@@ -173,3 +173,21 @@
     background: var(--color-muted-foreground);
   }
 }
+
+.btn-primary {
+  background: linear-gradient(135deg, #42bc24 0%, var(--brand-accent, #49a429) 100%) !important;
+  color: #fff !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  box-shadow: 0 4px 14px #49a42959 !important;
+  transition: all 0.2s ease-in-out !important;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, #4ecf2e 0%, #52b52e 100%) !important;
+  box-shadow: 0 6px 20px #49a42980 !important;
+  transform: translateY(-1px);
+}
+
+.btn-primary:active {
+  transform: translateY(0px) scale(0.98);
+}

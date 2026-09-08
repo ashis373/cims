@@ -211,70 +211,88 @@ export default function DuplicateCheck() {
         </div>
 
         {candidates.length ? (
-          <div className="grid gap-4 p-5 sm:grid-cols-2 sm:p-6 xl:grid-cols-3">
+          <div className="divide-y divide-slate-100">
             {candidates.map((candidate) => {
               const related = candidates.filter((other) => other.id !== candidate.id && getMatchReasons(candidate, other).length > 0);
               const matchSignals = [...new Set(related.flatMap((other) => getMatchReasons(candidate, other)))];
 
               return (
-                <article key={candidate.id} className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md">
-                  <div className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${palette.lineClass}`} />
-                  <div className="flex items-start justify-between gap-3 pt-1">
-                    <button type="button" onClick={() => navigate(`/candidates/${candidate.id}`)} className="flex min-w-0 items-center gap-3 text-left">
+                <article key={candidate.id} className="group flex flex-col xl:flex-row xl:items-center justify-between gap-4 p-5 hover:bg-slate-50/70 transition-colors bg-white">
+                  {/* Left: Candidate Info */}
+                  <div className="flex items-start sm:items-center gap-4 min-w-[260px] max-w-sm">
+                    <button type="button" onClick={() => navigate(`/candidates/${candidate.id}`)} className="flex items-center gap-3 text-left group-hover:opacity-90">
                       {candidate.photo ? (
                         <img
                           src={`${API_BASE_URL}/../uploads/candidates/photos/${candidate.photo}`}
                           alt={candidate.name}
-                          className="h-11 w-11 rounded-full object-cover shrink-0 border border-slate-200"
+                          className="h-12 w-12 rounded-full object-cover shrink-0 border border-slate-200 shadow-sm"
                         />
                       ) : (
-                        <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-sm font-black ${isExact ? "bg-red-50 text-red-700" : "bg-amber-50 text-amber-700"}`}>
+                        <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-base font-black shadow-sm ${isExact ? "bg-red-100 text-red-700 ring-2 ring-red-200" : "bg-amber-100 text-amber-700 ring-2 ring-amber-200"}`}>
                           {candidate.name?.charAt(0)?.toUpperCase() || "U"}
                         </div>
                       )}
                       <div className="min-w-0">
-                        <h3 className="truncate font-bold text-slate-950 group-hover:text-blue-700">{candidate.name}</h3>
-                        <p className="mt-0.5 truncate text-[11px] font-medium text-slate-500">ID: {candidate.id}</p>
+                        <h3 className="truncate font-black text-slate-950 group-hover:text-emerald-700 text-[15px]">{candidate.name}</h3>
+                        <p className="mt-0.5 truncate text-xs font-bold text-slate-400">ID: {candidate.id}</p>
                       </div>
                     </button>
-                    <Button onClick={() => setDeleteCandidate(candidate)} variant="ghost" size="icon" className="h-8 w-8 shrink-0 rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600" aria-label={`Delete ${candidate.name}`}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
                   </div>
 
-                  <div className="mt-4 flex flex-wrap gap-1.5">
+                  {/* Middle Left: Contact Details */}
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6 text-xs text-slate-600 min-w-[280px]">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center shrink-0">
+                        <Mail className="h-3.5 w-3.5 text-slate-500" />
+                      </div>
+                      <span className="font-semibold text-slate-700 truncate max-w-[180px]">{candidate.email || "No email"}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center shrink-0">
+                        <Phone className="h-3.5 w-3.5 text-slate-500" />
+                      </div>
+                      <span className="font-semibold text-slate-700">{candidate.phone || "No phone"}</span>
+                    </div>
+                  </div>
+
+                  {/* Middle Right: Match Signals & Stage */}
+                  <div className="flex flex-wrap items-center gap-2 min-w-[200px]">
                     {matchSignals.map((signal) => (
-                      <Badge key={signal} variant="outline" className={`border px-2 py-0.5 text-[10px] font-bold ${isExact ? "border-red-200 bg-red-50 text-red-700" : "border-amber-200 bg-amber-50 text-amber-700"}`}>
+                      <Badge key={signal} variant="outline" className={`border px-2.5 py-1 text-[11px] font-bold ${isExact ? "border-red-200 bg-red-50 text-red-700" : "border-amber-200 bg-amber-50 text-amber-700"}`}>
                         {signal}
                       </Badge>
                     ))}
-                    <Badge variant="outline" className="border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-bold text-slate-600">
-                      {related.length} matching record{related.length === 1 ? "" : "s"}
+                    <Badge variant="outline" className="border-slate-200 bg-slate-100/80 px-2.5 py-1 text-[11px] font-bold text-slate-600">
+                      {candidate.stage || "New Applicant"}
                     </Badge>
                   </div>
 
-                  <div className="mt-4 space-y-2 rounded-xl bg-slate-50 p-3 text-xs">
-                    <p className="flex min-w-0 items-center gap-2 text-slate-700"><Mail className="h-3.5 w-3.5 shrink-0 text-slate-400" /><span className="truncate">{candidate.email || "No email address"}</span></p>
-                    <p className="flex min-w-0 items-center gap-2 text-slate-700"><Phone className="h-3.5 w-3.5 shrink-0 text-slate-400" /><span className="truncate">{candidate.phone || "No phone number"}</span></p>
-                  </div>
-
-                  <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
-                    <div className="rounded-lg border border-slate-100 p-2.5">
-                      <span className="block text-[10px] font-bold uppercase tracking-wide text-slate-400">Stage</span>
-                      <span className="mt-1 block truncate font-bold text-slate-700">{candidate.stage || "New Applicant"}</span>
-                    </div>
-                    <div className="rounded-lg border border-slate-100 p-2.5">
-                      <span className="block text-[10px] font-bold uppercase tracking-wide text-slate-400">Updated</span>
-                      <span className="mt-1 block font-bold text-slate-700">{formatDate(candidate.updatedAt)}</span>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 flex gap-2">
-                    <Button onClick={() => handleCompare(candidate, isExact)} variant="outline" className={`h-9 flex-1 rounded-xl text-xs font-bold ${palette.actionClass}`}>
+                  {/* Right: Actions */}
+                  <div className="flex items-center gap-2 shrink-0 self-end xl:self-auto">
+                    <Button 
+                      onClick={() => handleCompare(candidate, isExact)} 
+                      variant="outline" 
+                      className={`h-9 px-4 rounded-xl text-xs font-bold transition-all ${palette.actionClass}`}
+                    >
                       <GitCompareArrows className="mr-1.5 h-3.5 w-3.5" /> Compare records
                     </Button>
-                    <Button onClick={() => navigate(`/candidates/${candidate.id}`)} variant="outline" size="icon" className="h-9 w-9 rounded-xl border-slate-200 text-slate-600 hover:bg-slate-50" aria-label={`Open ${candidate.name}`}>
+                    <Button 
+                      onClick={() => navigate(`/candidates/${candidate.id}`)} 
+                      variant="outline" 
+                      size="icon" 
+                      className="h-9 w-9 rounded-xl border-slate-200 text-slate-600 hover:bg-slate-100" 
+                      aria-label={`Open ${candidate.name}`}
+                    >
                       <Eye className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      onClick={() => setDeleteCandidate(candidate)} 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-9 w-9 rounded-xl text-slate-400 hover:bg-red-50 hover:text-red-600" 
+                      aria-label={`Delete ${candidate.name}`}
+                    >
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
                 </article>
@@ -441,28 +459,28 @@ export default function DuplicateCheck() {
       )}
       {!comparison && (
         <>
-      {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-3xl shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] border border-slate-100">
-        <div className="flex items-center gap-4">
-          <div className="bg-red-50 p-3 rounded-2xl">
-            <ShieldAlert className="h-6 w-6 text-red-500" />
-          </div>
-          <div>
-            <h1 className="text-[22px] font-bold tracking-tight text-slate-900">Duplicate Check</h1>
-            <p className="text-slate-500 text-[13px] font-medium mt-1">
-              Spot duplicate signals quickly, compare the records side by side, then review the correct action.
-            </p>
-          </div>
+      {/* Top Banner (Dark Teal / Cyan Gradient) */}
+      <div className="relative overflow-hidden rounded-[28px] bg-gradient-to-r from-[#000C22] via-[#0B2524] to-[#0D2823] shadow-lg border border-teal-900/40 p-8 sm:p-10 text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+        <div className="relative z-10 flex flex-col justify-center max-w-xl">
+          <h1 className="text-3xl sm:text-4xl font-black tracking-tight mb-2 text-white">Duplicate Check</h1>
+          <p className="text-[#60C042] text-[14px] sm:text-[15px] font-medium leading-relaxed">
+            Spot duplicate signals quickly, compare candidate records side by side, and review actions.
+          </p>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+        <div className="relative z-10 flex items-center gap-6 self-stretch sm:self-auto justify-between sm:justify-end">
+          <div className="relative w-full sm:w-[280px]">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-teal-300/70" />
             <Input 
               placeholder="Search duplicates..." 
-              className="pl-9 h-10 w-[260px] bg-slate-50 text-[13px] rounded-xl border-transparent focus-visible:bg-white focus-visible:ring-1 transition-all"
+              className="pl-10 h-11 w-full bg-white/10 text-[13px] text-white placeholder:text-teal-200/60 rounded-xl border border-white/20 focus-visible:bg-white/15 focus-visible:ring-1 focus-visible:ring-teal-400 transition-all shadow-sm"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
+          </div>
+          <div className="shrink-0 group cursor-pointer">
+            <span className="text-7xl drop-shadow-2xl inline-block origin-bottom hover:animate-bounce cursor-default select-none">
+              🛡️
+            </span>
           </div>
         </div>
       </div>
@@ -475,16 +493,51 @@ export default function DuplicateCheck() {
       ) : (
         <div className="space-y-6">
           <div className="grid gap-4 sm:grid-cols-2">
-            <div className="rounded-2xl border border-red-100 bg-gradient-to-br from-red-50 to-white p-4">
-              <div className="flex items-center justify-between"><span className="text-xs font-bold uppercase tracking-wide text-red-600">Exact matches</span><AlertCircle className="h-4 w-4 text-red-500" /></div>
-              <p className="mt-2 text-3xl font-black tracking-tight text-slate-950">{exactFiltered.length}</p>
-              <p className="mt-1 text-xs text-slate-600">Same email address or phone number.</p>
-            </div>
-            <div className="rounded-2xl border border-amber-100 bg-gradient-to-br from-amber-50 to-white p-4">
-              <div className="flex items-center justify-between"><span className="text-xs font-bold uppercase tracking-wide text-amber-700">Possible matches</span><FileWarning className="h-4 w-4 text-amber-500" /></div>
-              <p className="mt-2 text-3xl font-black tracking-tight text-slate-950">{possibleFiltered.length}</p>
-              <p className="mt-1 text-xs text-slate-600">Same name; contact details differ.</p>
-            </div>
+            <Card className="relative overflow-hidden shadow-sm border border-rose-200/60 rounded-2xl flex flex-col p-5 bg-rose-50/60 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md">
+              <div className="absolute top-0 right-0 -mt-4 -mr-4 w-28 h-28 bg-gradient-to-br from-white/60 to-transparent rounded-full blur-2xl pointer-events-none" />
+              <div className="flex items-start justify-between mb-3 relative z-10">
+                <div>
+                  <div className="text-[11px] font-black text-rose-700 uppercase tracking-wider">
+                    Exact Matches
+                  </div>
+                  <p className="mt-0.5 text-xs font-semibold text-slate-500">Same email address or phone number</p>
+                </div>
+                <div className="p-2.5 rounded-xl shrink-0 border border-white/60 shadow-sm bg-rose-100 text-rose-700">
+                  <AlertCircle className="w-5 h-5" />
+                </div>
+              </div>
+              <div className="mt-auto relative z-10 flex items-baseline justify-between pt-2">
+                <div className="text-3xl font-black tracking-tight text-slate-900">
+                  {exactFiltered.length}
+                </div>
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-100/80 text-rose-700 border border-rose-200/60">
+                  High Priority
+                </span>
+              </div>
+            </Card>
+
+            <Card className="relative overflow-hidden shadow-sm border border-amber-200/60 rounded-2xl flex flex-col p-5 bg-amber-50/60 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md">
+              <div className="absolute top-0 right-0 -mt-4 -mr-4 w-28 h-28 bg-gradient-to-br from-white/60 to-transparent rounded-full blur-2xl pointer-events-none" />
+              <div className="flex items-start justify-between mb-3 relative z-10">
+                <div>
+                  <div className="text-[11px] font-black text-amber-700 uppercase tracking-wider">
+                    Possible Matches
+                  </div>
+                  <p className="mt-0.5 text-xs font-semibold text-slate-500">Same name; contact details differ</p>
+                </div>
+                <div className="p-2.5 rounded-xl shrink-0 border border-white/60 shadow-sm bg-amber-100 text-amber-700">
+                  <FileWarning className="w-5 h-5" />
+                </div>
+              </div>
+              <div className="mt-auto relative z-10 flex items-baseline justify-between pt-2">
+                <div className="text-3xl font-black tracking-tight text-slate-900">
+                  {possibleFiltered.length}
+                </div>
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-100/80 text-amber-700 border border-amber-200/60">
+                  Manual Review
+                </span>
+              </div>
+            </Card>
           </div>
           {renderDuplicateSection("Exact duplicates", "Profiles sharing the same email address or phone number. Check these first to prevent duplicate follow-ups.", exactFiltered, true)}
           {renderDuplicateSection("Possible duplicates", "Profiles with the same name but different contact details. Compare before deciding whether they are the same person.", possibleFiltered, false)}

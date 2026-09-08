@@ -8,6 +8,7 @@ import {
   Users, UserCheck, Calendar, Briefcase, UserPlus, 
   Download, ChevronDown, Activity, Share2, Building2
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { PIPELINE_STAGES, DEPARTMENTS, SOURCES, type Stage, type Department } from "@/types/ats-types";
 import { ExportDialog } from "@/components/common/ExportDialog";
 import {
@@ -85,45 +86,58 @@ export default function ReportsPage() {
 
   return (
     <div className="w-full flex flex-col gap-6 pb-10 bg-slate-50/50 min-h-screen">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-100 text-blue-600">
-            <Activity className="h-6 w-6" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">Reports & Analytics</h1>
-            <p className="text-[13px] text-slate-500">Track your recruitment progress, analyze performance and make data-driven decisions.</p>
-          </div>
+      {/* Top Banner (Dark Teal / Cyan Gradient) */}
+      <div className="relative overflow-hidden rounded-[28px] bg-gradient-to-r from-[#000C22] via-[#0B2524] to-[#0D2823] shadow-lg border border-teal-900/40 p-8 sm:p-10 text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+        <div className="relative z-10 flex flex-col justify-center max-w-xl">
+          <h1 className="text-3xl sm:text-4xl font-black tracking-tight mb-2 text-white">Reports & Analytics</h1>
+          <p className="text-[#60C042] text-[14px] sm:text-[15px] font-medium leading-relaxed">
+            Track recruitment progress, analyze hiring performance, and make data-driven decisions.
+          </p>
         </div>
-        <div className="flex items-center gap-3">
-          <Button onClick={() => { exportCsv(candidates); toast.success(`Report downloaded (${candidates.length} candidates)`); }} className="h-10 bg-slate-900 text-white hover:bg-slate-800">
+        <div className="relative z-10 flex items-center gap-6 self-stretch sm:self-auto justify-between sm:justify-end">
+          <Button 
+            onClick={() => { exportCsv(candidates); toast.success(`Report downloaded (${candidates.length} candidates)`); }} 
+            className="rounded-xl font-bold btn-primary hover:opacity-95 px-6 h-11 text-white transition-all shadow-md"
+          >
             <Download className="mr-2 h-4 w-4" /> Export Report
           </Button>
+          <div className="shrink-0 group cursor-pointer">
+            <span className="text-7xl drop-shadow-2xl inline-block origin-bottom hover:animate-bounce cursor-default select-none">
+              📈
+            </span>
+          </div>
         </div>
       </div>
 
       {/* Top Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="flex flex-wrap gap-4">
         {[
-          { title: "Total Applications", value: stats.applied, icon: Users, color: "text-blue-500", bg: "bg-blue-50", border: "border-blue-200", pColor: "text-green-500", pText: "↑ 12%" },
-          { title: "Shortlisted", value: stats.shortlisted, icon: UserCheck, color: "text-purple-500", bg: "bg-purple-50", border: "border-purple-200", pColor: "text-green-500", pText: "↑ 18%" },
-          { title: "Interviews", value: stats.interviews, icon: Calendar, color: "text-orange-500", bg: "bg-orange-50", border: "border-orange-200", pColor: "text-green-500", pText: "↑ 25%" },
-          { title: "Offers", value: stats.offers, icon: Briefcase, color: "text-emerald-500", bg: "bg-emerald-50", border: "border-emerald-200", pColor: "text-green-500", pText: "↑ 40%" },
-          { title: "Hired", value: stats.hired, icon: UserPlus, color: "text-pink-500", bg: "bg-pink-50", border: "border-pink-200", pColor: "text-green-500", pText: "↑ 33%" }
+          { title: "Total Applications", value: stats.applied, icon: Users, tone: "bg-blue-50 text-blue-600", borderTone: "border-blue-500", pct: 12 },
+          { title: "Shortlisted", value: stats.shortlisted, icon: UserCheck, tone: "bg-purple-50 text-purple-600", borderTone: "border-purple-500", pct: 18 },
+          { title: "Interviews", value: stats.interviews, icon: Calendar, tone: "bg-orange-50 text-orange-500", borderTone: "border-orange-500", pct: 25 },
+          { title: "Offers", value: stats.offers, icon: Briefcase, tone: "bg-emerald-50 text-emerald-600", borderTone: "border-emerald-500", pct: 40 },
+          { title: "Hired", value: stats.hired, icon: UserPlus, tone: "bg-pink-50 text-pink-600", borderTone: "border-pink-500", pct: 33 }
         ].map((s, i) => (
-          <Card key={i} className={`p-5 bg-white shadow-sm border ${s.border} rounded-2xl`}>
-            <div className="flex items-start gap-4">
-              <div className={`w-11 h-11 shrink-0 rounded-xl flex items-center justify-center ${s.bg} ${s.color}`}>
-                <s.icon className="h-5 w-5" />
-              </div>
+          <Card
+            key={i}
+            className={cn(
+              "p-5 bg-white shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] rounded-3xl relative overflow-hidden group border-t-[3px] flex-1 min-w-[160px]",
+              s.borderTone,
+            )}
+          >
+            <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-gradient-to-br from-transparent to-black/[0.02] rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500" />
+            <div className="flex items-start justify-between relative z-10">
               <div>
-                <div className="text-[12px] font-bold text-slate-800 mb-1">{s.title}</div>
-                <div className="text-3xl font-black text-slate-900 tracking-tight leading-none">{s.value}</div>
-                <div className="mt-2.5 flex items-center gap-1.5 text-[10px]">
-                  <span className={`font-bold ${s.pColor}`}>{s.pText}</span>
-                  <span className="text-slate-400 font-medium line-clamp-1">vs. previous 30 days</span>
+                <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                  {s.title}
                 </div>
+                <div className="text-3xl font-black tracking-tight text-slate-900">{s.value}</div>
+                <div className="mt-1.5 text-[10px] font-bold text-emerald-500">+{s.pct}% this month</div>
+              </div>
+              <div
+                className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl", s.tone)}
+              >
+                <s.icon className="h-5 w-5" />
               </div>
             </div>
           </Card>

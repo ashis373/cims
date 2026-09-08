@@ -192,23 +192,26 @@ export default function Recruiters() {
 
   return (
     <div className="flex flex-col gap-6 w-full pb-10">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 relative overflow-hidden rounded-[28px] bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 shadow-lg border border-indigo-900/50 p-8 sm:p-10 text-white">
-
-        <div className="relative z-10 flex items-center gap-6">
-          <div className="flex h-[72px] w-[72px] items-center justify-center rounded-[20px] bg-white/10 border border-white/20 shadow-[0_0_20px_rgba(255,255,255,0.1)] backdrop-blur-md">
-            <Shield className="h-8 w-8 text-indigo-100" />
-          </div>
-          <div>
-            <h1 className="text-3xl sm:text-4xl font-black tracking-tight mb-2">Recruiters</h1>
-            <p className="text-indigo-100/80 text-[14px] sm:text-[15px] font-medium max-w-lg leading-relaxed">
-              Manage your recruiting team, control access, and monitor status.
-            </p>
-          </div>
+      {/* Top Banner (Dark Teal / Cyan Gradient) */}
+      <div className="relative overflow-hidden rounded-[28px] bg-gradient-to-r from-[#000C22] via-[#0B2524] to-[#0D2823] shadow-lg border border-teal-900/40 p-8 sm:p-10 text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+        <div className="relative z-10 flex flex-col justify-center max-w-xl">
+          <h1 className="text-3xl sm:text-4xl font-black tracking-tight mb-2 text-white">Recruiters</h1>
+          <p className="text-[#60C042] text-[14px] sm:text-[15px] font-medium leading-relaxed">
+            Manage your recruiting team, control access, and monitor status.
+          </p>
         </div>
-        <div className="relative z-10">
-          <Button onClick={handleOpenAdd} className="h-12 px-6 rounded-2xl bg-white text-indigo-900 hover:bg-slate-50 font-bold shadow-[0_0_20px_rgba(255,255,255,0.2)] hover:shadow-[0_0_30px_rgba(255,255,255,0.4)] transition-all">
-            <Plus className="mr-2 h-5 w-5" /> Add Recruiter
+        <div className="relative z-10 flex items-center gap-6 self-stretch sm:self-auto justify-between sm:justify-end">
+          <Button
+            onClick={handleOpenAdd}
+            className="rounded-xl font-bold btn-primary hover:opacity-95 px-6 h-11 text-white transition-all shadow-md"
+          >
+            <Plus className="mr-2 h-4 w-4" /> Add Recruiter
           </Button>
+          <div className="shrink-0 group cursor-pointer">
+            <span className="text-7xl drop-shadow-2xl inline-block origin-bottom hover:animate-bounce cursor-default select-none">
+              👥
+            </span>
+          </div>
         </div>
       </div>
 

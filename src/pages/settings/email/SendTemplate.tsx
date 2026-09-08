@@ -197,53 +197,43 @@ export default function SendTemplate() {
 
   return (
     <div className="w-full pb-12">
-      {/* Premium Header */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-900 via-blue-900 to-blue-800 p-8 text-white shadow-xl mb-8">
-        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay"></div>
-        <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-blue-500/20 blur-3xl"></div>
-        <div className="absolute -left-20 -bottom-20 h-64 w-64 rounded-full bg-indigo-500/20 blur-3xl"></div>
-
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="flex flex-col items-start">
-            <div className="flex items-center gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 shadow-inner backdrop-blur-md ring-1 ring-white/20">
-                <Send className="h-5 w-5 text-blue-100 -rotate-45 ml-1" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-black tracking-tight text-white drop-shadow-sm">Dispatch Email</h1>
-                <p className="mt-1 text-[13px] font-medium text-blue-200/90 max-w-md">
-                  Select a template and choose eligible candidates to send personalized emails.
-                </p>
-              </div>
-            </div>
+      {/* Premium Header (Dark Teal / Cyan Gradient) */}
+      <div className="relative overflow-hidden rounded-[28px] bg-gradient-to-r from-[#000C22] via-[#0B2524] to-[#0D2823] shadow-lg border border-teal-900/40 p-8 sm:p-10 text-white mb-8">
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div className="flex flex-col items-start max-w-xl">
+            <h1 className="text-3xl sm:text-4xl font-black tracking-tight mb-2 text-white">Dispatch Email</h1>
+            <p className="text-[#60C042] text-[14px] sm:text-[15px] font-medium leading-relaxed">
+              Select a template and choose eligible candidates to send personalized emails.
+            </p>
           </div>
 
-          <div className="flex items-center gap-4 shrink-0">
-            <div className="flex items-center gap-4 bg-black/20 p-2.5 rounded-2xl backdrop-blur-md border border-white/10">
+          <div className="flex flex-wrap items-center gap-4 shrink-0">
+            <div className="flex items-center gap-4 bg-white/5 p-2.5 rounded-2xl backdrop-blur-md border border-white/10 shadow-sm">
               <div className="flex items-center gap-3 px-3 py-1">
-                <Users className="h-5 w-5 text-blue-300" />
+                <Users className="h-5 w-5 text-teal-300" />
                 <div className="flex flex-col text-left">
                   <span className="text-xl font-black text-white leading-none">{eligibleCandidates.length}</span>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-blue-300/80">Eligible</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-teal-300/80">Eligible</span>
                 </div>
               </div>
               <div className="w-px h-8 bg-white/10" />
               <div className="flex items-center gap-3 px-3 py-1">
-                <CheckCircle2 className="h-5 w-5 text-orange-400" />
+                <CheckCircle2 className="h-5 w-5 text-emerald-400" />
                 <div className="flex flex-col text-left">
                   <span className="text-xl font-black text-white leading-none">{selectedCandidates.length}</span>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-blue-300/80">Selected</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-teal-300/80">Selected</span>
                 </div>
               </div>
               <div className="w-px h-8 bg-white/10" />
               <div className="flex items-center gap-3 px-3 py-1">
-                <Mail className="h-5 w-5 text-yellow-400" />
+                <Mail className="h-5 w-5 text-amber-400" />
                 <div className="flex flex-col text-left">
                   <span className="text-xl font-black text-white leading-none">{eligibleCandidates.length - selectableCandidates.length}</span>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-blue-300/80">Already Sent</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-teal-300/80">Already Sent</span>
                 </div>
               </div>
             </div>
+            
             <div className="flex items-center gap-3">
               {selectedCandidates.length > 0 && (
                 <Button
@@ -257,17 +247,26 @@ export default function SendTemplate() {
               <Button
                 onClick={handleSendEmails}
                 disabled={sending || selectedCandidates.length === 0 || !template}
-                className="h-12 px-6 rounded-xl font-bold bg-white text-blue-900 border-none hover:bg-blue-50 hover:scale-[1.02] transition-all text-sm flex items-center gap-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                className="h-12 px-6 rounded-xl font-bold btn-primary text-white hover:opacity-95 hover:scale-[1.02] transition-all text-sm flex items-center gap-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
               >
                 {sending ? (
-                  <>Sending...</>
+                  <>
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                    Sending...
+                  </>
                 ) : (
                   <>
                     <Send className="h-4 w-4" />
-                    Preview & Send Email
+                    Send to Selected ({selectedCandidates.length})
                   </>
                 )}
               </Button>
+            </div>
+
+            <div className="shrink-0 group cursor-pointer ml-2 hidden xl:block">
+              <span className="text-7xl drop-shadow-2xl inline-block origin-bottom hover:animate-bounce cursor-default select-none">
+                ✉️
+              </span>
             </div>
           </div>
         </div>

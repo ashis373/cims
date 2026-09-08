@@ -246,17 +246,17 @@ const NavItem = ({
         className={cn(
           "flex items-center gap-3.5 rounded-xl px-4 py-3 text-[13px] font-bold transition-all duration-300 group relative overflow-hidden",
           active
-            ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-900/20 ring-1 ring-white/10"
+            ? "bg-gradient-to-r from-[#42bc24] to-[#36961c] text-white shadow-md shadow-[#42bc24]/20 ring-1 ring-white/20"
             : "text-slate-400 hover:bg-slate-800/50 hover:text-slate-50",
         )}
       >
         {active && (
-          <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-r from-white/15 to-transparent pointer-events-none" />
         )}
         <item.icon
           className={cn(
             "h-[18px] w-[18px] shrink-0 transition-colors duration-300 relative z-10",
-            active ? "text-white" : "text-slate-400 group-hover:text-blue-400",
+            active ? "text-white" : "text-slate-400 group-hover:text-[#60C042]",
           )}
         />
         <span className="relative z-10 tracking-wide">{item.label}</span>
@@ -279,7 +279,7 @@ const NavItem = ({
           <item.icon
             className={cn(
               "h-[18px] w-[18px] shrink-0 transition-colors duration-300",
-              active && !isOpen ? "text-blue-400" : "text-slate-400 group-hover:text-blue-400",
+              active && !isOpen ? "text-[#60C042]" : "text-slate-400 group-hover:text-[#60C042]",
             )}
           />
           <span className="tracking-wide">{item.label}</span>
@@ -303,14 +303,14 @@ const NavItem = ({
                 className={cn(
                   "flex items-center gap-3 rounded-lg px-3 py-2.5 text-[12px] font-bold transition-all duration-300 relative group",
                   childActive
-                    ? "text-white bg-blue-500/10 ring-1 ring-blue-500/20"
+                    ? "text-[#60C042] bg-[#42bc24]/10 ring-1 ring-[#42bc24]/25 font-black"
                     : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/50",
                 )}
               >
                 {childActive ? (
-                  <div className="absolute -left-[17px] top-1/2 -translate-y-1/2 w-4 h-[2px] bg-blue-500" />
+                  <div className="absolute -left-[17px] top-1/2 -translate-y-1/2 w-4 h-[2px] bg-[#60C042]" />
                 ) : (
-                  <div className="absolute -left-[17px] top-1/2 -translate-y-1/2 w-2 h-[2px] bg-slate-700 transition-all duration-300 group-hover:w-4 group-hover:bg-blue-400" />
+                  <div className="absolute -left-[17px] top-1/2 -translate-y-1/2 w-2 h-[2px] bg-slate-700 transition-all duration-300 group-hover:w-4 group-hover:bg-[#60C042]" />
                 )}
                 <span className="tracking-wide">{child.label}</span>
               </Link>
@@ -373,7 +373,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
         const data = await res.json();
         const lastRead = localStorage.getItem('cims_last_alerts_read');
         const lastReadTime = lastRead ? new Date(lastRead).getTime() : 0;
-        
+
         const count = data.filter((a: any) => new Date(a.timeRaw).getTime() > lastReadTime).length;
         setUnreadCount(count);
       } catch (err) {
@@ -430,7 +430,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
             <div className="text-[22px] font-black leading-none tracking-tight text-white">
               Hireflow
             </div>
-            <div className="mt-1.5 text-[10px] font-black uppercase tracking-[0.2em] text-blue-400">
+            <div className="mt-1.5 text-[10px] font-black uppercase tracking-[0.2em] text-[#60C042]">
               Buddy ATS
             </div>
           </div>
@@ -473,8 +473,6 @@ export function AppLayout({ children }: { children: ReactNode }) {
             <span className="text-base font-black tracking-tight text-slate-900">Hireflow</span>
           </div>
 
-
-
           <div className="flex max-w-full gap-1 overflow-x-auto rounded-xl border border-slate-200/60 bg-slate-50 p-1 scrollbar-thin md:hidden">
             {nav.filter(hasAccess).map((n) => {
               const active =
@@ -486,7 +484,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
                   title={n.label}
                   className={cn(
                     "flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-2 text-xs font-bold transition-all",
-                    active ? "bg-white text-blue-600 shadow-sm ring-1 ring-slate-200" : "text-slate-500 hover:text-slate-900",
+                    active ? "bg-white text-[#42bc24] shadow-sm ring-1 ring-slate-200" : "text-slate-500 hover:text-slate-900",
                   )}
                 >
                   <n.icon className="h-4 w-4 shrink-0" />
@@ -497,13 +495,6 @@ export function AppLayout({ children }: { children: ReactNode }) {
           </div>
 
           <div className="ml-auto flex items-center gap-4">
-            <Link
-              to="/candidates/add"
-              className="hidden lg:flex items-center gap-2 bg-[#1447E6] hover:bg-[#0c31a6] text-white px-4 py-2 rounded-xl text-[13px] font-bold shadow-sm transition-all border border-blue-600"
-            >
-              <Plus className="h-4 w-4" />
-              Add Candidate
-            </Link>
             <Link to="/notifications/alerts" className="relative flex items-center justify-center h-10 w-10 rounded-full bg-white border border-slate-200 hover:bg-slate-50 transition-colors shadow-sm">
               <span className="text-[17px] hover:animate-bounce origin-bottom">🔔</span>
               {unreadCount > 0 && (
@@ -514,12 +505,12 @@ export function AppLayout({ children }: { children: ReactNode }) {
             </Link>
             <div className="h-8 w-px bg-slate-200" />
             <button className="flex items-center gap-3 hover:bg-white bg-slate-50 p-1.5 rounded-full pr-5 transition-colors border border-slate-200 shadow-sm">
-              <div className="h-8 w-8 rounded-full bg-[#1447E6] flex items-center justify-center text-white font-bold shadow-sm">
+              <div className="h-8 w-8 rounded-full bg-gradient-to-br from-[#42bc24] to-[#36961c] flex items-center justify-center text-white font-bold shadow-sm ring-1 ring-emerald-400/30">
                 {currentUser.initial}
               </div>
               <div className="hidden sm:flex flex-col items-start">
                 <span className="text-[13px] font-bold text-slate-900 leading-none">{currentUser.name}</span>
-                <span className="text-[10px] font-bold text-slate-500 mt-1.5 leading-none uppercase tracking-wider">
+                <span className="text-[10px] font-bold text-[#42bc24] mt-1.5 leading-none uppercase tracking-wider">
                   {currentUser.designation}
                 </span>
               </div>

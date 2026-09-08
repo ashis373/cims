@@ -264,24 +264,27 @@ export default function AllJobs() {
   
   return (
     <div className="flex flex-col gap-6 w-full pb-10">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 relative overflow-hidden rounded-3xl bg-white shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] border border-slate-100 p-8 sm:p-10">
-        <div className="flex items-center gap-5 relative z-10">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl shadow-sm border bg-blue-50 border-blue-100 text-blue-600">
-            <Briefcase className="h-6 w-6" />
-          </div>
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">Job Openings</h1>
-            <p className="text-slate-500 text-[13px] sm:text-[14px] font-medium mt-1.5 max-w-lg leading-relaxed">
-              Manage and track all open, paused, and closed job positions across departments.
-            </p>
+      {/* Top Banner (Dark Teal / Cyan Gradient) */}
+      <div className="relative overflow-hidden rounded-[28px] bg-gradient-to-r from-[#000C22] via-[#0B2524] to-[#0D2823] shadow-lg border border-teal-900/40 p-8 sm:p-10 text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+        <div className="relative z-10 flex flex-col justify-center max-w-xl">
+          <h1 className="text-3xl sm:text-4xl font-black tracking-tight mb-2 text-white">Job Openings</h1>
+          <p className="text-[#60C042] text-[14px] sm:text-[15px] font-medium leading-relaxed">
+            Manage and track all open, paused, and closed job positions across departments.
+          </p>
+        </div>
+        <div className="relative z-10 flex items-center gap-6 self-stretch sm:self-auto justify-between sm:justify-end">
+          <Link to="/jobs/create">
+            <Button className="rounded-xl font-bold btn-primary hover:opacity-95 px-6 h-11 text-white transition-all shadow-md">
+              <Plus className="w-4 h-4 mr-2" />
+              Create Job
+            </Button>
+          </Link>
+          <div className="shrink-0 group cursor-pointer">
+            <span className="text-7xl drop-shadow-2xl inline-block origin-bottom hover:animate-bounce cursor-default select-none">
+              💼
+            </span>
           </div>
         </div>
-        <Link to="/jobs/create">
-          <Button className="rounded-xl font-bold bg-[#1447E6] hover:bg-[#0c31a6] shadow-md shadow-[#1447E6]/20 px-6 h-11 text-white transition-colors">
-            <Plus className="w-4 h-4 mr-2" />
-            Create Job
-          </Button>
-        </Link>
       </div>
 
       <div className="flex flex-wrap gap-4">
@@ -546,11 +549,11 @@ export default function AllJobs() {
             <span className="text-[13px] font-bold text-slate-500">
               Showing {filteredJobs.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0} to {Math.min(currentPage * itemsPerPage, filteredJobs.length)} of {filteredJobs.length} entries
             </span>
-            <div className="flex gap-1">
+            <div className="flex items-center gap-1.5">
               <Button 
                 variant="outline" 
                 size="sm" 
-                className="rounded-lg h-8 text-xs font-bold" 
+                className="rounded-xl h-8.5 px-3 text-xs font-bold border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors" 
                 disabled={currentPage === 1}
                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
               >
@@ -563,8 +566,10 @@ export default function AllJobs() {
                   variant="outline" 
                   size="sm" 
                   className={cn(
-                    "rounded-lg h-8 w-8 p-0 text-xs font-bold",
-                    currentPage === page ? "bg-indigo-600 text-white border-indigo-600 hover:bg-indigo-700 hover:text-white" : ""
+                    "rounded-xl h-8.5 w-8.5 p-0 text-xs font-black transition-all",
+                    currentPage === page 
+                      ? "bg-gradient-to-br from-[#42bc24] to-[#36961c] text-white border-transparent shadow-md shadow-[#42bc24]/30 hover:brightness-105" 
+                      : "border-slate-200 text-slate-600 hover:bg-slate-100"
                   )}
                   onClick={() => setCurrentPage(page)}
                 >
@@ -575,7 +580,7 @@ export default function AllJobs() {
               <Button 
                 variant="outline" 
                 size="sm" 
-                className="rounded-lg h-8 text-xs font-bold"
+                className="rounded-xl h-8.5 px-3 text-xs font-bold border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors"
                 disabled={currentPage === totalPages || totalPages === 0}
                 onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
               >

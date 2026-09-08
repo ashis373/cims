@@ -7,6 +7,7 @@ import {
   Globe, UserPlus, Phone, X, Award, Building, User, ArrowDown
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { API_BASE_URL } from "@/config/api";
 import { toast } from "sonner";
@@ -197,41 +198,40 @@ export default function CandidateTimeline() {
 
       {/* Header Area */}
       <div className="flex flex-col gap-6">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-[22px] font-bold tracking-tight text-slate-900">Global Activity Feed</h1>
-            <p className="text-slate-500 text-[13px] font-medium mt-1">
-              Real-time updates and activities from all candidates across the system.
+        {/* Top Banner (Dark Teal / Cyan Gradient) */}
+        <div className="relative overflow-hidden rounded-[28px] bg-gradient-to-r from-[#000C22] via-[#0B2524] to-[#0D2823] shadow-lg border border-teal-900/40 p-8 sm:p-10 text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+          <div className="relative z-10 flex flex-col justify-center max-w-xl">
+            <h1 className="text-3xl sm:text-4xl font-black tracking-tight mb-2 text-white">Global Activity Feed</h1>
+            <p className="text-[#60C042] text-[14px] sm:text-[15px] font-medium leading-relaxed">
+              Real-time updates, timeline events, and activities from all candidates across the system.
             </p>
           </div>
-
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <div className="relative z-10 flex items-center gap-6 self-stretch sm:self-auto justify-between sm:justify-end">
+            <div className="relative w-full sm:w-[280px]">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-teal-300/70" />
               <Input
-                placeholder="Search candidate, activity, stage..."
-                className="pl-9 h-10 w-[280px] bg-white text-[13px] rounded-lg border-slate-200 focus-visible:ring-1"
+                placeholder="Search activity feed..."
+                className="pl-10 h-11 w-full bg-white/10 text-[13px] text-white placeholder:text-teal-200/60 rounded-xl border border-white/20 focus-visible:bg-white/15 focus-visible:ring-1 focus-visible:ring-teal-400 transition-all shadow-sm"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
-            <div className="relative">
-              <select className="h-10 pl-4 pr-10 bg-white border border-slate-200 rounded-lg text-[13px] font-semibold text-slate-700 outline-none appearance-none focus:ring-1 focus:ring-blue-500">
-                <option>All Users</option>
-              </select>
-              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+            <div className="shrink-0 group cursor-pointer">
+              <span className="text-7xl drop-shadow-2xl inline-block origin-bottom hover:animate-bounce cursor-default select-none">
+                ⚡
+              </span>
             </div>
           </div>
         </div>
 
         {/* Tabs */}
-        <div className="flex items-center gap-6 border-b border-slate-200">
+        <div className="flex items-center gap-6 border-b border-slate-200 overflow-x-auto pb-1">
           {["All Activities", "Application History", "Interview History", "Offer History", "Joining History", "Rejection History", "Blacklist History"].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={cn(
-                "pb-3 text-[13px] font-semibold transition-colors relative",
+                "pb-3 text-[13px] font-semibold transition-colors relative whitespace-nowrap",
                 activeTab === tab ? "text-blue-600" : "text-slate-500 hover:text-slate-700"
               )}
             >
@@ -247,29 +247,36 @@ export default function CandidateTimeline() {
 
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-7 gap-4">
+      <div className="flex flex-wrap gap-4">
         {[
-          { label: "Total Activities", value: timeline.length, change: "+12%", icon: Activity, tone: "bg-blue-50 text-blue-600", borderTone: "border-blue-500" },
-          { label: "Applications", value: stats?.total || 0, change: "+18%", icon: FileText, tone: "bg-emerald-50 text-emerald-600", borderTone: "border-emerald-500" },
-          { label: "Interviews", value: (stats?.scheduled || 0) + (stats?.selected || 0), change: "+8%", icon: Users, tone: "bg-purple-50 text-purple-600", borderTone: "border-purple-500" },
-          { label: "Offers", value: (stats?.offersReleased || 0) + (stats?.offersAccepted || 0) + (stats?.offersDeclined || 0), change: "+15%", icon: Award, tone: "bg-orange-50 text-orange-600", borderTone: "border-orange-500" },
-          { label: "Joinings", value: stats?.joined || 0, change: "+10%", icon: Building, tone: "bg-indigo-50 text-indigo-600", borderTone: "border-indigo-500" },
-          { label: "Rejections", value: stats?.rejected || 0, change: "+5%", icon: XCircle, tone: "bg-red-50 text-red-600", borderTone: "border-red-500" },
-          { label: "Blacklisted", value: stats?.blacklisted || 0, change: "+7%", icon: AlertTriangle, tone: "bg-slate-100 text-slate-600", borderTone: "border-slate-500" },
+          { label: "Total Activities", value: timeline.length, pct: 12, icon: Activity, tone: "bg-blue-50 text-blue-600", borderTone: "border-blue-500" },
+          { label: "Applications", value: stats?.total || 0, pct: 18, icon: FileText, tone: "bg-emerald-50 text-emerald-600", borderTone: "border-emerald-500" },
+          { label: "Interviews", value: (stats?.scheduled || 0) + (stats?.selected || 0), pct: 8, icon: Users, tone: "bg-purple-50 text-purple-600", borderTone: "border-purple-500" },
+          { label: "Offers", value: (stats?.offersReleased || 0) + (stats?.offersAccepted || 0) + (stats?.offersDeclined || 0), pct: 15, icon: Award, tone: "bg-orange-50 text-orange-600", borderTone: "border-orange-500" },
         ].map((stat, i) => (
-          <div key={i} className={cn("p-5 bg-white shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] rounded-3xl relative overflow-hidden group border-t-[3px] flex-1 min-w-[160px]", stat.borderTone)}>
+          <Card
+            key={i}
+            className={cn(
+              "p-5 bg-white shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] rounded-3xl relative overflow-hidden group border-t-[3px] flex-1 min-w-[160px]",
+              stat.borderTone,
+            )}
+          >
             <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-gradient-to-br from-transparent to-black/[0.02] rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500" />
             <div className="flex items-start justify-between relative z-10">
               <div>
-                <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">{stat.label}</div>
+                <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                  {stat.label}
+                </div>
                 <div className="text-3xl font-black tracking-tight text-slate-900">{stat.value}</div>
-                <div className="mt-1.5 text-[10px] font-bold text-emerald-500">{stat.change} vs last 7 days</div>
+                <div className="mt-1.5 text-[10px] font-bold text-emerald-500">+{stat.pct}% this month</div>
               </div>
-              <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl", stat.tone)}>
+              <div
+                className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl", stat.tone)}
+              >
                 <stat.icon className="h-5 w-5" />
               </div>
             </div>
-          </div>
+          </Card>
         ))}
       </div>
 

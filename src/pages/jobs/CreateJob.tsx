@@ -170,19 +170,25 @@ export default function CreateJob() {
 
   return (
     <div className="flex flex-col gap-6 w-full pb-10">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 relative overflow-hidden rounded-3xl bg-white shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] border border-slate-100 p-8 sm:p-10">
+      {/* Top Banner (Dark Teal / Cyan Gradient) */}
+      <div className="relative overflow-hidden rounded-[28px] bg-gradient-to-r from-[#000C22] via-[#0B2524] to-[#0D2823] shadow-lg border border-teal-900/40 p-8 sm:p-10 text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
         <div className="flex items-center gap-5 relative z-10">
           <Link to="/jobs/all">
-            <Button variant="outline" size="icon" className="h-14 w-14 rounded-2xl border-slate-200 text-slate-500 hover:text-slate-900 hover:bg-slate-50">
+            <Button variant="outline" size="icon" className="h-14 w-14 rounded-2xl bg-white/10 border border-white/20 text-white hover:bg-white/20 hover:text-white shadow-sm">
               <ArrowLeft className="h-6 w-6" />
             </Button>
           </Link>
           <div>
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">{id ? "Edit Job" : "Create Job"}</h1>
-            <p className="text-slate-500 text-[13px] sm:text-[14px] font-medium mt-1.5 max-w-lg leading-relaxed">
+            <h1 className="text-3xl sm:text-4xl font-black tracking-tight mb-2 text-white">{id ? "Edit Job" : "Create Job"}</h1>
+            <p className="text-[#60C042] text-[14px] sm:text-[15px] font-medium max-w-lg leading-relaxed">
               {id ? "Update the details for this position." : "Add a new position to your organization's recruitment pipeline."}
             </p>
           </div>
+        </div>
+        <div className="relative z-10 shrink-0 group cursor-pointer self-center sm:self-auto">
+          <span className="text-7xl drop-shadow-2xl inline-block origin-bottom hover:animate-bounce cursor-default select-none">
+            📝
+          </span>
         </div>
       </div>
 

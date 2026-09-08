@@ -327,34 +327,37 @@ function Pipeline() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Pipeline</h1>
-          <p className="text-[13px] text-slate-500 mt-1">
-            Drag cards between columns to update stage.
+      {/* Top Banner (Dark Teal / Cyan Gradient) */}
+      <div className="relative overflow-hidden rounded-[28px] bg-gradient-to-r from-[#000C22] via-[#0B2524] to-[#0D2823] shadow-lg border border-teal-900/40 p-8 sm:p-10 text-white flex flex-col xl:flex-row items-start xl:items-center justify-between gap-6">
+        <div className="relative z-10 flex flex-col justify-center max-w-xl">
+          <h1 className="text-3xl sm:text-4xl font-black tracking-tight mb-2 text-white">Pipeline</h1>
+          <p className="text-[#60C042] text-[14px] sm:text-[15px] font-medium leading-relaxed">
+            Drag cards between columns to update stage and streamline recruitment flow.
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+        <div className="relative z-10 flex flex-wrap items-center gap-4 self-stretch xl:self-auto justify-between xl:justify-end">
+          <div className="relative w-full sm:w-[280px]">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-teal-300/70" />
             <Input
               placeholder="Search candidates..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 h-9 w-[250px] text-xs bg-white border-slate-200 shadow-sm rounded-lg"
+              className="pl-10 h-11 w-full bg-white/10 text-[13px] text-white placeholder:text-teal-200/60 rounded-xl border border-white/20 focus-visible:bg-white/15 focus-visible:ring-1 focus-visible:ring-teal-400 transition-all shadow-sm"
             />
           </div>
-
           <Button
             asChild
-            className="h-9 text-xs bg-blue-600 hover:bg-blue-700 text-white shadow-sm font-semibold rounded-lg"
+            className="h-11 px-5 text-[13px] font-bold btn-primary hover:opacity-95 text-white transition-all rounded-xl shadow-md"
           >
             <Link to="/candidates/new">
-              <Plus className="mr-1.5 h-3.5 w-3.5" />
-              Add Candidate
+              <Plus className="mr-1.5 h-4 w-4" /> Add Candidate
             </Link>
           </Button>
+          <div className="shrink-0 group cursor-pointer hidden sm:block">
+            <span className="text-7xl drop-shadow-2xl inline-block origin-bottom hover:animate-bounce cursor-default select-none">
+              🚀
+            </span>
+          </div>
         </div>
       </div>
 

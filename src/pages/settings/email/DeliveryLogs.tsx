@@ -121,10 +121,18 @@ export default function DeliveryLogs() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Delivery Logs</h1>
-          <p className="text-[13px] text-slate-500 mt-1">Monitor the status of all outgoing messages.</p>
+      {/* Top Banner (Dark Teal / Cyan Gradient) */}
+      <div className="relative overflow-hidden rounded-[28px] bg-gradient-to-r from-[#000C22] via-[#0B2524] to-[#0D2823] shadow-lg border border-teal-900/40 p-8 sm:p-10 text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+        <div className="relative z-10 flex flex-col justify-center">
+          <h1 className="text-3xl sm:text-4xl font-black tracking-tight mb-2 text-white">Delivery Logs</h1>
+          <p className="text-[#60C042] text-[14px] sm:text-[15px] font-medium max-w-xl leading-relaxed">
+            Monitor the status of all outgoing messages and verify real-time email delivery logs.
+          </p>
+        </div>
+        <div className="relative z-10 shrink-0 group cursor-pointer self-center sm:self-auto">
+          <span className="text-7xl drop-shadow-2xl inline-block origin-bottom hover:animate-bounce cursor-default select-none">
+            📊
+          </span>
         </div>
       </div>
 

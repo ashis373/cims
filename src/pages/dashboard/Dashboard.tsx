@@ -179,6 +179,45 @@ function Dashboard() {
   return (
     <motion.div initial="hidden" animate="show" variants={container} className="space-y-6 max-w-[1600px] mx-auto pb-10">
 
+      {/* Top Banner (Dark Teal / Cyan Gradient) */}
+      <div className="relative overflow-hidden rounded-[28px] bg-gradient-to-r from-[#000C22] via-[#0B2524] to-[#0D2823] shadow-lg border border-teal-900/40 p-8 sm:p-10 text-white flex flex-col xl:flex-row items-start xl:items-center justify-between gap-6">
+        <div className="relative z-10 flex flex-col justify-center max-w-2xl">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-500/10 border border-teal-500/20 text-teal-300 text-xs font-bold mb-3 backdrop-blur-md w-fit">
+            <span className="w-2 h-2 rounded-full bg-[#60C042] animate-ping" />
+            Recruitment Intelligence Overview
+          </div>
+          <h1 className="text-3xl sm:text-4xl font-black tracking-tight mb-2 text-white">
+            Welcome back{currentUser?.name || currentUser?.full_name ? `, ${currentUser?.name || currentUser?.full_name}` : ''} 👋
+          </h1>
+          <p className="text-[#60C042] text-[14px] sm:text-[15px] font-medium leading-relaxed">
+            Monitor real-time candidate pipeline stages, recruitment conversions, and team productivity.
+          </p>
+        </div>
+
+        {/* Action Buttons & 3D Interactive Icon */}
+        <div className="relative z-10 flex flex-wrap items-center gap-3 self-stretch xl:self-auto justify-start xl:justify-end">
+          <Link to="/pipeline">
+            <Button className="h-11 px-5 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/20 backdrop-blur-md font-bold text-sm shadow-sm transition-all">
+              <ClipboardList className="w-4 h-4 mr-2 text-teal-300" /> View Pipeline
+            </Button>
+          </Link>
+
+          <Link to="/candidates/add">
+            <Button className="btn-primary h-11 px-6 rounded-xl font-bold shadow-lg transition-transform active:scale-95 flex items-center gap-2">
+              <Plus className="w-4 h-4" /> Add Candidate
+            </Button>
+          </Link>
+
+          <div className="hidden xl:flex items-center justify-center w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 shadow-inner flex-shrink-0 cursor-pointer hover:scale-105 transition-transform duration-300 ml-1">
+            <span className="text-3xl select-none filter drop-shadow-md hover:animate-bounce">🚀</span>
+          </div>
+        </div>
+
+        {/* Decorative Background Glows */}
+        <div className="absolute -right-16 -top-16 w-80 h-80 bg-teal-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute right-40 -bottom-20 w-60 h-60 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
+      </div>
+
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
         <StatCard
           label="Total Candidates"

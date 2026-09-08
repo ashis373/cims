@@ -106,41 +106,54 @@ export default function Departments() {
   };
 
   return (
-    <div className="flex-1 w-full p-8 space-y-8">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-black tracking-tight text-slate-900">Departments</h1>
-          <p className="text-sm font-medium text-slate-500 mt-1">Manage company departments and teams</p>
+    <div className="flex-1 w-full space-y-8">
+      {/* Top Banner (Dark Teal / Cyan Gradient) */}
+      <div className="relative overflow-hidden rounded-[28px] bg-gradient-to-r from-[#000C22] via-[#0B2524] to-[#0D2823] shadow-lg border border-teal-900/40 p-8 sm:p-10 text-white flex flex-col xl:flex-row items-start xl:items-center justify-between gap-6">
+        <div className="relative z-10 flex flex-col justify-center max-w-xl">
+          <h1 className="text-3xl sm:text-4xl font-black tracking-tight mb-2 text-white">Departments</h1>
+          <p className="text-[#60C042] text-[14px] sm:text-[15px] font-medium leading-relaxed">
+            Manage company departments, organize business units, and structure recruitment teams.
+          </p>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="bg-slate-100 p-1 rounded-xl flex items-center">
+
+        {/* Controls & Action Buttons */}
+        <div className="relative z-10 flex flex-wrap items-center gap-3 self-stretch xl:self-auto justify-start xl:justify-end">
+          <div className="bg-white/10 backdrop-blur-md p-1 rounded-xl border border-white/20 flex items-center shadow-inner">
             <button
               onClick={() => setView('grid')}
               className={cn(
-                "px-3 py-1.5 rounded-lg text-sm font-bold flex items-center transition-colors",
-                view === 'grid' ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                "px-3 py-1.5 rounded-lg text-sm font-bold flex items-center transition-all",
+                view === 'grid' ? "bg-white text-slate-900 shadow-sm" : "text-teal-100 hover:text-white"
               )}
             >
-              <LayoutGrid className="w-4 h-4 mr-2" /> Grid
+              <LayoutGrid className="w-4 h-4 mr-1.5" /> Grid
             </button>
             <button
               onClick={() => setView('table')}
               className={cn(
-                "px-3 py-1.5 rounded-lg text-sm font-bold flex items-center transition-colors",
-                view === 'table' ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                "px-3 py-1.5 rounded-lg text-sm font-bold flex items-center transition-all",
+                view === 'table' ? "bg-white text-slate-900 shadow-sm" : "text-teal-100 hover:text-white"
               )}
             >
-              <List className="w-4 h-4 mr-2" /> Table
+              <List className="w-4 h-4 mr-1.5" /> Table
             </button>
           </div>
+
           <Button 
             onClick={() => openModal()}
-            className="h-10 px-4 rounded-xl font-bold bg-[#1447E6] hover:bg-[#0c31a6] text-white shadow-md shadow-[#1447E6]/20"
+            className="btn-primary h-11 px-6 rounded-xl font-bold shadow-lg transition-transform active:scale-95"
           >
             <Plus className="w-4 h-4 mr-2" /> Add Department
           </Button>
+
+          <div className="hidden xl:flex items-center justify-center w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 shadow-inner flex-shrink-0 cursor-pointer hover:scale-105 transition-transform duration-300 ml-1">
+            <span className="text-3xl select-none filter drop-shadow-md hover:animate-bounce">🏢</span>
+          </div>
         </div>
+
+        {/* Decorative Background Elements */}
+        <div className="absolute -right-16 -top-16 w-80 h-80 bg-teal-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute right-40 -bottom-20 w-60 h-60 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
       </div>
 
       {/* Grid View */}

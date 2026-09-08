@@ -131,19 +131,19 @@ export default function Notifications() {
   return (
     <div className="flex flex-col gap-6 w-full pb-10 bg-[#FAFAFB]">
       {/* Header Banner */}
-      <div className="flex flex-col sm:flex-row justify-between items-center gap-4 relative overflow-hidden rounded-[24px] bg-gradient-to-r from-[#4A3AFF] to-[#8C3AFF] shadow-lg p-8 sm:py-10 sm:px-12 text-white">
+      <div className="flex flex-col sm:flex-row justify-between items-center gap-4 relative overflow-hidden rounded-[28px] bg-gradient-to-r from-[#000C22] via-[#0B2524] to-[#0D2823] shadow-lg border border-teal-900/40 p-8 sm:p-10 text-white">
         <div className="relative z-10 flex items-center gap-6">
           <div className="relative">
             <span className="text-7xl drop-shadow-2xl inline-block origin-bottom hover:animate-bounce cursor-default select-none">🔔</span>
             {unreadAlerts > 0 && (
-              <div className="absolute top-0 right-0 -mt-1 mr-1 bg-[#FF3B30] text-white text-[12px] font-black px-2 py-0.5 rounded-full border-2 border-[#8C3AFF] shadow-md z-20">
+              <div className="absolute top-0 right-0 -mt-1 mr-1 bg-[#FF3B30] text-white text-[12px] font-black px-2 py-0.5 rounded-full border-2 border-teal-900 shadow-md z-20">
                 {unreadAlerts}
               </div>
             )}
           </div>
           <div className="flex flex-col justify-center">
-            <h1 className="text-[28px] font-bold tracking-tight mb-1">Alerts Center</h1>
-            <p className="text-white/80 text-[14px] font-medium">
+            <h1 className="text-3xl sm:text-4xl font-black tracking-tight mb-2">Alerts Center</h1>
+            <p className="text-[#60C042] text-[14px] sm:text-[15px] font-medium max-w-xl leading-relaxed">
               Stay updated with important activities across your recruitment pipeline.
             </p>
           </div>
@@ -152,7 +152,7 @@ export default function Notifications() {
           <Button
             onClick={markAllAsRead}
             variant="outline"
-            className="h-10 px-5 rounded-xl bg-transparent border border-white/30 text-white hover:bg-white/10 hover:text-white font-bold transition-all"
+            className="h-10 px-5 rounded-xl bg-white/10 border border-white/20 text-white hover:bg-white/20 hover:text-white font-bold transition-all shadow-sm"
           >
             <Check className="mr-2 h-4 w-4" /> Mark all as read
           </Button>
@@ -160,51 +160,37 @@ export default function Notifications() {
       </div>
 
       {/* Stats Cards Row */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
-        {/* Total Alerts */}
-        <Card className="p-6 rounded-[24px] bg-white border border-slate-100 shadow-[0_2px_15px_-5px_rgba(0,0,0,0.03)] flex items-center gap-5">
-          <div className="h-14 w-14 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-500 border border-indigo-50">
-            <MessageSquare className="h-6 w-6" />
-          </div>
-          <div className="flex flex-col">
-            <span className="text-slate-500 text-[12px] font-bold">Total Alerts</span>
-            <span className="text-[28px] font-black text-slate-900 leading-tight">{totalAlerts}</span>
-            <span className="text-slate-400 text-[11px] font-medium mt-0.5">All time alerts</span>
-          </div>
-        </Card>
-        {/* Unread Alerts */}
-        <Card className="p-6 rounded-[24px] bg-white border border-slate-100 shadow-[0_2px_15px_-5px_rgba(0,0,0,0.03)] flex items-center gap-5">
-          <div className="h-14 w-14 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-500 border border-amber-50">
-            <Bell className="h-6 w-6" />
-          </div>
-          <div className="flex flex-col">
-            <span className="text-slate-500 text-[12px] font-bold">Unread Alerts</span>
-            <span className="text-[28px] font-black text-slate-900 leading-tight">{unreadAlerts}</span>
-            <span className="text-slate-400 text-[11px] font-medium mt-0.5">Need your attention</span>
-          </div>
-        </Card>
-        {/* Critical Alerts */}
-        <Card className="p-6 rounded-[24px] bg-white border border-slate-100 shadow-[0_2px_15px_-5px_rgba(0,0,0,0.03)] flex items-center gap-5">
-          <div className="h-14 w-14 rounded-2xl bg-red-50 flex items-center justify-center text-red-500 border border-red-50">
-            <AlertTriangle className="h-6 w-6" />
-          </div>
-          <div className="flex flex-col">
-            <span className="text-slate-500 text-[12px] font-bold">Critical Alerts</span>
-            <span className="text-[28px] font-black text-slate-900 leading-tight">{criticalAlerts}</span>
-            <span className="text-slate-400 text-[11px] font-medium mt-0.5">High priority</span>
-          </div>
-        </Card>
-        {/* Today's Alerts */}
-        <Card className="p-6 rounded-[24px] bg-white border border-slate-100 shadow-[0_2px_15px_-5px_rgba(0,0,0,0.03)] flex items-center gap-5">
-          <div className="h-14 w-14 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-500 border border-emerald-50">
-            <CalendarCheck className="h-6 w-6" />
-          </div>
-          <div className="flex flex-col">
-            <span className="text-slate-500 text-[12px] font-bold">Today's Alerts</span>
-            <span className="text-[28px] font-black text-slate-900 leading-tight">{todaysAlerts}</span>
-            <span className="text-slate-400 text-[11px] font-medium mt-0.5">Since midnight</span>
-          </div>
-        </Card>
+      <div className="flex flex-wrap gap-4">
+        {[
+          { title: "Total Alerts", value: totalAlerts, icon: MessageSquare, tone: "bg-blue-50 text-blue-600", borderTone: "border-blue-500", pct: 12 },
+          { title: "Unread Alerts", value: unreadAlerts, icon: Bell, tone: "bg-amber-50 text-amber-600", borderTone: "border-amber-500", pct: 5 },
+          { title: "Critical Alerts", value: criticalAlerts, icon: AlertTriangle, tone: "bg-red-50 text-red-600", borderTone: "border-red-500", pct: 8 },
+          { title: "Today's Alerts", value: todaysAlerts, icon: CalendarCheck, tone: "bg-emerald-50 text-emerald-600", borderTone: "border-emerald-500", pct: 15 },
+        ].map((stat, i) => (
+          <Card
+            key={i}
+            className={cn(
+              "p-5 bg-white shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] rounded-3xl relative overflow-hidden group border-t-[3px] flex-1 min-w-[160px]",
+              stat.borderTone,
+            )}
+          >
+            <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-gradient-to-br from-transparent to-black/[0.02] rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500" />
+            <div className="flex items-start justify-between relative z-10">
+              <div>
+                <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                  {stat.title}
+                </div>
+                <div className="text-3xl font-black tracking-tight text-slate-900">{stat.value}</div>
+                <div className="mt-1.5 text-[10px] font-bold text-emerald-500">+{stat.pct}% this month</div>
+              </div>
+              <div
+                className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl", stat.tone)}
+              >
+                <stat.icon className="h-5 w-5" />
+              </div>
+            </div>
+          </Card>
+        ))}
       </div>
 
       {/* Tabs and Filters */}
@@ -310,23 +296,23 @@ export default function Notifications() {
             Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredAlerts.length)} of {filteredAlerts.length} alerts
           </div>
         
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1.5">
             <Button 
               onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
               disabled={currentPage === 1}
-              variant="outline" size="icon" className="h-8 w-8 rounded-xl border-slate-200 text-slate-400 hover:text-slate-600 bg-white disabled:opacity-50"><ChevronRight className="h-4 w-4 rotate-180" /></Button>
+              variant="outline" size="icon" className="h-8.5 w-8.5 rounded-xl border-slate-200 text-slate-400 hover:text-slate-600 bg-white disabled:opacity-50"><ChevronRight className="h-4 w-4 rotate-180" /></Button>
             
             {Array.from({ length: totalPages }).map((_, i) => (
               <Button 
                 key={i}
                 onClick={() => setCurrentPage(i + 1)}
-                variant={currentPage === i + 1 ? "default" : "outline"} 
+                variant="outline" 
                 size="icon" 
                 className={cn(
-                  "h-8 w-8 rounded-xl font-bold text-[13px]",
+                  "h-8.5 w-8.5 rounded-xl font-black text-xs transition-all",
                   currentPage === i + 1 
-                    ? "bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm" 
-                    : "border-transparent text-slate-600 hover:bg-slate-100 hover:border-slate-200 bg-transparent"
+                    ? "bg-gradient-to-br from-[#42bc24] to-[#36961c] text-white border-transparent shadow-md shadow-[#42bc24]/30 hover:brightness-105" 
+                    : "border-slate-200 text-slate-600 hover:bg-slate-100 bg-white"
                 )}>
                 {i + 1}
               </Button>
@@ -335,7 +321,7 @@ export default function Notifications() {
             <Button 
               onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
               disabled={currentPage === totalPages}
-              variant="outline" size="icon" className="h-8 w-8 rounded-xl border-slate-200 text-slate-400 hover:text-slate-600 bg-white disabled:opacity-50"><ChevronRight className="h-4 w-4" /></Button>
+              variant="outline" size="icon" className="h-8.5 w-8.5 rounded-xl border-slate-200 text-slate-400 hover:text-slate-600 bg-white disabled:opacity-50"><ChevronRight className="h-4 w-4" /></Button>
           </div>
 
           <div className="flex items-center gap-2 text-[13px] font-medium text-slate-500">

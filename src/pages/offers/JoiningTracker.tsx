@@ -41,28 +41,28 @@ export default function JoiningTracker() {
 
   return (
     <div className="flex flex-col gap-6 w-full pb-10 mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
-      
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 relative overflow-hidden rounded-[28px] bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 shadow-lg border border-indigo-900/50 p-8 sm:p-10 text-white">
 
-        <div className="relative z-10 flex items-center gap-6">
-          <div className="flex h-[72px] w-[72px] items-center justify-center rounded-[20px] bg-white/10 border border-white/20 shadow-[0_0_20px_rgba(255,255,255,0.1)] backdrop-blur-md shrink-0">
-            <FileCheck className="h-8 w-8 text-indigo-100" />
-          </div>
-          <div>
-            <h1 className="text-3xl sm:text-4xl font-black tracking-tight mb-2">Joining Tracker</h1>
-            <p className="text-indigo-100/80 text-[14px] sm:text-[15px] font-medium max-w-xl leading-relaxed">
-              Monitor candidates who have accepted offers and track their successful onboarding.
-            </p>
-          </div>
+      {/* Top Banner (Dark Teal / Cyan Gradient) */}
+      <div className="relative overflow-hidden rounded-[28px] bg-gradient-to-r from-[#000C22] via-[#0B2524] to-[#0D2823] shadow-lg border border-teal-900/40 p-8 sm:p-10 text-white flex items-center justify-between">
+        <div className="relative z-10 flex flex-col justify-center">
+          <h1 className="text-3xl sm:text-4xl font-black tracking-tight mb-2">Joining Tracker</h1>
+          <p className="text-[#60C042] text-[14px] sm:text-[15px] font-medium max-w-xl leading-relaxed">
+            Monitor candidates who have accepted offers and track their successful onboarding.
+          </p>
+        </div>
+        <div className="relative z-10 shrink-0 group cursor-pointer">
+          <span className="text-7xl drop-shadow-2xl inline-block origin-bottom hover:animate-bounce cursor-default select-none">
+            📋
+          </span>
         </div>
       </div>
 
       {/* Main Container */}
       <div className="bg-white rounded-[24px] shadow-[0_2px_20px_rgba(0,0,0,0.03)] border border-slate-100 p-2 sm:p-4">
-        
+
         {/* Top Controls Row */}
         <div className="flex flex-col xl:flex-row items-center justify-between gap-4 p-4 border-b border-slate-100/80 mb-2">
-          
+
           <div className="flex overflow-x-auto hide-scrollbar gap-2 w-full xl:w-auto">
             {TABS.map((t) => {
               const isActive = activeTabId === t.id;
@@ -128,15 +128,15 @@ export default function JoiningTracker() {
             </div>
           ) : (
             filteredCandidates.map((c) => (
-              <div 
-                key={c.id} 
+              <div
+                key={c.id}
                 className="group flex flex-col lg:grid lg:grid-cols-[2.5fr_1.5fr_1.5fr_1.5fr_1.5fr_1fr] gap-4 items-start lg:items-center p-4 bg-white border border-slate-200 shadow-sm hover:shadow-md hover:border-slate-300 transition-all rounded-[16px]"
               >
                 {/* Candidate */}
                 <div className="flex items-center gap-4 w-full">
                   {c.photo ? (
-                    <img 
-                      src={`${API_BASE_URL}/../uploads/candidates/photos/${c.photo}`} 
+                    <img
+                      src={`${API_BASE_URL}/../uploads/candidates/photos/${c.photo}`}
                       alt={c.name}
                       className="h-12 w-12 rounded-xl object-cover shrink-0 shadow-sm border border-slate-200"
                     />
@@ -208,22 +208,22 @@ export default function JoiningTracker() {
           <div className="text-[13px] font-medium text-slate-500">
             Showing 1 to {filteredCandidates.length} of {filteredCandidates.length} results
           </div>
-          <div className="flex items-center gap-2">
-            <button className="h-8 w-8 rounded-lg border border-slate-200 flex items-center justify-center text-slate-400 hover:bg-slate-50">
+          <div className="flex items-center gap-1.5">
+            <button className="h-8.5 w-8.5 rounded-xl border border-slate-200 flex items-center justify-center text-slate-400 hover:bg-slate-50 transition-colors">
               <ChevronLeft className="h-4 w-4" />
             </button>
-            <button className="h-8 w-8 rounded-lg bg-indigo-600 text-white font-medium text-sm flex items-center justify-center shadow-sm">
+            <button className="h-8.5 w-8.5 rounded-xl bg-gradient-to-br from-[#42bc24] to-[#36961c] text-white font-black text-xs flex items-center justify-center shadow-md shadow-[#42bc24]/30">
               1
             </button>
-            <button className="h-8 w-8 rounded-lg border border-slate-200 flex items-center justify-center text-slate-400 hover:bg-slate-50">
+            <button className="h-8.5 w-8.5 rounded-xl border border-slate-200 flex items-center justify-center text-slate-400 hover:bg-slate-50 transition-colors">
               <ChevronRight className="h-4 w-4" />
             </button>
-            <button className="h-8 px-3 ml-2 rounded-lg border border-slate-200 flex items-center gap-2 text-slate-600 text-[13px] font-medium hover:bg-slate-50">
+            <button className="h-8.5 px-3 ml-2 rounded-xl border border-slate-200 flex items-center gap-2 text-slate-600 text-xs font-bold hover:bg-slate-50 transition-colors">
               10 / page <ChevronDown className="h-3 w-3" />
             </button>
           </div>
         </div>
-        
+
       </div>
     </div>
   );

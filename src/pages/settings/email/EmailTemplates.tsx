@@ -228,24 +228,27 @@ export default function EmailTemplates() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Email Templates</h1>
-          <p className="text-[13px] text-slate-500 mt-1">Manage standard system emails and notifications.</p>
+      {/* Top Banner (Dark Teal / Cyan Gradient) */}
+      <div className="relative overflow-hidden rounded-[28px] bg-gradient-to-r from-[#000C22] via-[#0B2524] to-[#0D2823] shadow-lg border border-teal-900/40 p-8 sm:p-10 text-white flex flex-col xl:flex-row items-start xl:items-center justify-between gap-6">
+        <div className="relative z-10 flex flex-col justify-center max-w-xl">
+          <h1 className="text-3xl sm:text-4xl font-black tracking-tight mb-2 text-white">Email Templates</h1>
+          <p className="text-[#60C042] text-[14px] sm:text-[15px] font-medium leading-relaxed">
+            Manage standard system emails, customize templates, and automate notification workflows.
+          </p>
         </div>
-      </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-          <Input 
-            placeholder="Search templates..." 
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 h-10 w-full text-sm bg-white border-slate-200 shadow-sm rounded-xl"
-          />
-        </div>
-        <div className="flex items-center gap-3">
+        {/* Action Controls & Search on Right */}
+        <div className="relative z-10 flex flex-wrap items-center gap-3 w-full xl:w-auto justify-start xl:justify-end">
+          <div className="relative w-full sm:w-64">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-teal-200/60" />
+            <Input 
+              placeholder="Search templates..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 h-10 w-full text-sm bg-white/10 border-white/20 text-white placeholder:text-teal-200/60 focus-visible:ring-teal-400 backdrop-blur-md rounded-xl shadow-inner"
+            />
+          </div>
+
           <Button 
             variant="outline"
             onClick={() => {
@@ -253,10 +256,10 @@ export default function EmailTemplates() {
               toggleAllTemplates(anyActive ? 0 : 1);
             }}
             className={cn(
-              "h-10 text-sm font-semibold rounded-xl transition-colors",
+              "h-10 text-sm font-semibold rounded-xl transition-all backdrop-blur-md",
               templates.some(t => t.is_active) 
-                ? "text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300 hover:text-red-700" 
-                : "text-emerald-600 border-emerald-200 hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-700"
+                ? "bg-red-500/10 border-red-400/30 text-red-300 hover:bg-red-500/20 hover:text-white" 
+                : "bg-emerald-500/10 border-emerald-400/30 text-emerald-300 hover:bg-emerald-500/20 hover:text-white"
             )}
           >
             {templates.some(t => t.is_active) ? (
@@ -265,13 +268,29 @@ export default function EmailTemplates() {
                <><CheckCircle2 className="mr-1.5 h-4 w-4" /> Enable All</>
             )}
           </Button>
-          <Button onClick={() => navigate("/email-settings/send")} className="h-10 text-sm bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm font-semibold rounded-xl">
+
+          <Button 
+            onClick={() => navigate("/email-settings/send")} 
+            className="h-10 text-sm bg-white/10 hover:bg-white/20 text-white border border-white/20 backdrop-blur-md font-semibold rounded-xl shadow-sm transition-all"
+          >
             <Send className="mr-1.5 h-4 w-4" /> Send Email
           </Button>
-          <Button onClick={openCreateDialog} className="h-10 text-sm bg-blue-600 hover:bg-blue-700 text-white shadow-sm font-semibold rounded-xl">
+
+          <Button 
+            onClick={openCreateDialog} 
+            className="btn-primary h-10 px-5 text-sm font-bold rounded-xl flex items-center shadow-lg transition-transform active:scale-95"
+          >
             <Plus className="mr-1.5 h-4 w-4" /> Create Template
           </Button>
+
+          <div className="hidden xl:flex items-center justify-center w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 shadow-inner flex-shrink-0 cursor-pointer hover:scale-105 transition-transform duration-300 ml-1">
+            <span className="text-3xl select-none filter drop-shadow-md hover:animate-bounce">✉️</span>
+          </div>
         </div>
+
+        {/* Decorative Background Elements */}
+        <div className="absolute -right-16 -top-16 w-80 h-80 bg-teal-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute right-40 -bottom-20 w-60 h-60 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
       </div>
 
       <Card className="bg-white border-border/50 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] rounded-2xl overflow-hidden">

@@ -156,11 +156,32 @@ export default function UserProfile() {
 
   return (
     <div className="space-y-6 pb-10">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">User Profile</h1>
-        <p className="text-[13px] text-slate-500 mt-1">
-          Manage your personal information, security credentials, and notification preferences.
-        </p>
+      {/* Top Banner (Dark Teal / Cyan Gradient) */}
+      <div className="relative overflow-hidden rounded-[28px] bg-gradient-to-r from-[#000C22] via-[#0B2524] to-[#0D2823] shadow-lg border border-teal-900/40 p-8 sm:p-10 text-white flex flex-col xl:flex-row items-start xl:items-center justify-between gap-6">
+        <div className="relative z-10 flex flex-col justify-center max-w-xl">
+          <h1 className="text-3xl sm:text-4xl font-black tracking-tight mb-2 text-white">User Profile</h1>
+          <p className="text-[#60C042] text-[14px] sm:text-[15px] font-medium leading-relaxed">
+            Manage your personal credentials, account security settings, and contact information.
+          </p>
+        </div>
+
+        <div className="relative z-10 flex items-center gap-4 self-stretch xl:self-auto justify-end">
+          <Button 
+            onClick={handleSave} 
+            disabled={isSaving}
+            className="btn-primary h-11 px-6 rounded-xl font-bold shadow-lg transition-transform active:scale-95 flex items-center gap-2"
+          >
+            <Save className="w-4 h-4" /> {isSaving ? "Saving..." : "Save Changes"}
+          </Button>
+
+          <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 shadow-inner flex-shrink-0 cursor-pointer hover:scale-105 transition-transform duration-300">
+            <span className="text-3xl select-none filter drop-shadow-md hover:animate-bounce">👤</span>
+          </div>
+        </div>
+
+        {/* Decorative Background Elements */}
+        <div className="absolute -right-16 -top-16 w-80 h-80 bg-teal-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute right-40 -bottom-20 w-60 h-60 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
@@ -233,10 +254,12 @@ export default function UserProfile() {
 
         {/* Right Preview */}
         <div className="lg:col-span-1">
-          <Card className="bg-white border-border/50 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] rounded-3xl overflow-hidden sticky top-6">
-            <div className="h-24 bg-gradient-to-r from-[#1447E6] to-indigo-500 relative" />
-            <div className="px-6 pb-6 relative flex flex-col items-center text-center">
-              <div className="w-20 h-20 rounded-full bg-white border-4 border-white shadow-md flex items-center justify-center overflow-hidden -mt-10 mb-3">
+          <Card className="bg-white border-border/50 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] rounded-3xl overflow-hidden sticky top-6 border">
+            <div className="h-16 bg-gradient-to-r from-[#000C22] via-[#0B2524] to-[#0D2823] relative p-3 flex items-start justify-end">
+              <span className="text-lg filter drop-shadow opacity-50 select-none">✨</span>
+            </div>
+            <div className="px-5 pb-5 relative flex flex-col items-center text-center">
+              <div className="w-16 h-16 rounded-full bg-white border-2 border-white shadow-md flex items-center justify-center overflow-hidden -mt-8 mb-2 ring-1 ring-teal-500/20">
                 {profile.profile_photo ? (
                   <img 
                     src={profile.profile_photo.startsWith('http') ? profile.profile_photo : `${API_BASE_URL}/${profile.profile_photo.replace('../../', '../')}`} 
@@ -244,37 +267,47 @@ export default function UserProfile() {
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <span className="text-2xl font-black text-[#1447E6]">{profile.name ? profile.name.charAt(0) : "U"}</span>
+                  <div className="w-full h-full bg-gradient-to-br from-[#0B2524] to-[#000C22] flex items-center justify-center">
+                    <span className="text-xl font-black text-[#60C042]">{profile.name ? profile.name.charAt(0) : "U"}</span>
+                  </div>
                 )}
               </div>
-              <h3 className="text-[16px] font-black text-slate-900 leading-tight">{profile.name || "Your Name"}</h3>
-              <p className="text-[12px] font-bold text-[#1447E6] mt-1">{profile.role_name || profile.designation || "Designation"}</p>
+              <h3 className="text-[15px] font-black text-slate-900 leading-tight">{profile.name || "Your Name"}</h3>
+              <p className="text-[11px] font-bold text-teal-700 bg-teal-50 border border-teal-100/80 px-2.5 py-0.5 rounded-full mt-1 inline-block">{profile.role_name || profile.designation || "Designation"}</p>
 
-              <div className="mt-3 flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full border border-emerald-100">
-                <span className={cn("w-2 h-2 rounded-full", profile.is_active ? "bg-emerald-500" : "bg-red-500")} />
-                <span className="text-[11px] font-bold uppercase tracking-wider">{profile.is_active ? "Active" : "Inactive"}</span>
+              <div className="mt-2 flex items-center gap-1.5 px-2.5 py-0.5 bg-emerald-50 text-emerald-700 rounded-full border border-emerald-200/80">
+                <span className={cn("w-1.5 h-1.5 rounded-full ring-2 ring-offset-1", profile.is_active ? "bg-emerald-500 ring-emerald-300 animate-pulse" : "bg-red-500 ring-red-300")} />
+                <span className="text-[10px] font-black uppercase tracking-wider">{profile.is_active ? "Active" : "Inactive"}</span>
               </div>
 
-              <div className="w-full h-px bg-slate-100 my-4" />
+              <div className="w-full h-px bg-slate-100 my-3" />
 
-              <div className="w-full space-y-3">
-                <div className="flex items-center gap-3 text-left">
-                  <div className="w-7 h-7 rounded-lg bg-slate-50 flex items-center justify-center shrink-0">
-                    <Mail className="w-3.5 h-3.5 text-slate-400" />
+              <div className="w-full space-y-2">
+                <div className="flex items-center gap-2.5 text-left p-2 rounded-xl bg-slate-50 border border-slate-100/80">
+                  <div className="w-7 h-7 rounded-lg bg-teal-500/10 text-teal-700 flex items-center justify-center shrink-0">
+                    <Mail className="w-3.5 h-3.5" />
                   </div>
-                  <div className="truncate text-[11px] font-medium text-slate-600">{profile.email || "Email address"}</div>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-[11px] font-bold text-slate-700">{profile.email || "Email address"}</div>
+                  </div>
                 </div>
-                <div className="flex items-center gap-3 text-left">
-                  <div className="w-7 h-7 rounded-lg bg-slate-50 flex items-center justify-center shrink-0">
-                    <Phone className="w-3.5 h-3.5 text-slate-400" />
+
+                <div className="flex items-center gap-2.5 text-left p-2 rounded-xl bg-slate-50 border border-slate-100/80">
+                  <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-700 flex items-center justify-center shrink-0">
+                    <Phone className="w-3.5 h-3.5" />
                   </div>
-                  <div className="truncate text-[11px] font-medium text-slate-600">{profile.mobile || "Phone number"}</div>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-[11px] font-bold text-slate-700">{profile.mobile || "Phone number"}</div>
+                  </div>
                 </div>
-                <div className="flex items-center gap-3 text-left">
-                  <div className="w-7 h-7 rounded-lg bg-slate-50 flex items-center justify-center shrink-0">
-                    <Building className="w-3.5 h-3.5 text-slate-400" />
+
+                <div className="flex items-center gap-2.5 text-left p-2 rounded-xl bg-slate-50 border border-slate-100/80">
+                  <div className="w-7 h-7 rounded-lg bg-blue-500/10 text-blue-700 flex items-center justify-center shrink-0">
+                    <Building className="w-3.5 h-3.5" />
                   </div>
-                  <div className="truncate text-[11px] font-medium text-slate-600 capitalize">{profile.department || "Department"}</div>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-[11px] font-bold text-slate-700 capitalize">{profile.department || "Department"}</div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -395,10 +428,10 @@ export default function UserProfile() {
           </div>
 
           <div className="flex items-center justify-end gap-3 mt-4">
-            <Button variant="outline" className="h-11 px-6 rounded-xl font-bold border-slate-200 text-slate-600 bg-white">
+            <Button variant="outline" className="h-11 px-6 rounded-xl font-bold border-slate-200 text-slate-600 bg-white hover:bg-slate-50">
               <RotateCcw className="w-4 h-4 mr-2" /> Reset
             </Button>
-            <Button disabled={isSaving} onClick={handleSave} className="h-11 px-6 rounded-xl font-bold bg-[#1447E6] hover:bg-[#0c31a6] text-white shadow-md shadow-[#1447E6]/20">
+            <Button disabled={isSaving} onClick={handleSave} className="btn-primary h-11 px-6 rounded-xl font-bold shadow-lg transition-transform active:scale-95 flex items-center">
               <Save className="w-4 h-4 mr-2" /> {isSaving ? "Saving..." : "Save Changes"}
             </Button>
           </div>

@@ -424,23 +424,36 @@ export default function UserRoles() {
   }
 
   return (
-    <div className="flex-1 w-full p-8 space-y-8">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-black tracking-tight text-slate-900">Users & Roles</h1>
-          <p className="text-sm font-medium text-slate-500 mt-1">Manage user permissions and access control</p>
+    <div className="flex-1 w-full space-y-8 pb-20">
+      {/* Top Banner (Dark Teal / Cyan Gradient) */}
+      <div className="relative overflow-hidden rounded-[28px] bg-gradient-to-r from-[#000C22] via-[#0B2524] to-[#0D2823] shadow-lg border border-teal-900/40 p-8 sm:p-10 text-white flex flex-col xl:flex-row items-start xl:items-center justify-between gap-6">
+        <div className="relative z-10 flex flex-col justify-center max-w-xl">
+          <h1 className="text-3xl sm:text-4xl font-black tracking-tight mb-2 text-white">Users & Roles</h1>
+          <p className="text-[#60C042] text-[14px] sm:text-[15px] font-medium leading-relaxed">
+            Manage user permissions, configure access control, and define system security policies.
+          </p>
         </div>
-        <Button 
-          onClick={() => {
-            setEditingUser(null);
-            setFormData({ full_name: '', email: '', password: '', role_id: roles[0]?.id ? String(roles[0].id) : '', is_active: true });
-            setIsUserModalOpen(true);
-          }}
-          className="h-10 px-4 rounded-xl font-bold bg-[#1447E6] hover:bg-[#0c31a6] text-white shadow-md shadow-[#1447E6]/20"
-        >
-          <Plus className="w-4 h-4 mr-2" /> Add User
-        </Button>
+
+        <div className="relative z-10 flex items-center gap-4 self-stretch xl:self-auto justify-end">
+          <Button 
+            onClick={() => {
+              setEditingUser(null);
+              setFormData({ full_name: '', email: '', mobile: '', designation: '', department: '', password: '', role_id: roles[0]?.id ? String(roles[0].id) : '', is_active: true });
+              setIsUserModalOpen(true);
+            }}
+            className="btn-primary h-11 px-6 rounded-xl font-bold shadow-lg transition-transform active:scale-95"
+          >
+            <Plus className="w-4 h-4 mr-2" /> Add User
+          </Button>
+
+          <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 shadow-inner flex-shrink-0 cursor-pointer hover:scale-105 transition-transform duration-300">
+            <span className="text-3xl select-none filter drop-shadow-md hover:animate-bounce">🛡️</span>
+          </div>
+        </div>
+
+        {/* Decorative Background Elements */}
+        <div className="absolute -right-16 -top-16 w-80 h-80 bg-teal-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute right-40 -bottom-20 w-60 h-60 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
       </div>
 
       {/* Users Table */}
@@ -572,30 +585,52 @@ export default function UserRoles() {
       </div>
 
       {/* Roles Overview */}
-      <div className="space-y-4 pt-4 border-t border-slate-200">
-        <h2 className="text-lg font-bold text-slate-900">Roles Overview</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="space-y-4 pt-6 border-t border-slate-200">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-black text-slate-900 tracking-tight">Roles Overview</h2>
+          <span className="text-xs font-bold text-slate-500 bg-slate-100 px-3 py-1 rounded-full border border-slate-200/60">
+            {roles.length} system roles
+          </span>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
           {roles.map(role => {
             const usersInRole = activeUsers.filter(u => u.role_id === role.id).length;
+            const isAdmin = role.role_name === 'Administrator';
             return (
-              <Card key={role.id} className="rounded-3xl border-slate-200/60 shadow-sm bg-white p-6 flex flex-col">
-                <div className="text-sm font-bold text-slate-500 mb-2">{usersInRole} users</div>
-                <h3 className="text-lg font-black text-slate-900 mb-1">{role.role_name}</h3>
-                <p className="text-sm font-medium text-slate-500 mb-6 flex-1 line-clamp-2">
-                  {role.description || "No description provided."}
-                </p>
+              <Card key={role.id} className="relative overflow-hidden rounded-2xl border border-slate-200/80 shadow-sm bg-white p-5 flex flex-col justify-between transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md hover:border-teal-200 group">
+                <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-gradient-to-br from-teal-500/10 to-transparent rounded-full blur-2xl pointer-events-none" />
                 
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider bg-teal-50 text-teal-700 border border-teal-200/60">
+                      {usersInRole} {usersInRole === 1 ? 'user' : 'users'}
+                    </span>
+                    <div className="p-1.5 rounded-lg bg-slate-50 text-slate-400 group-hover:text-teal-600 group-hover:bg-teal-50 transition-colors">
+                      <Shield className="w-4 h-4" />
+                    </div>
+                  </div>
 
+                  <h3 className="text-base font-black text-slate-900 mb-1 group-hover:text-emerald-700 transition-colors">{role.role_name}</h3>
+                  <p className="text-xs font-medium text-slate-500 mb-5 line-clamp-2 leading-relaxed">
+                    {role.description || (isAdmin ? "Full access to all system modules and settings" : "Standard role permissions.")}
+                  </p>
+                </div>
 
-                {role.role_name !== 'Administrator' && (
-                  <Button 
-                    onClick={() => openRoleModal(role)}
-                    variant="outline"
-                    className="w-full h-10 rounded-xl font-bold border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900"
-                  >
-                    Manage Role
-                  </Button>
-                )}
+                <div className="pt-2 border-t border-slate-100 mt-auto">
+                  {!isAdmin ? (
+                    <Button 
+                      onClick={() => openRoleModal(role)}
+                      variant="outline"
+                      className="w-full h-9 rounded-xl text-xs font-bold border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors"
+                    >
+                      Manage Role
+                    </Button>
+                  ) : (
+                    <div className="w-full h-9 rounded-xl bg-slate-50 border border-slate-100 text-slate-400 font-bold text-[11px] flex items-center justify-center">
+                      Full System Access
+                    </div>
+                  )}
+                </div>
               </Card>
             );
           })}
@@ -678,8 +713,6 @@ export default function UserRoles() {
                         {mockModules.map(mod => {
                           const config = moduleConfig[mod];
                           const p = permissions[mod] || { view: false, add: false, edit: false, delete: false, scope: config.scopes.includes('Assigned') ? 'Assigned' : 'All' };
-                          const Icon = moduleIcons[mod] || Settings;
-                          
                           const CheckBox = ({ checked, onChange, allowed }: { checked: boolean, onChange: (val: boolean) => void, allowed: boolean }) => {
                             if (!allowed) {
                               return <div className="w-5 h-5 flex items-center justify-center text-slate-300 font-bold">—</div>;
@@ -689,21 +722,22 @@ export default function UserRoles() {
                                 type="button"
                                 onClick={() => onChange(!checked)}
                                 className={cn(
-                                  "w-5 h-5 rounded flex items-center justify-center transition-all border outline-none focus:ring-2 focus:ring-[#1447E6]/30", 
-                                  checked ? "bg-[#1447E6] text-white border-[#1447E6]" : "bg-white text-transparent border-slate-300 hover:border-[#1447E6]"
+                                  "w-5 h-5 rounded flex items-center justify-center transition-all border outline-none focus:ring-2 focus:ring-[#42bc24]/30", 
+                                  checked ? "bg-gradient-to-br from-[#42bc24] to-[#36961c] text-white border-transparent shadow-sm" : "bg-white text-transparent border-slate-300 hover:border-[#42bc24]"
                                 )}
                               >
                                 <Check className="w-3.5 h-3.5" strokeWidth={3} />
                               </button>
                             );
                           };
+                          const Icon = moduleIcons[mod] || Settings;
 
                           return (
                             <tr key={mod} className="hover:bg-slate-50/50">
                               <td className="px-6 py-4">
                                 <div className="flex items-center gap-3">
-                                  <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-slate-50/50 border border-slate-100/50">
-                                    <Icon className="w-4 h-4 text-indigo-500" strokeWidth={2} />
+                                  <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-teal-50 border border-teal-100">
+                                    <Icon className="w-4 h-4 text-teal-700" strokeWidth={2} />
                                   </div>
                                   <span className="font-bold text-[13px] text-slate-700">{config.label}</span>
                                 </div>
@@ -722,7 +756,7 @@ export default function UserRoles() {
                                   <select 
                                     value={p.scope} 
                                     onChange={e => updatePermission(mod, 'scope', e.target.value)}
-                                    className="w-[140px] mx-auto block h-9 text-[12px] font-bold rounded-lg border-slate-200 focus:ring-[#1447E6] text-slate-700 bg-white shadow-sm"
+                                    className="w-[140px] mx-auto block h-9 text-[12px] font-bold rounded-lg border-slate-200 focus:ring-[#42bc24] text-slate-700 bg-white shadow-sm"
                                   >
                                     {config.scopes.map(s => <option key={s} value={s}>{s}</option>)}
                                   </select>
@@ -741,10 +775,10 @@ export default function UserRoles() {
               <div className="pt-6 border-t border-slate-100">
                 <div className="flex items-center justify-between mb-4">
                   <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                    <Users className="w-4 h-4 text-[#1447E6]" />
+                    <Users className="w-4 h-4 text-teal-600" />
                     Users assigned to this role ({editingRole ? activeUsers.filter(u => u.role_id === editingRole.id).length : 0})
                   </h4>
-                  <Button variant="outline" size="sm" className="h-8 text-xs font-bold text-[#1447E6] border-[#1447E6]/20 bg-blue-50/50 hover:bg-blue-50">
+                  <Button variant="outline" size="sm" className="h-8 text-xs font-bold text-teal-700 border-teal-200 bg-teal-50/50 hover:bg-teal-50">
                     View Users
                   </Button>
                 </div>
@@ -763,7 +797,7 @@ export default function UserRoles() {
                             className="h-10 w-10 rounded-full object-cover border border-slate-200 shadow-sm shrink-0" 
                           />
                         ) : (
-                          <div className="h-10 w-10 rounded-full bg-indigo-50 text-indigo-700 flex items-center justify-center font-black text-sm shrink-0 border border-indigo-100 shadow-inner">
+                          <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[#42bc24] to-[#36961c] text-white flex items-center justify-center font-black text-sm shrink-0 shadow-inner">
                             {u.full_name?.charAt(0) || u.email?.charAt(0)}
                           </div>
                         )}
@@ -779,11 +813,11 @@ export default function UserRoles() {
             </div>
 
             <div className="px-8 py-5 border-t border-slate-100 bg-slate-50 flex items-center justify-end gap-3 shrink-0">
-              <Button type="button" variant="ghost" onClick={() => setIsRoleModalOpen(false)} className="rounded-xl font-bold text-slate-600">Cancel</Button>
+              <Button type="button" variant="ghost" onClick={() => setIsRoleModalOpen(false)} className="rounded-xl font-bold text-slate-600 hover:bg-slate-200/60">Cancel</Button>
               <Button 
                 onClick={handleRoleSubmit}
                 disabled={isSaving}
-                className="bg-[#1447E6] hover:bg-[#0c31a6] text-white rounded-xl font-bold shadow-md shadow-[#1447E6]/20"
+                className="btn-primary h-11 px-6 rounded-xl font-bold shadow-lg transition-transform active:scale-95"
               >
                 {isSaving ? "Saving..." : "Save Changes"}
               </Button>
@@ -824,35 +858,35 @@ export default function UserRoles() {
                       setSelectedPhoto(file);
                     }
                   }}
-                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl bg-slate-50 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-[#1447E6]/10 file:text-[#1447E6] hover:file:bg-[#1447E6]/20 cursor-pointer"
+                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl bg-slate-50 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100 cursor-pointer"
                 />
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1.5">Full Name</label>
                 <input 
-                  type="text"
+                  type="text" 
                   required
                   maxLength={100}
                   value={formData.full_name}
                   onChange={e => setFormData({...formData, full_name: e.target.value})}
-                  className="w-full h-11 px-4 rounded-xl border border-slate-200 focus:border-[#1447E6] focus:ring-2 focus:ring-[#1447E6]/10 text-sm font-medium"
+                  className="w-full h-11 px-4 rounded-xl border border-slate-200 focus:border-[#42bc24] focus:ring-2 focus:ring-[#42bc24]/20 text-sm font-medium outline-none"
                 />
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1.5">Email Address</label>
                 <input 
-                  type="email"
+                  type="email" 
                   required
                   maxLength={150}
                   value={formData.email}
                   onChange={e => setFormData({...formData, email: e.target.value})}
-                  className="w-full h-11 px-4 rounded-xl border border-slate-200 focus:border-[#1447E6] focus:ring-2 focus:ring-[#1447E6]/10 text-sm font-medium"
+                  className="w-full h-11 px-4 rounded-xl border border-slate-200 focus:border-[#42bc24] focus:ring-2 focus:ring-[#42bc24]/20 text-sm font-medium outline-none"
                 />
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1.5">Mobile Number</label>
                 <input 
-                  type="text"
+                  type="text" 
                   maxLength={10}
                   pattern="[0-9]{10}"
                   title="Please enter exactly 10 digits"
@@ -861,7 +895,7 @@ export default function UserRoles() {
                     const val = e.target.value.replace(/\D/g, '').slice(0, 10);
                     setFormData({...formData, mobile: val});
                   }}
-                  className="w-full h-11 px-4 rounded-xl border border-slate-200 focus:border-[#1447E6] focus:ring-2 focus:ring-[#1447E6]/10 text-sm font-medium"
+                  className="w-full h-11 px-4 rounded-xl border border-slate-200 focus:border-[#42bc24] focus:ring-2 focus:ring-[#42bc24]/20 text-sm font-medium outline-none"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -871,7 +905,7 @@ export default function UserRoles() {
                     type="text" 
                     value={formData.designation}
                     onChange={e => setFormData({...formData, designation: e.target.value})}
-                    className="w-full h-11 px-4 rounded-xl border border-slate-200 focus:border-[#1447E6] focus:ring-2 focus:ring-[#1447E6]/10 text-sm font-medium"
+                    className="w-full h-11 px-4 rounded-xl border border-slate-200 focus:border-[#42bc24] focus:ring-2 focus:ring-[#42bc24]/20 text-sm font-medium outline-none"
                   />
                 </div>
                 <div>
@@ -880,7 +914,7 @@ export default function UserRoles() {
                     type="text" 
                     value={formData.department}
                     onChange={e => setFormData({...formData, department: e.target.value})}
-                    className="w-full h-11 px-4 rounded-xl border border-slate-200 focus:border-[#1447E6] focus:ring-2 focus:ring-[#1447E6]/10 text-sm font-medium"
+                    className="w-full h-11 px-4 rounded-xl border border-slate-200 focus:border-[#42bc24] focus:ring-2 focus:ring-[#42bc24]/20 text-sm font-medium outline-none"
                   />
                 </div>
               </div>
@@ -892,7 +926,7 @@ export default function UserRoles() {
                     required
                     value={formData.password}
                     onChange={e => setFormData({...formData, password: e.target.value})}
-                    className="w-full h-11 px-4 rounded-xl border border-slate-200 focus:border-[#1447E6] focus:ring-2 focus:ring-[#1447E6]/10 text-sm font-medium"
+                    className="w-full h-11 px-4 rounded-xl border border-slate-200 focus:border-[#42bc24] focus:ring-2 focus:ring-[#42bc24]/20 text-sm font-medium outline-none"
                   />
                 </div>
               )}
@@ -902,7 +936,7 @@ export default function UserRoles() {
                   required
                   value={String(formData.role_id)}
                   onChange={e => setFormData({...formData, role_id: e.target.value})}
-                  className="w-full h-11 px-4 rounded-xl border border-slate-200 focus:border-[#1447E6] focus:ring-2 focus:ring-[#1447E6]/10 text-sm bg-white font-medium"
+                  className="w-full h-11 px-4 rounded-xl border border-slate-200 focus:border-[#42bc24] focus:ring-2 focus:ring-[#42bc24]/20 text-sm bg-white font-medium outline-none"
                 >
                   <option value="" disabled>Select a role...</option>
                   {roles.map(r => (
@@ -916,13 +950,13 @@ export default function UserRoles() {
                   id="isActive"
                   checked={formData.is_active}
                   onChange={e => setFormData({...formData, is_active: e.target.checked})}
-                  className="w-4 h-4 rounded border-slate-300 text-[#1447E6] focus:ring-[#1447E6]"
+                  className="w-4 h-4 rounded border-slate-300 text-[#42bc24] focus:ring-[#42bc24]"
                 />
                 <label htmlFor="isActive" className="text-sm font-bold text-slate-700 cursor-pointer">Active Account</label>
               </div>
               <div className="pt-4 flex items-center justify-end gap-3">
                 <Button type="button" variant="ghost" onClick={() => setIsUserModalOpen(false)} className="rounded-xl font-bold">Cancel</Button>
-                <Button type="submit" className="bg-[#1447E6] hover:bg-[#0c31a6] text-white rounded-xl font-bold shadow-md shadow-[#1447E6]/20">Save User</Button>
+                <Button type="submit" className="btn-primary h-11 px-6 rounded-xl font-bold shadow-lg transition-transform active:scale-95">Save User</Button>
               </div>
             </form>
           </div>
@@ -951,12 +985,12 @@ export default function UserRoles() {
                   required
                   value={passwordData.password}
                   onChange={e => setPasswordData({...passwordData, password: e.target.value})}
-                  className="w-full h-11 px-4 rounded-xl border border-slate-200 focus:border-[#1447E6] focus:ring-2 focus:ring-[#1447E6]/10 text-sm font-medium"
+                  className="w-full h-11 px-4 rounded-xl border border-slate-200 focus:border-[#42bc24] focus:ring-2 focus:ring-[#42bc24]/20 text-sm font-medium outline-none"
                 />
               </div>
               <div className="pt-2 flex items-center justify-end gap-3">
                 <Button type="button" variant="ghost" onClick={() => setIsPasswordModalOpen(false)} className="rounded-xl font-bold">Cancel</Button>
-                <Button type="submit" className="bg-[#1447E6] hover:bg-[#0c31a6] text-white rounded-xl font-bold shadow-md shadow-[#1447E6]/20">Reset Password</Button>
+                <Button type="submit" className="btn-primary h-11 px-6 rounded-xl font-bold shadow-lg transition-transform active:scale-95">Reset Password</Button>
               </div>
             </form>
           </div>
@@ -965,7 +999,3 @@ export default function UserRoles() {
     </div>
   );
 }
-
-
-
-
