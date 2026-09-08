@@ -19,10 +19,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $fileExtension = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
         $isImage = in_array($fileExtension, ['jpg', 'jpeg', 'png']);
         
-        $maxSize = $isImage ? (5 * 1024 * 1024) : (10 * 1024 * 1024);
+        $maxSize = $isImage ? (1 * 1024 * 1024) : (2 * 1024 * 1024);
         if ($_FILES['resume']['size'] > $maxSize) {
             http_response_code(400);
-            echo json_encode(["error" => "File exceeds maximum allowed size (" . ($isImage ? '5MB' : '10MB') . ")."]);
+            echo json_encode(["error" => "File exceeds maximum allowed size (" . ($isImage ? '1MB' : '2MB') . ")."]);
             exit;
         }
         

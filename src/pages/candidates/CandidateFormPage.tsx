@@ -401,6 +401,11 @@ export default function CandidateFormPage() {
                 onChange={async (e) => {
                   const file = e.target.files?.[0];
                   if (file) {
+                    if (file.size > 1 * 1024 * 1024) {
+                      toast.error("Profile photo file size must be less than 1 MB");
+                      e.target.value = '';
+                      return;
+                    }
                     const formData = new FormData();
                     formData.append("resume", file);
                     const uploadUrl = `${API_BASE_URL}/candidates/upload.php`;
@@ -410,9 +415,11 @@ export default function CandidateFormPage() {
                       if (data.success) {
                         set("photo", data.filename);
                       } else {
+                        toast.error(data.error || "Upload failed");
                         console.error(data.error || "Upload failed");
                       }
                     } catch (err) {
+                      toast.error("Upload failed due to network error");
                       console.error("Upload failed", err);
                     }
                   }
