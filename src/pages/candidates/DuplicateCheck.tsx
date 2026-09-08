@@ -221,9 +221,17 @@ export default function DuplicateCheck() {
                   <div className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${palette.lineClass}`} />
                   <div className="flex items-start justify-between gap-3 pt-1">
                     <button type="button" onClick={() => navigate(`/candidates/${candidate.id}`)} className="flex min-w-0 items-center gap-3 text-left">
-                      <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-sm font-black ${isExact ? "bg-red-50 text-red-700" : "bg-amber-50 text-amber-700"}`}>
-                        {candidate.name?.charAt(0)?.toUpperCase() || "U"}
-                      </div>
+                      {candidate.photo ? (
+                        <img
+                          src={`${API_BASE_URL}/../uploads/candidates/photos/${candidate.photo}`}
+                          alt={candidate.name}
+                          className="h-11 w-11 rounded-full object-cover shrink-0 border border-slate-200"
+                        />
+                      ) : (
+                        <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-sm font-black ${isExact ? "bg-red-50 text-red-700" : "bg-amber-50 text-amber-700"}`}>
+                          {candidate.name?.charAt(0)?.toUpperCase() || "U"}
+                        </div>
+                      )}
                       <div className="min-w-0">
                         <h3 className="truncate font-bold text-slate-950 group-hover:text-blue-700">{candidate.name}</h3>
                         <p className="mt-0.5 truncate text-[11px] font-medium text-slate-500">ID: {candidate.id}</p>

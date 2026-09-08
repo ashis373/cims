@@ -7,7 +7,8 @@ import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, MoreVertical } from "lucide-react";
+import { Plus, MoreVertical, MapPin, CalendarDays } from "lucide-react";
+import { API_BASE_URL } from "@/config/api";
 
 export function KanbanBoard({ candidates }: { candidates: Candidate[] }) {
   const { setStage } = useAts();
@@ -94,40 +95,65 @@ export function KanbanBoard({ candidates }: { candidates: Candidate[] }) {
                       )}
                     >
                       <Link to={`/candidates/${c.id}`} className="block">
-                        <div className="flex items-start justify-between mb-3">
-                          <div
-                            className={cn(
-                              "flex h-9 w-9 items-center justify-center rounded-full text-[11px] font-bold uppercase",
-                              stageColorClass,
-                            )}
-                          >
-                            {c.name
-                              .split(" ")
-                              .map((n) => n[0])
-                              .join("")
-                              .substring(0, 2)}
+                        <div className="flex items-center gap-2.5 mb-2">
+                          {c.photo ? (
+                            <img
+                              src={`${API_BASE_URL}/../uploads/candidates/photos/${c.photo}`}
+                              alt={c.name}
+                              className="h-9 w-9 rounded-full object-cover shrink-0 border border-slate-200"
+                            />
+                          ) : (
+                            <div
+                              className={cn(
+                                "flex h-9 w-9 items-center justify-center rounded-full text-[11px] font-bold uppercase shrink-0",
+                                stageColorClass,
+                              )}
+                            >
+                              {c.name
+                                .split(" ")
+                                .map((n) => n[0])
+                                .join("")
+                                .substring(0, 2)}
+                            </div>
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <div className="text-[14px] font-bold leading-tight text-slate-900 truncate">{c.name}</div>
+                            <div className="text-[12px] text-slate-500 font-medium truncate">{c.role}</div>
                           </div>
-                          <button className="text-slate-400 hover:text-slate-600 p-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <MoreVertical className="h-4 w-4" />
-                          </button>
                         </div>
-                        <div className="text-[13px] font-bold leading-tight text-slate-900 mb-1">
-                          {c.name}
+
+                        <div className="mt-2 space-y-1">
+                          {(c.recruiter || c.experience) && (
+                            <div className="text-[11px] text-slate-700 font-medium truncate">
+                              {[c.recruiter, c.experience].filter(Boolean).join(" · ")}
+                            </div>
+                          )}
+                          {c.location && (
+                            <div className="flex items-center gap-1 text-[11px] text-slate-600 font-medium truncate">
+                              <MapPin className="h-3 w-3 shrink-0" />
+                              {c.location}
+                            </div>
+                          )}
+                          {c.appliedAt && (
+                            <div className="flex items-center gap-1 text-[11px] text-slate-600 font-medium">
+                              <CalendarDays className="h-3 w-3 shrink-0" />
+                              {new Date(c.appliedAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                            </div>
+                          )}
                         </div>
-                        <div className="text-[11px] text-slate-500 font-medium">{c.role}</div>
 
                         {c.tags.length > 0 && (
-                          <div className="mt-4 flex flex-wrap gap-2">
+                          <div className="mt-3 flex flex-wrap gap-1.5">
                             {c.tags.slice(0, 2).map((t) => (
                               <div
                                 key={t}
-                                className="text-[9px] px-2 py-1 rounded-md bg-slate-50 text-slate-600 font-bold border border-slate-200"
+                                className="text-[10px] px-2 py-0.5 rounded-md bg-slate-50 text-slate-600 font-bold border border-slate-200"
                               >
                                 {t}
                               </div>
                             ))}
                             {c.tags.length > 2 && (
-                              <div className="text-[9px] px-2 py-1 rounded-md bg-slate-50 text-slate-600 font-bold border border-slate-200">
+                              <div className="text-[9px] px-2 py-0.5 rounded-md bg-slate-50 text-slate-600 font-bold border border-slate-200">
                                 +{c.tags.length - 2}
                               </div>
                             )}

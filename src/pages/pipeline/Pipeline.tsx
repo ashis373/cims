@@ -345,29 +345,7 @@ function Pipeline() {
               className="pl-9 h-9 w-[250px] text-xs bg-white border-slate-200 shadow-sm rounded-lg"
             />
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={undo}
-            disabled={!canUndo}
-            className="h-9 w-9 p-0 bg-white shadow-sm border-slate-200"
-          >
-            <Undo2 className="h-4 w-4 text-slate-600" />
-          </Button>
-          <Button
-            variant="outline"
-            className="h-9 text-xs bg-white shadow-sm border-slate-200 text-slate-700 font-semibold"
-          >
-            <Filter className="mr-2 h-3.5 w-3.5 text-slate-500" />
-            Filter
-          </Button>
-          <Button
-            variant="outline"
-            className="h-9 text-xs bg-white shadow-sm border-slate-200 text-slate-700 font-semibold"
-          >
-            <LayoutGrid className="mr-2 h-3.5 w-3.5 text-slate-500" />
-            Display
-          </Button>
+
           <Button
             asChild
             className="h-9 text-xs bg-blue-600 hover:bg-blue-700 text-white shadow-sm font-semibold rounded-lg"
