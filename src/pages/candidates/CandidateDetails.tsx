@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { useAts, PIPELINE_STAGES } from "@/services/ats-store";
 import { STAGE_COLORS, INTERVIEW_TYPES, type Stage } from "@/types/ats-types";
@@ -82,8 +82,14 @@ function DetailItem({
 export default function CandidateProfile() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { candidates, setStage, remove, update, addInterview, updateInterview } = useAts();
+  const { candidates, setStage, remove, update, addInterview, updateInterview, refresh } = useAts();
   const candidate = candidates.find((c) => c.id === id);
+
+  useEffect(() => {
+    if (id && refresh) {
+      refresh();
+    }
+  }, [id, refresh]);
 
   let currentUser = "System";
   try {

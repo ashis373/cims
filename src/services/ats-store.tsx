@@ -49,6 +49,7 @@ interface Ctx {
   canUndo: boolean;
   isLoading: boolean;
   error: string | null;
+  refresh: () => Promise<void>;
 }
 
 const AtsContext = createContext<Ctx | null>(null);
@@ -60,27 +61,29 @@ export function AtsProvider({ children }: { children: ReactNode }) {
   const history = useRef<Candidate[][]>([]);
   const [canUndo, setCanUndo] = useState(false);
 
+  const refresh = async () => {
+    try {
+      const data = await fetchCandidatesAPI();
+      setCandidates((prev) => {
+        if (JSON.stringify(prev) !== JSON.stringify(data)) {
+          return data;
+        }
+        return prev;
+      });
+    } catch (err) {
+      console.error("DB Fetch failed:", err);
+      if (candidates.length === 0) {
+        setError("Failed to load candidates");
+      }
+    }
+  };
+
   useEffect(() => {
     let isMounted = true;
     
     const fetchData = async () => {
-      try {
-        const data = await fetchCandidatesAPI();
-        if (!isMounted) return;
-        setCandidates((prev) => {
-          if (JSON.stringify(prev) !== JSON.stringify(data)) {
-            return data;
-          }
-          return prev;
-        });
-      } catch (err) {
-        console.error("DB Fetch failed:", err);
-        if (isMounted && candidates.length === 0) {
-          setError("Failed to load candidates");
-        }
-      } finally {
-        if (isMounted) setIsLoading(false);
-      }
+      await refresh();
+      if (isMounted) setIsLoading(false);
     };
 
     // Initial fetch only
@@ -107,6 +110,7 @@ export function AtsProvider({ children }: { children: ReactNode }) {
   const api: Ctx = useMemo(
     () => ({
       candidates,
+      refresh,
       setAll: (c) => mutate(() => c),
       add: async (input) => {
         const t = now();
@@ -147,7 +151,7 @@ export function AtsProvider({ children }: { children: ReactNode }) {
         } as unknown as Candidate;
         try {
           await postCandidateAPI(cand);
-          mutate((prev) => [cand, ...prev]);
+          await refresh();
           return cand;
         } catch (e) {
           const error = e as Error;
