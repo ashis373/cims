@@ -202,6 +202,21 @@ export default function CandidateFormPage() {
 
     if (!form.experience) {
       newErrors.experience = "Total experience is required.";
+    } else if (form.relevantExperience) {
+      const expRanks: Record<string, number> = {
+        "Fresher": 0,
+        "1-2 Years": 1,
+        "2-4 Years": 2,
+        "4-6 Years": 3,
+        "6-8 Years": 4,
+        "8-10 Years": 5,
+        "10+ Years": 6
+      };
+      const tRank = expRanks[form.experience];
+      const rRank = expRanks[form.relevantExperience];
+      if (tRank !== undefined && rRank !== undefined && rRank > tRank) {
+        newErrors.relevantExperience = "Relevant experience cannot be greater than total experience.";
+      }
     }
 
     if (form.currentCtc && (isNaN(Number(form.currentCtc)) || Number(form.currentCtc) < 0)) {

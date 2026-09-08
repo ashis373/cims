@@ -549,12 +549,7 @@ export default function CandidatesPage() {
                 <option value="10+ Years">10+ Years</option>
               </select>
 
-              <Button
-                variant="outline"
-                className="h-9 text-xs font-semibold rounded-lg bg-white border-slate-200"
-              >
-                <Filter className="mr-1.5 h-3.5 w-3.5" /> More Filters
-              </Button>
+
               <Button
                 variant="ghost"
                 onClick={resetFilters}
