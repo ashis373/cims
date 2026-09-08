@@ -25,11 +25,9 @@ try {
             cr.recordedBy,
             c.id,
             c.name,
-            c.email,
-            a.role_applied as position
+            c.email
         FROM cims_candidate_rejections cr
         JOIN cims_candidates c ON cr.candidate_id = c.id
-        LEFT JOIN cims_applications a ON cr.application_id = a.id
         WHERE cr.type = 'Rejected'
         ORDER BY cr.recordedAt DESC
     ");

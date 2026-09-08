@@ -383,30 +383,38 @@ export default function CandidateProfile() {
       </div>
 
       {/* Alerts */}
-      {candidate.alerts?.map((alert: any, i: number) => (
-        <div key={i} className="flex items-center justify-between rounded-xl bg-red-50/80 p-4 border border-red-100 shadow-sm mb-4">
-          <div className="flex items-start gap-3 text-red-600">
-            <div className="mt-0.5">
-              <AlertCircle className="h-4 w-4" />
-            </div>
-            <div>
-              <div className="font-bold text-[13px]">{alert.type} Candidate</div>
-              <div className="text-[11px] font-semibold text-red-500 mt-0.5">
-                Reason: {alert.reason} <span className="text-red-400 font-medium ml-2">({formatDate(alert.recordedAt)})</span>
+      {(() => {
+        const activeAlerts = candidate.alerts?.filter((a: any) => a.type !== 'Blacklisted') || [];
+        const latestBlacklist = (candidate.isBlacklisted == 1 || candidate.isBlacklisted === true)
+          ? candidate.alerts?.filter((a: any) => a.type === 'Blacklisted').sort((a: any, b: any) => new Date(b.recordedAt).getTime() - new Date(a.recordedAt).getTime())[0]
+          : null;
+        if (latestBlacklist) activeAlerts.unshift(latestBlacklist);
+        
+        return activeAlerts.map((alert: any, i: number) => (
+          <div key={i} className="flex items-center justify-between rounded-xl bg-red-50/80 p-4 border border-red-100 shadow-sm mb-4">
+            <div className="flex items-start gap-3 text-red-600">
+              <div className="mt-0.5">
+                <AlertCircle className="h-4 w-4" />
+              </div>
+              <div>
+                <div className="font-bold text-[13px]">{alert.type} Candidate</div>
+                <div className="text-[11px] font-semibold text-red-500 mt-0.5">
+                  Reason: {alert.reason} <span className="text-red-400 font-medium ml-2">({formatDate(alert.recordedAt)})</span>
+                </div>
               </div>
             </div>
+            {alert.type === 'Blacklisted' && (
+              <Button
+                variant="outline"
+                className="bg-white text-red-600 border-red-200 hover:bg-red-50 text-[11px] font-bold h-8"
+                onClick={unblacklist}
+              >
+                Unblock
+              </Button>
+            )}
           </div>
-          {alert.type === 'Blacklisted' && (
-            <Button
-              variant="outline"
-              className="bg-white text-red-600 border-red-200 hover:bg-red-50 text-[11px] font-bold h-8"
-              onClick={unblacklist}
-            >
-              Unblock
-            </Button>
-          )}
-        </div>
-      ))}
+        ));
+      })()}
 
       {/* Header Card */}
       <Card className="p-6 bg-white border-border/50 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] rounded-2xl">

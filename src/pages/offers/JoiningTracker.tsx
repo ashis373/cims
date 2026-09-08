@@ -2,8 +2,9 @@ import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useAts } from "@/services/ats-store";
 import { Input } from "@/components/ui/input";
-import { Search, MoreVertical, Clock, UserCheck, User, Calendar, Briefcase, FileCheck, ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
+import { Search, MoreVertical, Clock, UserCheck, User, Calendar, Briefcase, FileCheck, ChevronLeft, ChevronRight, ChevronDown, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 const TABS = [
   { id: "pending", label: "Pending Joining", icon: Clock, stage: "Offer Accepted", color: "text-blue-600", activeBg: "bg-blue-50", badgeBg: "bg-slate-100 text-slate-700", dot: "bg-blue-500", pillBg: "bg-blue-50 text-blue-700" },
@@ -107,12 +108,13 @@ export default function JoiningTracker() {
         </div>
 
         {/* Table Header */}
-        <div className="hidden lg:grid grid-cols-[2.5fr_1.5fr_1.5fr_1.5fr_1.5fr] gap-4 px-6 py-4">
+        <div className="hidden lg:grid grid-cols-[2.5fr_1.5fr_1.5fr_1.5fr_1.5fr_1fr] gap-4 px-6 py-4">
           <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Candidate</div>
           <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Role Offered</div>
           <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Recruiter</div>
           <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Joining Status</div>
           <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Last Updated</div>
+          <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Action</div>
         </div>
 
         {/* Table List */}
@@ -127,10 +129,10 @@ export default function JoiningTracker() {
             filteredCandidates.map((c) => (
               <div 
                 key={c.id} 
-                className="group flex flex-col lg:grid lg:grid-cols-[2.5fr_1.5fr_1.5fr_1.5fr_1.5fr] gap-y-4 lg:gap-0 lg:divide-x lg:divide-slate-200 items-start lg:items-center p-4 bg-white border border-slate-200 shadow-sm hover:shadow-md hover:border-slate-300 transition-all rounded-[16px]"
+                className="group flex flex-col lg:grid lg:grid-cols-[2.5fr_1.5fr_1.5fr_1.5fr_1.5fr_1fr] gap-4 items-start lg:items-center p-4 bg-white border border-slate-200 shadow-sm hover:shadow-md hover:border-slate-300 transition-all rounded-[16px]"
               >
                 {/* Candidate */}
-                <div className="flex items-center gap-4 w-full lg:pr-4">
+                <div className="flex items-center gap-4 w-full">
                   <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 text-[16px] font-bold">
                     {c.name?.charAt(0) || "?"}
                   </div>
@@ -141,7 +143,7 @@ export default function JoiningTracker() {
                 </div>
 
                 {/* Role Offered */}
-                <div className="flex items-center gap-2.5 w-full lg:px-4">
+                <div className="flex items-center gap-2.5 w-full">
                   <div className="lg:hidden text-[11px] font-bold text-slate-400 uppercase w-24">Role:</div>
                   <div className="flex items-center gap-2 text-[14px] font-bold text-slate-700">
                     <Briefcase className="h-4 w-4 text-amber-600/70" />
@@ -150,7 +152,7 @@ export default function JoiningTracker() {
                 </div>
 
                 {/* Recruiter */}
-                <div className="flex items-center gap-2.5 w-full lg:px-4">
+                <div className="flex items-center gap-2.5 w-full">
                   <div className="lg:hidden text-[11px] font-bold text-slate-400 uppercase w-24">Recruiter:</div>
                   <div className="flex items-center gap-2 text-[14px] font-bold text-slate-700">
                     <User className="h-4 w-4 text-slate-400" />
@@ -159,7 +161,7 @@ export default function JoiningTracker() {
                 </div>
 
                 {/* Offer Status */}
-                <div className="flex items-center gap-2.5 w-full lg:px-4">
+                <div className="flex items-center gap-2.5 w-full">
                   <div className="lg:hidden text-[11px] font-bold text-slate-400 uppercase w-24">Status:</div>
                   <div className={cn("inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[13px] font-bold border border-transparent", activeTabDef.pillBg)}>
                     <div className={cn("h-1.5 w-1.5 rounded-full", activeTabDef.dot)} />
@@ -168,11 +170,23 @@ export default function JoiningTracker() {
                 </div>
 
                 {/* Last Updated */}
-                <div className="flex items-center gap-2.5 w-full lg:pl-4">
+                <div className="flex items-center gap-2.5 w-full">
                   <div className="lg:hidden text-[11px] font-bold text-slate-400 uppercase w-24">Updated:</div>
                   <div className="flex items-center gap-2 text-[13px] font-medium text-slate-500">
                     <Calendar className="h-4 w-4 text-slate-400" />
                     {formatDate(c.updatedAt)}
+                  </div>
+                </div>
+
+                {/* Action */}
+                <div className="flex items-center gap-2 w-full lg:justify-start">
+                  <div className="lg:hidden text-[11px] font-bold text-slate-400 uppercase w-24">Action:</div>
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" className="h-8 text-[12px] px-3 font-semibold text-slate-600 hover:text-slate-900" asChild>
+                      <Link to={`/candidates/${c.id}`}>
+                        <Eye className="h-3.5 w-3.5 mr-1" /> View
+                      </Link>
+                    </Button>
                   </div>
                 </div>
               </div>

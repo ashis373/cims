@@ -437,19 +437,14 @@ if ($method === 'GET') {
             $stmtRej = $conn->prepare("INSERT INTO cims_candidate_rejections (candidate_id, type, reason) VALUES (?, ?, ?)");
             $stmtRej->execute([$id, $data['stage'], $reason]);
         }
-        if (isset($data['isBlacklisted'])) {
-            if ($data['isBlacklisted']) {
-                $reason = $data['blacklistReason'] ?? 'Blacklisted';
-                // Only insert if not already recently blacklisted to prevent duplicates on multiple updates
-                $stmtCheck = $conn->prepare("SELECT COUNT(*) FROM cims_candidate_rejections WHERE candidate_id = ? AND type = 'Blacklisted'");
-                $stmtCheck->execute([$id]);
-                if ($stmtCheck->fetchColumn() == 0) {
-                    $stmtRej = $conn->prepare("INSERT INTO cims_candidate_rejections (candidate_id, type, reason) VALUES (?, ?, ?)");
-                    $stmtRej->execute([$id, 'Blacklisted', $reason]);
-                }
-            } else {
-                $stmtDel = $conn->prepare("DELETE FROM cims_candidate_rejections WHERE candidate_id = ? AND type = 'Blacklisted'");
-                $stmtDel->execute([$id]);
+        if (isset($data['isBlacklisted']) && $data['isBlacklisted']) {
+            $reason = $data['blacklistReason'] ?? 'Blacklisted';
+            // Only insert if not already recently blacklisted to prevent duplicates on multiple updates
+            $stmtCheck = $conn->prepare("SELECT COUNT(*) FROM cims_candidate_rejections WHERE candidate_id = ? AND type = 'Blacklisted'");
+            $stmtCheck->execute([$id]);
+            if ($stmtCheck->fetchColumn() == 0) {
+                $stmtRej = $conn->prepare("INSERT INTO cims_candidate_rejections (candidate_id, type, reason) VALUES (?, ?, ?)");
+                $stmtRej->execute([$id, 'Blacklisted', $reason]);
             }
         }
         

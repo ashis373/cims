@@ -1,9 +1,10 @@
 import { useState, useMemo } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { useAts } from "@/services/ats-store";
 import { Input } from "@/components/ui/input";
-import { Search, MoreVertical, FileText, CheckCircle2, XCircle, AlertTriangle, UserCheck, User, Calendar, Briefcase, FileCheck, Gift, ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
+import { Search, MoreVertical, FileText, CheckCircle2, XCircle, AlertTriangle, UserCheck, User, Calendar, Briefcase, FileCheck, Gift, ChevronLeft, ChevronRight, ChevronDown, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 const TABS = [
   { id: "released", label: "Released", icon: FileText, stage: "Offer Released", color: "text-indigo-600", activeBg: "bg-indigo-50", badgeBg: "bg-slate-100 text-slate-700", dot: "bg-indigo-500", pillBg: "bg-indigo-50 text-indigo-700" },
@@ -117,12 +118,13 @@ export default function Offers() {
         </div>
 
         {/* Table Header */}
-        <div className="hidden lg:grid grid-cols-[2.5fr_1.5fr_1.5fr_1.5fr_1.5fr] gap-4 px-6 py-4">
+        <div className="hidden lg:grid grid-cols-[2.5fr_1.5fr_1.5fr_1.5fr_1.5fr_1fr] gap-4 px-6 py-4">
           <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Candidate</div>
           <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Role Offered</div>
           <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Recruiter</div>
           <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Offer Status</div>
           <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Last Updated</div>
+          <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Action</div>
         </div>
 
         {/* Table List */}
@@ -137,7 +139,7 @@ export default function Offers() {
             filteredCandidates.map((c) => (
               <div 
                 key={c.id} 
-                className="group flex flex-col lg:grid lg:grid-cols-[2.5fr_1.5fr_1.5fr_1.5fr_1.5fr] gap-4 items-start lg:items-center p-4 bg-white border border-slate-200 shadow-sm hover:shadow-md hover:border-slate-300 transition-all rounded-[16px]"
+                className="group flex flex-col lg:grid lg:grid-cols-[2.5fr_1.5fr_1.5fr_1.5fr_1.5fr_1fr] gap-4 items-start lg:items-center p-4 bg-white border border-slate-200 shadow-sm hover:shadow-md hover:border-slate-300 transition-all rounded-[16px]"
               >
                 {/* Candidate */}
                 <div className="flex items-center gap-4 w-full">
@@ -183,6 +185,18 @@ export default function Offers() {
                   <div className="flex items-center gap-2 text-[13px] font-medium text-slate-500">
                     <Calendar className="h-4 w-4 text-slate-400" />
                     {formatDate(c.updatedAt)}
+                  </div>
+                </div>
+
+                {/* Action */}
+                <div className="flex items-center gap-2 w-full lg:justify-start">
+                  <div className="lg:hidden text-[11px] font-bold text-slate-400 uppercase w-24">Action:</div>
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" className="h-8 text-[12px] px-3 font-semibold text-slate-600 hover:text-slate-900" asChild>
+                      <Link to={`/candidates/${c.id}`}>
+                        <Eye className="h-3.5 w-3.5 mr-1" /> View
+                      </Link>
+                    </Button>
                   </div>
                 </div>
               </div>

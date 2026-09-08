@@ -8,11 +8,12 @@ import { cn } from "@/lib/utils";
 import { API_BASE_URL } from "@/config/api";
 import { toast } from "sonner";
 import { getAuthHeaders } from "@/services/candidate-api";
+import { Button } from "@/components/ui/button";
+import { Eye } from "lucide-react";
 
 export default function Rejected() {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [reasonFilter, setReasonFilter] = useState("All");
   const [search, setSearch] = useState("");
 
   useEffect(() => {
@@ -35,24 +36,16 @@ export default function Rejected() {
       });
   }, []);
 
-  const uniqueReasons = useMemo(() => {
-    const reasons = new Set<string>();
-    data.forEach((item) => {
-      if (item.reason) reasons.add(item.reason);
-    });
-    return Array.from(reasons);
-  }, [data]);
-
   const filteredList = useMemo(() => {
     return data.filter((item) => {
-      const matchReason = reasonFilter === "All" || item.reason === reasonFilter;
       const matchSearch = 
-        item.name?.toLowerCase().includes(search.toLowerCase()) || 
-        item.email?.toLowerCase().includes(search.toLowerCase()) || 
-        item.position?.toLowerCase().includes(search.toLowerCase());
-      return matchReason && matchSearch;
+        !search ||
+        (item.name || "").toLowerCase().includes(search.toLowerCase()) || 
+        (item.email || "").toLowerCase().includes(search.toLowerCase()) || 
+        (item.position || "").toLowerCase().includes(search.toLowerCase());
+      return matchSearch;
     });
-  }, [data, reasonFilter, search]);
+  }, [data, search]);
 
   const formatDate = (d: string) => {
     if (!d) return "-";
@@ -91,26 +84,7 @@ export default function Rejected() {
         {/* Top Controls Row */}
         <div className="flex flex-col md:flex-row items-center justify-between gap-4 p-4 border-b border-slate-100/80 mb-2">
           
-          {/* Reason Filter */}
-          <div className="w-full md:w-[280px]">
-            <Select value={reasonFilter} onValueChange={setReasonFilter}>
-              <SelectTrigger className="h-[42px] w-full bg-slate-50 border-transparent shadow-sm rounded-xl text-[14px] font-semibold text-slate-700 pl-4 pr-4 transition-all hover:bg-slate-100 focus:ring-1 focus:ring-indigo-500 overflow-hidden">
-                <span className="truncate pr-2">
-                  <SelectValue placeholder="All Reasons" />
-                </span>
-              </SelectTrigger>
-              <SelectContent className="rounded-xl border-slate-200 shadow-lg bg-white">
-                <SelectItem value="All" className="text-[13px] font-medium cursor-pointer rounded-lg hover:bg-slate-50 focus:bg-slate-50">
-                  All Reasons
-                </SelectItem>
-                {uniqueReasons.map((r) => (
-                  <SelectItem key={r} value={r} className="text-[13px] font-medium cursor-pointer rounded-lg hover:bg-slate-50 focus:bg-slate-50">
-                    {r}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+
 
           {/* Search Bar */}
           <div className="relative w-full md:w-[320px] shrink-0">
@@ -125,11 +99,11 @@ export default function Rejected() {
         </div>
 
         {/* Table Header */}
-        <div className="hidden lg:grid grid-cols-[2.5fr_1.5fr_1.5fr_2fr] gap-4 px-6 py-4">
+        <div className="hidden lg:grid grid-cols-[3fr_2fr_2fr_1.5fr] gap-4 px-6 py-4">
           <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Candidate</div>
-          <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Position</div>
           <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Recorded On</div>
           <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Reason</div>
+          <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Action</div>
         </div>
 
         {/* Table List */}
@@ -156,7 +130,7 @@ export default function Rejected() {
             filteredList.map((c) => (
               <div 
                 key={c.rejection_id} 
-                className="group flex flex-col lg:grid lg:grid-cols-[2.5fr_1.5fr_1.5fr_2fr] gap-4 items-start lg:items-center p-4 bg-white border border-slate-200 shadow-sm hover:shadow-md hover:border-slate-300 transition-all rounded-[16px]"
+                className="group flex flex-col lg:grid lg:grid-cols-[3fr_2fr_2fr_1.5fr] gap-4 items-start lg:items-center p-4 bg-white border border-slate-200 shadow-sm hover:shadow-md hover:border-slate-300 transition-all rounded-[16px]"
               >
                 {/* Candidate */}
                 <div className="flex items-center gap-4 w-full">
@@ -166,15 +140,6 @@ export default function Rejected() {
                   <div className="min-w-0">
                     <div className="font-bold text-[15px] text-slate-900 truncate group-hover:text-rose-600 transition-colors">{c.name}</div>
                     <div className="text-[13px] text-slate-500 truncate">{c.email}</div>
-                  </div>
-                </div>
-
-                {/* Position */}
-                <div className="flex items-center gap-2.5 w-full">
-                  <div className="lg:hidden text-[11px] font-bold text-slate-400 uppercase w-24">Position:</div>
-                  <div className="flex items-center gap-2 text-[14px] font-bold text-slate-700">
-                    <Briefcase className="h-4 w-4 text-slate-400" />
-                    <span className="truncate">{c.position || "N/A"}</span>
                   </div>
                 </div>
 
@@ -193,6 +158,18 @@ export default function Rejected() {
                   <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[13px] font-bold bg-rose-50 text-rose-700 border border-rose-100">
                     <FileText className="h-3.5 w-3.5" />
                     <span className="truncate max-w-[200px]" title={c.reason}>{c.reason || "Unspecified"}</span>
+                  </div>
+                </div>
+
+                {/* Action */}
+                <div className="flex items-center gap-2 w-full lg:justify-start">
+                  <div className="lg:hidden text-[11px] font-bold text-slate-400 uppercase w-24">Action:</div>
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" className="h-8 text-[12px] px-3 font-semibold text-slate-600 hover:text-slate-900" asChild>
+                      <Link to={`/candidates/${c.id}`}>
+                        <Eye className="h-3.5 w-3.5 mr-1" /> View
+                      </Link>
+                    </Button>
                   </div>
                 </div>
               </div>

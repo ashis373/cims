@@ -148,7 +148,7 @@ const nav = [
     roles: ["Administrator", "HR Manager"],
     module: "offers",
     children: [
-      { to: "/offers/management", label: "Offer Management", roles: ["Administrator", "HR Manager"], module: "offers" },
+      { to: "/offers/management", label: "Offer Management", roles: ["Administrator", "HR Manager"], module: "offers", activeAliases: ["/offers/released", "/offers/accepted", "/offers/declined", "/offers/no-show", "/offers/joined"] },
       { to: "/offers/joining-tracker", label: "Joining Tracker", roles: ["Administrator", "HR Manager"], module: "offers" },
     ],
   },
@@ -223,7 +223,7 @@ const NavItem = ({
   const visibleChildren = item.children?.filter(hasAccess);
 
   const isChildrenActive = visibleChildren?.some(
-    (child: any) => pathname === child.to || pathname.startsWith(child.to + "?"),
+    (child: any) => pathname === child.to || pathname.startsWith(child.to + "?") || (child.activeAliases && child.activeAliases.some((alias: string) => pathname.startsWith(alias))),
   );
   const isDirectActive = isActive(item.to);
   const [isOpen, setIsOpen] = useState(isChildrenActive || isDirectActive);
@@ -295,7 +295,7 @@ const NavItem = ({
         <div className="flex flex-col gap-1 pl-12 pr-2 pb-2 mt-1 relative">
           <div className="absolute left-[26px] top-0 bottom-4 w-[2px] bg-slate-800" />
           {visibleChildren.map((child: any) => {
-            const childActive = pathname === child.to || pathname.startsWith(child.to + "?");
+            const childActive = pathname === child.to || pathname.startsWith(child.to + "?") || (child.activeAliases && child.activeAliases.some((alias: string) => pathname.startsWith(alias)));
             return (
               <Link
                 key={child.to}
@@ -478,7 +478,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
           <div className="flex max-w-full gap-1 overflow-x-auto rounded-xl border border-slate-200/60 bg-slate-50 p-1 scrollbar-thin md:hidden">
             {nav.filter(hasAccess).map((n) => {
               const active =
-                isActive(n.to) || (n.children && n.children.some((c) => pathname === c.to));
+                isActive(n.to) || (n.children && n.children.some((c: any) => pathname === c.to || (c.activeAliases && c.activeAliases.some((alias: string) => pathname.startsWith(alias)))));
               return (
                 <Link
                   key={n.label}
