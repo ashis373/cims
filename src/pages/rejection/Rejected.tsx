@@ -134,9 +134,17 @@ export default function Rejected() {
               >
                 {/* Candidate */}
                 <div className="flex items-center gap-4 w-full">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-rose-50 text-rose-600 text-[16px] font-bold">
-                    {c.name?.charAt(0) || "?"}
-                  </div>
+                  {c.photo ? (
+                    <img 
+                      src={`${API_BASE_URL}/../uploads/candidates/photos/${c.photo}`} 
+                      alt={c.name}
+                      className="h-12 w-12 rounded-xl object-cover shrink-0 shadow-sm border border-slate-200"
+                    />
+                  ) : (
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-rose-50 text-rose-600 text-[16px] font-bold shadow-sm">
+                      {c.name?.charAt(0) || "?"}
+                    </div>
+                  )}
                   <div className="min-w-0">
                     <div className="font-bold text-[15px] text-slate-900 truncate group-hover:text-rose-600 transition-colors">{c.name}</div>
                     <div className="text-[13px] text-slate-500 truncate">{c.email}</div>

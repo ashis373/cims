@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Search, MoreVertical, FileText, CheckCircle2, XCircle, AlertTriangle, UserCheck, User, Calendar, Briefcase, FileCheck, Gift, ChevronLeft, ChevronRight, ChevronDown, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { API_BASE_URL } from "@/config/api";
 
 const TABS = [
   { id: "released", label: "Released", icon: FileText, stage: "Offer Released", color: "text-indigo-600", activeBg: "bg-indigo-50", badgeBg: "bg-slate-100 text-slate-700", dot: "bg-indigo-500", pillBg: "bg-indigo-50 text-indigo-700" },
@@ -143,9 +144,17 @@ export default function Offers() {
               >
                 {/* Candidate */}
                 <div className="flex items-center gap-4 w-full">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 text-[16px] font-bold">
-                    {c.name?.charAt(0) || "?"}
-                  </div>
+                  {c.photo ? (
+                    <img 
+                      src={`${API_BASE_URL}/../uploads/candidates/photos/${c.photo}`} 
+                      alt={c.name}
+                      className="h-12 w-12 rounded-xl object-cover shrink-0 shadow-sm border border-slate-200"
+                    />
+                  ) : (
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 text-[16px] font-bold shadow-sm">
+                      {c.name?.charAt(0) || "?"}
+                    </div>
+                  )}
                   <div className="min-w-0">
                     <div className="font-bold text-[15px] text-slate-900 truncate">{c.name}</div>
                     <div className="text-[13px] text-slate-500 truncate">{c.email}</div>

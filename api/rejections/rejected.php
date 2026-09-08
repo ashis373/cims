@@ -25,7 +25,8 @@ try {
             cr.recordedBy,
             c.id,
             c.name,
-            c.email
+            c.email,
+            c.photo
         FROM cims_candidate_rejections cr
         JOIN cims_candidates c ON cr.candidate_id = c.id
         WHERE cr.type = 'Rejected'

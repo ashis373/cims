@@ -26,7 +26,8 @@ try {
             c.id,
             c.name,
             c.email,
-            c.isBlacklisted
+            c.isBlacklisted,
+            c.photo
         FROM cims_candidate_rejections cr
         JOIN cims_candidates c ON cr.candidate_id = c.id
         LEFT JOIN cims_applications a ON cr.application_id = a.id
