@@ -247,33 +247,80 @@ export default function CandidateTimeline() {
 
 
       {/* Stats Cards */}
-      <div className="flex flex-wrap gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: "Total Activities", value: timeline.length, pct: 12, icon: Activity, tone: "bg-blue-50 text-blue-600", borderTone: "border-blue-500" },
-          { label: "Applications", value: stats?.total || 0, pct: 18, icon: FileText, tone: "bg-emerald-50 text-emerald-600", borderTone: "border-emerald-500" },
-          { label: "Interviews", value: (stats?.scheduled || 0) + (stats?.selected || 0), pct: 8, icon: Users, tone: "bg-purple-50 text-purple-600", borderTone: "border-purple-500" },
-          { label: "Offers", value: (stats?.offersReleased || 0) + (stats?.offersAccepted || 0) + (stats?.offersDeclined || 0), pct: 15, icon: Award, tone: "bg-orange-50 text-orange-600", borderTone: "border-orange-500" },
+          { 
+            label: "Total Activities", 
+            value: timeline.length, 
+            pct: 12, 
+            icon: Activity, 
+            cardBg: "bg-blue-50/40",
+            border: "border-blue-200/70 hover:border-blue-400",
+            iconBg: "bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-blue-500/20",
+            trendText: "text-blue-700 bg-white/80",
+            trendLabel: "+12% this month"
+          },
+          { 
+            label: "Applications", 
+            value: stats?.total || 0, 
+            pct: 18, 
+            icon: FileText, 
+            cardBg: "bg-emerald-50/40",
+            border: "border-emerald-200/70 hover:border-emerald-400",
+            iconBg: "bg-gradient-to-br from-[#42bc24] to-[#36961c] text-white shadow-emerald-500/20",
+            trendText: "text-emerald-700 bg-white/80",
+            trendLabel: "+18% this month"
+          },
+          { 
+            label: "Interviews", 
+            value: (stats?.scheduled || 0) + (stats?.selected || 0), 
+            pct: 8, 
+            icon: Users, 
+            cardBg: "bg-purple-50/40",
+            border: "border-purple-200/70 hover:border-purple-400",
+            iconBg: "bg-gradient-to-br from-purple-500 to-indigo-600 text-white shadow-purple-500/20",
+            trendText: "text-purple-700 bg-white/80",
+            trendLabel: "+8% this month"
+          },
+          { 
+            label: "Offers", 
+            value: (stats?.offersReleased || 0) + (stats?.offersAccepted || 0) + (stats?.offersDeclined || 0), 
+            pct: 15, 
+            icon: Award, 
+            cardBg: "bg-amber-50/40",
+            border: "border-amber-200/70 hover:border-amber-400",
+            iconBg: "bg-gradient-to-br from-amber-500 to-orange-500 text-white shadow-amber-500/20",
+            trendText: "text-amber-700 bg-white/80",
+            trendLabel: "+15% this month"
+          },
         ].map((stat, i) => (
           <Card
             key={i}
             className={cn(
-              "p-5 bg-white shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] rounded-3xl relative overflow-hidden group border-t-[3px] flex-1 min-w-[160px]",
-              stat.borderTone,
+              "relative overflow-hidden shadow-xs border rounded-xl flex-1 min-w-[160px] flex flex-col p-3.5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-sm group",
+              stat.cardBg,
+              stat.border
             )}
           >
-            <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-gradient-to-br from-transparent to-black/[0.02] rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500" />
-            <div className="flex items-start justify-between relative z-10">
-              <div>
-                <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                  {stat.label}
-                </div>
-                <div className="text-3xl font-black tracking-tight text-slate-900">{stat.value}</div>
-                <div className="mt-1.5 text-[10px] font-bold text-emerald-500">+{stat.pct}% this month</div>
+            <div className="absolute top-0 right-0 -mt-3 -mr-3 w-20 h-20 bg-gradient-to-br from-white to-transparent rounded-full blur-xl pointer-events-none opacity-60" />
+            
+            <div className="flex items-start justify-between mb-1.5 relative z-10">
+              <div className="text-[10.5px] font-bold text-slate-500 uppercase tracking-wider pr-1.5 leading-tight truncate">
+                {stat.label}
               </div>
-              <div
-                className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl", stat.tone)}
-              >
-                <stat.icon className="h-5 w-5" />
+              <div className={cn("p-1.5 rounded-lg shrink-0 shadow-xs", stat.iconBg)}>
+                <stat.icon className="w-3.5 h-3.5" />
+              </div>
+            </div>
+            
+            <div className="mt-auto relative z-10 pt-1">
+              <div className="text-2xl font-black tracking-tight text-slate-900 leading-none mb-1.5">
+                {stat.value}
+              </div>
+              <div className="flex items-center gap-1.5 text-[9.5px] font-bold text-slate-400">
+                <span className={cn("inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded font-bold", stat.trendText)}>
+                  {stat.trendLabel}
+                </span>
               </div>
             </div>
           </Card>

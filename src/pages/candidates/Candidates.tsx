@@ -56,35 +56,125 @@ import {
 interface TopStatProps {
   title: string;
   value: number | string;
-  pct: number;
+  pct?: number;
   icon: React.ElementType;
-  tone: string;
-  pctTone: string;
-  borderTone: string;
+  theme: 'blue' | 'emerald' | 'purple' | 'amber' | 'cyan' | 'rose' | 'teal' | 'zinc' | 'orange';
+  trendLabel?: string;
 }
 
-function TopStat({ title, value, pct, icon: Icon, tone, pctTone, borderTone }: TopStatProps) {
+function TopStat({ title, value, pct, icon: Icon, theme, trendLabel }: TopStatProps) {
+  const styles = {
+    blue: { 
+      cardBg: "bg-blue-50/40",
+      badge: "bg-blue-50 text-blue-700 border-blue-100", 
+      border: "border-blue-200/70 hover:border-blue-400",
+      iconBg: "bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-blue-500/20", 
+      glow: "from-white to-transparent",
+      trendText: "text-blue-700 bg-white/80"
+    },
+    emerald: { 
+      cardBg: "bg-emerald-50/40",
+      badge: "bg-emerald-50 text-emerald-700 border-emerald-100", 
+      border: "border-emerald-200/70 hover:border-emerald-400",
+      iconBg: "bg-gradient-to-br from-[#42bc24] to-[#36961c] text-white shadow-emerald-500/20", 
+      glow: "from-white to-transparent",
+      trendText: "text-emerald-700 bg-white/80"
+    },
+    purple: { 
+      cardBg: "bg-purple-50/40",
+      badge: "bg-purple-50 text-purple-700 border-purple-100", 
+      border: "border-purple-200/70 hover:border-purple-400",
+      iconBg: "bg-gradient-to-br from-purple-500 to-indigo-600 text-white shadow-purple-500/20", 
+      glow: "from-white to-transparent",
+      trendText: "text-purple-700 bg-white/80"
+    },
+    amber: { 
+      cardBg: "bg-amber-50/40",
+      badge: "bg-amber-50 text-amber-700 border-amber-100", 
+      border: "border-amber-200/70 hover:border-amber-400",
+      iconBg: "bg-gradient-to-br from-amber-500 to-orange-500 text-white shadow-amber-500/20", 
+      glow: "from-white to-transparent",
+      trendText: "text-amber-700 bg-white/80"
+    },
+    cyan: { 
+      cardBg: "bg-cyan-50/40",
+      badge: "bg-cyan-50 text-cyan-700 border-cyan-100", 
+      border: "border-cyan-200/70 hover:border-cyan-400",
+      iconBg: "bg-gradient-to-br from-cyan-500 to-teal-600 text-white shadow-cyan-500/20", 
+      glow: "from-white to-transparent",
+      trendText: "text-cyan-700 bg-white/80"
+    },
+    rose: { 
+      cardBg: "bg-rose-50/40",
+      badge: "bg-rose-50 text-rose-700 border-rose-100", 
+      border: "border-rose-200/70 hover:border-rose-400",
+      iconBg: "bg-gradient-to-br from-rose-500 to-red-600 text-white shadow-rose-500/20", 
+      glow: "from-white to-transparent",
+      trendText: "text-rose-700 bg-white/80"
+    },
+    teal: { 
+      cardBg: "bg-teal-50/40",
+      badge: "bg-teal-50 text-teal-700 border-teal-100", 
+      border: "border-teal-200/70 hover:border-teal-400",
+      iconBg: "bg-gradient-to-br from-teal-500 to-emerald-600 text-white shadow-teal-500/20", 
+      glow: "from-white to-transparent",
+      trendText: "text-teal-700 bg-white/80"
+    },
+    zinc: { 
+      cardBg: "bg-slate-50/60",
+      badge: "bg-slate-100 text-slate-700 border-slate-200", 
+      border: "border-slate-300/70 hover:border-slate-400",
+      iconBg: "bg-gradient-to-br from-slate-600 to-slate-800 text-white shadow-slate-500/20", 
+      glow: "from-white to-transparent",
+      trendText: "text-slate-700 bg-white/80"
+    },
+    orange: { 
+      cardBg: "bg-orange-50/40",
+      badge: "bg-orange-50 text-orange-700 border-orange-100", 
+      border: "border-orange-200/70 hover:border-orange-400",
+      iconBg: "bg-gradient-to-br from-orange-500 to-amber-600 text-white shadow-orange-500/20", 
+      glow: "from-white to-transparent",
+      trendText: "text-orange-700 bg-white/80"
+    }
+  }[theme];
+
   return (
     <Card
       className={cn(
-        "p-5 bg-white shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] rounded-3xl relative overflow-hidden group border-t-[3px] flex-1 min-w-[160px]",
-        borderTone,
+        "relative overflow-hidden shadow-xs border rounded-xl flex-1 min-w-[150px] flex flex-col p-3.5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-sm group",
+        styles.cardBg,
+        styles.border
       )}
     >
-      <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-gradient-to-br from-transparent to-black/[0.02] rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500" />
-      <div className="flex items-start justify-between relative z-10">
-        <div>
-          <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-            {title}
+      <div className={cn("absolute top-0 right-0 -mt-3 -mr-3 w-20 h-20 bg-gradient-to-br to-transparent rounded-full blur-xl pointer-events-none opacity-60", styles.glow)} />
+      
+      <div className="flex items-start justify-between mb-1.5 relative z-10">
+        <div className="text-[10.5px] font-bold text-slate-500 uppercase tracking-wider pr-1.5 leading-tight truncate">
+          {title}
+        </div>
+        <div className={cn("p-1.5 rounded-lg shrink-0 shadow-xs", styles.iconBg)}>
+          <Icon className="w-3.5 h-3.5" />
+        </div>
+      </div>
+      
+      <div className="mt-auto relative z-10 pt-1">
+        <div className="text-2xl font-black tracking-tight text-slate-900 leading-none mb-1.5">
+          {value}
+        </div>
+        {pct !== undefined ? (
+          <div className="flex items-center gap-1.5 text-[9.5px] font-bold text-slate-400">
+            <span className={cn("inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded font-bold", styles.trendText)}>
+              +{pct}%
+            </span>
+            <span className="text-slate-400 font-medium truncate">this month</span>
           </div>
-          <div className="text-3xl font-black tracking-tight text-slate-900">{value}</div>
-          <div className={cn("mt-1.5 text-[10px] font-bold", pctTone)}>+{pct}% this month</div>
-        </div>
-        <div
-          className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl", tone)}
-        >
-          <Icon className="h-5 w-5" />
-        </div>
+        ) : trendLabel ? (
+          <div className="flex items-center gap-1.5 text-[9.5px] font-bold text-slate-400">
+            <span className={cn("inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded font-bold", styles.trendText)}>
+              {trendLabel}
+            </span>
+          </div>
+        ) : null}
       </div>
     </Card>
   );
@@ -391,60 +481,41 @@ export default function CandidatesPage() {
       </div>
 
       {/* Top Stats */}
-      <div className="flex flex-wrap gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
         <TopStat
           title="Total Candidates"
           value={analytics.total}
           pct={12}
           icon={Users}
-          tone="bg-blue-50 text-blue-600"
-          pctTone="text-emerald-500"
-          borderTone="border-blue-500"
+          theme="blue"
         />
-        {/* <TopStat
-          title="Active Candidates"
-          value={analytics.active}
-          pct={8}
-          icon={UserCheck}
-          tone="bg-teal-50 text-teal-600"
-          pctTone="text-emerald-500"
-          borderTone="border-teal-500"
-        /> */}
         <TopStat
           title="Interview Scheduled"
           value={analytics.intSched}
           pct={15}
           icon={Calendar}
-          tone="bg-orange-50 text-orange-500"
-          pctTone="text-emerald-500"
-          borderTone="border-orange-500"
+          theme="orange"
         />
         <TopStat
           title="Offers Released"
           value={analytics.offers}
           pct={6}
           icon={CalendarCheck}
-          tone="bg-amber-50 text-amber-600"
-          pctTone="text-emerald-500"
-          borderTone="border-amber-500"
+          theme="amber"
         />
         <TopStat
           title="Joined"
           value={analytics.joined}
           pct={10}
           icon={CheckCircle2}
-          tone="bg-emerald-50 text-emerald-600"
-          pctTone="text-emerald-500"
-          borderTone="border-emerald-500"
+          theme="emerald"
         />
         <TopStat
           title="Rejected / Others"
           value={analytics.rejected}
           pct={5}
           icon={UserMinus}
-          tone="bg-red-50 text-red-500"
-          pctTone="text-emerald-500"
-          borderTone="border-red-500"
+          theme="rose"
         />
       </div>
 

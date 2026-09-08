@@ -6,6 +6,7 @@ import { AtsProvider } from "@/services/ats-store";
 import { AppLayout } from "@/components/layout/AppLayout";
 import Login from "@/pages/auth/Login";
 import { PrivateRoute } from "@/components/auth/PrivateRoute";
+import { ScrollToTop } from "@/components/common/ScrollToTop";
 import { Loader2 } from "lucide-react";
 
 // Lazily loaded components
@@ -74,6 +75,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <BrowserRouter basename={import.meta.env.MODE === 'production' ? '/cims' : '/'}>
+          <ScrollToTop />
           <Suspense fallback={
             <div className="flex min-h-screen items-center justify-center">
               <Loader2 className="h-8 w-8 animate-spin text-slate-400" />

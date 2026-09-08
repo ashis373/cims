@@ -160,33 +160,77 @@ export default function Notifications() {
       </div>
 
       {/* Stats Cards Row */}
-      <div className="flex flex-wrap gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { title: "Total Alerts", value: totalAlerts, icon: MessageSquare, tone: "bg-blue-50 text-blue-600", borderTone: "border-blue-500", pct: 12 },
-          { title: "Unread Alerts", value: unreadAlerts, icon: Bell, tone: "bg-amber-50 text-amber-600", borderTone: "border-amber-500", pct: 5 },
-          { title: "Critical Alerts", value: criticalAlerts, icon: AlertTriangle, tone: "bg-red-50 text-red-600", borderTone: "border-red-500", pct: 8 },
-          { title: "Today's Alerts", value: todaysAlerts, icon: CalendarCheck, tone: "bg-emerald-50 text-emerald-600", borderTone: "border-emerald-500", pct: 15 },
+          { 
+            title: "Total Alerts", 
+            value: totalAlerts, 
+            icon: MessageSquare, 
+            pct: 12,
+            cardBg: "bg-blue-50/40",
+            border: "border-blue-200/70 hover:border-blue-400",
+            iconBg: "bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-blue-500/20",
+            trendText: "text-blue-700 bg-white/80",
+          },
+          { 
+            title: "Unread Alerts", 
+            value: unreadAlerts, 
+            icon: Bell, 
+            pct: 5,
+            cardBg: "bg-amber-50/40",
+            border: "border-amber-200/70 hover:border-amber-400",
+            iconBg: "bg-gradient-to-br from-amber-500 to-orange-500 text-white shadow-amber-500/20",
+            trendText: "text-amber-700 bg-white/80",
+          },
+          { 
+            title: "Critical Alerts", 
+            value: criticalAlerts, 
+            icon: AlertTriangle, 
+            pct: 8,
+            cardBg: "bg-rose-50/40",
+            border: "border-rose-200/70 hover:border-rose-400",
+            iconBg: "bg-gradient-to-br from-rose-500 to-red-600 text-white shadow-rose-500/20",
+            trendText: "text-rose-700 bg-white/80",
+          },
+          { 
+            title: "Today's Alerts", 
+            value: todaysAlerts, 
+            icon: CalendarCheck, 
+            pct: 15,
+            cardBg: "bg-emerald-50/40",
+            border: "border-emerald-200/70 hover:border-emerald-400",
+            iconBg: "bg-gradient-to-br from-[#42bc24] to-[#36961c] text-white shadow-emerald-500/20",
+            trendText: "text-emerald-700 bg-white/80",
+          },
         ].map((stat, i) => (
           <Card
             key={i}
             className={cn(
-              "p-5 bg-white shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] rounded-3xl relative overflow-hidden group border-t-[3px] flex-1 min-w-[160px]",
-              stat.borderTone,
+              "relative overflow-hidden shadow-xs border rounded-xl flex-1 min-w-[160px] flex flex-col p-3.5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-sm group",
+              stat.cardBg,
+              stat.border
             )}
           >
-            <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-gradient-to-br from-transparent to-black/[0.02] rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500" />
-            <div className="flex items-start justify-between relative z-10">
-              <div>
-                <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                  {stat.title}
-                </div>
-                <div className="text-3xl font-black tracking-tight text-slate-900">{stat.value}</div>
-                <div className="mt-1.5 text-[10px] font-bold text-emerald-500">+{stat.pct}% this month</div>
+            <div className="absolute top-0 right-0 -mt-3 -mr-3 w-20 h-20 bg-gradient-to-br from-white to-transparent rounded-full blur-xl pointer-events-none opacity-60" />
+            
+            <div className="flex items-start justify-between mb-1.5 relative z-10">
+              <div className="text-[10.5px] font-bold text-slate-500 uppercase tracking-wider pr-1.5 leading-tight truncate">
+                {stat.title}
               </div>
-              <div
-                className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl", stat.tone)}
-              >
-                <stat.icon className="h-5 w-5" />
+              <div className={cn("p-1.5 rounded-lg shrink-0 shadow-xs", stat.iconBg)}>
+                <stat.icon className="w-3.5 h-3.5" />
+              </div>
+            </div>
+            
+            <div className="mt-auto relative z-10 pt-1">
+              <div className="text-2xl font-black tracking-tight text-slate-900 leading-none mb-1.5">
+                {stat.value}
+              </div>
+              <div className="flex items-center gap-1.5 text-[9.5px] font-bold text-slate-400">
+                <span className={cn("inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded font-bold", stat.trendText)}>
+                  +{stat.pct}%
+                </span>
+                <span className="text-slate-400 font-medium truncate">this month</span>
               </div>
             </div>
           </Card>

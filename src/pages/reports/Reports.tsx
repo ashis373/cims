@@ -110,34 +110,87 @@ export default function ReportsPage() {
       </div>
 
       {/* Top Cards */}
-      <div className="flex flex-wrap gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
         {[
-          { title: "Total Applications", value: stats.applied, icon: Users, tone: "bg-blue-50 text-blue-600", borderTone: "border-blue-500", pct: 12 },
-          { title: "Shortlisted", value: stats.shortlisted, icon: UserCheck, tone: "bg-purple-50 text-purple-600", borderTone: "border-purple-500", pct: 18 },
-          { title: "Interviews", value: stats.interviews, icon: Calendar, tone: "bg-orange-50 text-orange-500", borderTone: "border-orange-500", pct: 25 },
-          { title: "Offers", value: stats.offers, icon: Briefcase, tone: "bg-emerald-50 text-emerald-600", borderTone: "border-emerald-500", pct: 40 },
-          { title: "Hired", value: stats.hired, icon: UserPlus, tone: "bg-pink-50 text-pink-600", borderTone: "border-pink-500", pct: 33 }
+          { 
+            title: "Total Applications", 
+            value: stats.applied, 
+            icon: Users, 
+            pct: 12,
+            cardBg: "bg-blue-50/40",
+            border: "border-blue-200/70 hover:border-blue-400",
+            iconBg: "bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-blue-500/20",
+            trendText: "text-blue-700 bg-white/80",
+          },
+          { 
+            title: "Shortlisted", 
+            value: stats.shortlisted, 
+            icon: UserCheck, 
+            pct: 18,
+            cardBg: "bg-purple-50/40",
+            border: "border-purple-200/70 hover:border-purple-400",
+            iconBg: "bg-gradient-to-br from-purple-500 to-indigo-600 text-white shadow-purple-500/20",
+            trendText: "text-purple-700 bg-white/80",
+          },
+          { 
+            title: "Interviews", 
+            value: stats.interviews, 
+            icon: Calendar, 
+            pct: 25,
+            cardBg: "bg-orange-50/40",
+            border: "border-orange-200/70 hover:border-orange-400",
+            iconBg: "bg-gradient-to-br from-orange-500 to-amber-600 text-white shadow-orange-500/20",
+            trendText: "text-orange-700 bg-white/80",
+          },
+          { 
+            title: "Offers", 
+            value: stats.offers, 
+            icon: Briefcase, 
+            pct: 40,
+            cardBg: "bg-amber-50/40",
+            border: "border-amber-200/70 hover:border-amber-400",
+            iconBg: "bg-gradient-to-br from-amber-500 to-orange-500 text-white shadow-amber-500/20",
+            trendText: "text-amber-700 bg-white/80",
+          },
+          { 
+            title: "Hired", 
+            value: stats.hired, 
+            icon: UserPlus, 
+            pct: 33,
+            cardBg: "bg-emerald-50/40",
+            border: "border-emerald-200/70 hover:border-emerald-400",
+            iconBg: "bg-gradient-to-br from-[#42bc24] to-[#36961c] text-white shadow-emerald-500/20",
+            trendText: "text-emerald-700 bg-white/80",
+          }
         ].map((s, i) => (
           <Card
             key={i}
             className={cn(
-              "p-5 bg-white shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] rounded-3xl relative overflow-hidden group border-t-[3px] flex-1 min-w-[160px]",
-              s.borderTone,
+              "relative overflow-hidden shadow-xs border rounded-xl flex-1 min-w-[150px] flex flex-col p-3.5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-sm group",
+              s.cardBg,
+              s.border
             )}
           >
-            <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-gradient-to-br from-transparent to-black/[0.02] rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500" />
-            <div className="flex items-start justify-between relative z-10">
-              <div>
-                <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                  {s.title}
-                </div>
-                <div className="text-3xl font-black tracking-tight text-slate-900">{s.value}</div>
-                <div className="mt-1.5 text-[10px] font-bold text-emerald-500">+{s.pct}% this month</div>
+            <div className="absolute top-0 right-0 -mt-3 -mr-3 w-20 h-20 bg-gradient-to-br from-white to-transparent rounded-full blur-xl pointer-events-none opacity-60" />
+            
+            <div className="flex items-start justify-between mb-1.5 relative z-10">
+              <div className="text-[10.5px] font-bold text-slate-500 uppercase tracking-wider pr-1.5 leading-tight truncate">
+                {s.title}
               </div>
-              <div
-                className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl", s.tone)}
-              >
-                <s.icon className="h-5 w-5" />
+              <div className={cn("p-1.5 rounded-lg shrink-0 shadow-xs", s.iconBg)}>
+                <s.icon className="w-3.5 h-3.5" />
+              </div>
+            </div>
+            
+            <div className="mt-auto relative z-10 pt-1">
+              <div className="text-2xl font-black tracking-tight text-slate-900 leading-none mb-1.5">
+                {s.value}
+              </div>
+              <div className="flex items-center gap-1.5 text-[9.5px] font-bold text-slate-400">
+                <span className={cn("inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded font-bold", s.trendText)}>
+                  +{s.pct}%
+                </span>
+                <span className="text-slate-400 font-medium truncate">this month</span>
               </div>
             </div>
           </Card>
