@@ -39,7 +39,10 @@ export default function CandidateTimeline() {
       })
     ])
       .then(([timelineData, statsData]) => {
-        setTimeline(timelineData);
+        const sortedTimeline = (timelineData || []).sort((a: any, b: any) => 
+          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+        );
+        setTimeline(sortedTimeline);
         setStats(statsData);
         setLoading(false);
       })
@@ -169,14 +172,13 @@ export default function CandidateTimeline() {
   const groupedTimeline = useMemo(() => {
     const groups: Record<string, any[]> = {};
     
-    // Determine the reference date for "Today" based on the newest event to handle dummy data dates
-    const referenceDate = filteredTimeline.length > 0 ? new Date(filteredTimeline[0].timestamp) : new Date();
-    const todayStr = referenceDate.toDateString();
+    const todayStr = new Date().toDateString();
+    const yesterdayStr = new Date(Date.now() - 86400000).toDateString();
 
     paginatedTimeline.forEach(item => {
       const date = new Date(item.timestamp);
       const isToday = todayStr === date.toDateString();
-      const isYesterday = new Date(referenceDate.getTime() - 86400000).toDateString() === date.toDateString();
+      const isYesterday = yesterdayStr === date.toDateString();
 
       let prefix = "";
       if (isToday) prefix = "TODAY • ";
@@ -188,7 +190,7 @@ export default function CandidateTimeline() {
       groups[dateStr].push(item);
     });
     return groups;
-  }, [paginatedTimeline, filteredTimeline]);
+  }, [paginatedTimeline]);
 
   return (
     <div className="flex flex-col gap-6 w-full pb-10 bg-[#FAFAFA] min-h-screen">
@@ -363,8 +365,7 @@ export default function CandidateTimeline() {
           <div className="col-span-3">CANDIDATE</div>
           <div className="col-span-3">ACTIVITY</div>
           <div className="col-span-2">STAGE</div>
-          <div className="col-span-2">PERFORMED BY</div>
-          <div className="col-span-1">SOURCE</div>
+          <div className="col-span-3">PERFORMED BY</div>
         </div>
 
         <div className="bg-transparent">
@@ -441,20 +442,9 @@ export default function CandidateTimeline() {
                           </div>
 
                           {/* Performed By */}
-                          <div className="col-span-2 flex flex-col min-w-0">
+                          <div className="col-span-3 flex flex-col min-w-0">
                             <span className="text-[13px] font-semibold text-slate-700 truncate">{item.user}</span>
-                            <span className="text-[12px] text-slate-500 truncate">{'HR Manager'}</span>
-                          </div>
-
-                          {/* Source & Actions */}
-                          <div className="col-span-1 flex items-center justify-between">
-                            <div className="flex items-center gap-2 text-slate-500">
-                              <Monitor className="w-4 h-4" />
-                              <span className="text-[12px] font-medium hidden xl:inline-block">Manual</span>
-                            </div>
-                            <button className="text-slate-400 hover:text-slate-600 p-1 rounded-md hover:bg-slate-100 transition-colors">
-                              <MoreVertical className="w-4 h-4" />
-                            </button>
+                            <span className="text-[12px] text-slate-500 truncate">{item.userRole || 'System'}</span>
                           </div>
 
                         </div>

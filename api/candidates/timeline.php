@@ -39,11 +39,14 @@ try {
                 h.action as action, 
                 h.details as description, 
                 h.createdAt as timestamp, 
-                'System' as user, 
+                COALESCE(u.full_name, 'System') as user, 
+                COALESCE(rl.role_name, 'System') as userRole,
                 c.name as candidateName,
                 c.photo as image 
             FROM cims_candidate_history h 
             JOIN cims_candidates c ON h.candidate_id = c.id 
+            LEFT JOIN cims_users u ON h.userId = u.id
+            LEFT JOIN cims_roles rl ON u.role_id = rl.id
             $whereHist
         )
         UNION ALL
@@ -53,11 +56,14 @@ try {
                 'Note Added' as action, 
                 n.text as description, 
                 n.createdAt as timestamp, 
-                n.createdBy as user, 
+                COALESCE(u.full_name, n.createdBy, 'System') as user, 
+                COALESCE(rl.role_name, 'HR Manager') as userRole,
                 c.name as candidateName,
                 c.photo as image 
             FROM cims_candidate_notes n 
             JOIN cims_candidates c ON n.candidate_id = c.id 
+            LEFT JOIN cims_users u ON n.createdBy = u.full_name
+            LEFT JOIN cims_roles rl ON u.role_id = rl.id
             $whereNotes
         )
         UNION ALL
@@ -66,13 +72,16 @@ try {
                 'Interview' as type, 
                 CONCAT(i.type, ' Interview ', i.status) as action, 
                 COALESCE(i.feedback, CONCAT('Scheduled on ', i.interviewDate)) as description, 
-                i.interviewDate as timestamp, 
-                'System' as user, 
+                i.created_at as timestamp, 
+                COALESCE(u.full_name, i.created_by, 'System') as user, 
+                COALESCE(rl.role_name, 'HR Manager') as userRole,
                 c.name as candidateName,
                 c.photo as image 
             FROM cims_candidate_interviews i 
             JOIN cims_applications a ON i.application_id = a.id 
             JOIN cims_candidates c ON a.candidate_id = c.id 
+            LEFT JOIN cims_users u ON i.created_by = u.full_name
+            LEFT JOIN cims_roles rl ON u.role_id = rl.id
             $whereInt
         )
         UNION ALL
@@ -82,11 +91,14 @@ try {
                 CONCAT('Candidate ', r.type) as action, 
                 r.reason as description, 
                 r.recordedAt as timestamp, 
-                'System' as user, 
+                COALESCE(u.full_name, r.recordedBy, 'System') as user, 
+                COALESCE(rl.role_name, 'System') as userRole,
                 c.name as candidateName,
                 c.photo as image 
             FROM cims_candidate_rejections r 
             JOIN cims_candidates c ON r.candidate_id = c.id 
+            LEFT JOIN cims_users u ON r.recordedBy = u.full_name
+            LEFT JOIN cims_roles rl ON u.role_id = rl.id
             $whereRej
         )
         UNION ALL
@@ -96,11 +108,14 @@ try {
                 'Application Submitted' as action, 
                 CONCAT('Applied for ', a.role_applied, ' via ', a.source) as description, 
                 a.appliedAt as timestamp, 
-                'System' as user, 
+                COALESCE(u.full_name, a.recruiter, 'System') as user, 
+                COALESCE(rl.role_name, 'Recruiter') as userRole,
                 c.name as candidateName,
                 c.photo as image 
             FROM cims_applications a 
             JOIN cims_candidates c ON a.candidate_id = c.id 
+            LEFT JOIN cims_users u ON a.recruiter = u.full_name
+            LEFT JOIN cims_roles rl ON u.role_id = rl.id
             $whereApp
         )
         UNION ALL
@@ -111,6 +126,7 @@ try {
                 CONCAT('Status: ', e.status) as description, 
                 e.sent_at as timestamp, 
                 'System' as user, 
+                'System' as userRole,
                 c.name as candidateName,
                 c.photo as image 
             FROM cims_email_logs e 
