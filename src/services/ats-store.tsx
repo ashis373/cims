@@ -169,6 +169,9 @@ export function AtsProvider({ children }: { children: ReactNode }) {
             { id: uid(), at: now(), kind: "edited", message: activityMsg },
           ];
         }
+        if (patch.isBlacklisted === false && next.alerts) {
+          next.alerts = next.alerts.filter((a: any) => a.type !== "Blacklisted");
+        }
         try {
           await syncPut(next);
           mutate((prev) => prev.map((c) => (c.id === id ? next : c)));

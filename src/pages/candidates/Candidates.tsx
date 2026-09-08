@@ -260,8 +260,11 @@ export default function CandidatesPage() {
       }
 
       const matchQuick =
-        quickFilter === "All" ||
-        (quickFilter === "Blacklisted" ? c.isBlacklisted : c.stage === quickFilter);
+        quickFilter === "Blacklisted"
+          ? c.isBlacklisted
+          : (quickFilter === "All"
+              ? !c.isBlacklisted
+              : c.stage === quickFilter && !c.isBlacklisted);
       const matchStage = !stageFilter || stageFilter === "All Status" || c.stage === stageFilter;
       const matchPosition =
         !positionFilter || positionFilter === "All Positions" || c.role === positionFilter;
