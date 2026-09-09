@@ -122,18 +122,18 @@ const nav = [
       { to: "/candidates/timeline", label: "Candidate Timeline", roles: ["Administrator", "HR Manager", "Recruiter"], module: "candidates" },
     ],
   },
-  /* {
+  {
     to: "/interviews",
     label: "Interviews",
     icon: CalendarDays,
     roles: ["Administrator", "HR Manager", "Recruiter", "Hiring Manager"],
-    module: "Interviews",
+    module: "interviews",
     children: [
-      { to: "/interviews/upcoming", label: "Upcoming Interviews", roles: ["Administrator", "HR Manager", "Recruiter", "Hiring Manager"], module: "Interviews" },
-      { to: "/interviews/feedback-pending", label: "Feedback Pending", roles: ["Administrator", "HR Manager", "Recruiter", "Hiring Manager"], module: "Interviews" },
-      { to: "/interviews/history", label: "Interview History", roles: ["Administrator", "HR Manager", "Recruiter", "Hiring Manager"], module: "Interviews" },
+      { to: "/interviews/upcoming", label: "Upcoming Interviews", roles: ["Administrator", "HR Manager", "Recruiter", "Hiring Manager"], module: "interviews" },
+      { to: "/interviews/feedback-pending", label: "Feedback Pending", roles: ["Administrator", "HR Manager", "Recruiter", "Hiring Manager"], module: "interviews" },
+      { to: "/interviews/history", label: "Interview History", roles: ["Administrator", "HR Manager", "Recruiter", "Hiring Manager"], module: "interviews" },
     ],
-  }, */
+  },
   {
     to: "/pipeline",
     label: "Recruitment Pipeline",

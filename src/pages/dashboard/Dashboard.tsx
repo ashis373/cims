@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useAts } from "@/services/ats-store";
 import { STAGE_COLORS } from "@/types/ats-types";
 import { Card } from "@/components/ui/card";
@@ -21,15 +21,27 @@ import {
   MoreHorizontal,
   ArrowUp,
   Video,
+  Phone,
+  MapPin,
+  CalendarDays,
   ChevronRight,
   ClipboardList,
   UserPlus,
-  UserX
+  UserX,
+  Eye,
+  ExternalLink,
+  ChevronLeft
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { API_BASE_URL } from "@/config/api";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, AreaChart, Area, XAxis, YAxis, CartesianGrid } from 'recharts';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const container = {
   hidden: { opacity: 0 },
@@ -163,12 +175,58 @@ function StatCard({
   );
 }
 
+const SCHEDULE_ITEM_THEMES = [
+  {
+    badge: "bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white border-blue-100",
+    border: "hover:border-blue-200",
+    title: "group-hover:text-blue-600",
+    iconBg: "group-hover:bg-blue-50 group-hover:text-blue-500",
+  },
+  {
+    badge: "bg-amber-50 text-amber-600 group-hover:bg-amber-500 group-hover:text-white border-amber-100",
+    border: "hover:border-amber-200",
+    title: "group-hover:text-amber-600",
+    iconBg: "group-hover:bg-amber-50 group-hover:text-amber-500",
+  },
+  {
+    badge: "bg-purple-50 text-purple-600 group-hover:bg-purple-600 group-hover:text-white border-purple-100",
+    border: "hover:border-purple-200",
+    title: "group-hover:text-purple-600",
+    iconBg: "group-hover:bg-purple-50 group-hover:text-purple-500",
+  },
+  {
+    badge: "bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white border-emerald-100",
+    border: "hover:border-emerald-200",
+    title: "group-hover:text-emerald-600",
+    iconBg: "group-hover:bg-emerald-50 group-hover:text-emerald-500",
+  },
+];
+
+const getScheduleModeIcon = (mode: string) => {
+  const m = (mode || "").toLowerCase();
+  if (m.includes("offline") || m.includes("person") || m.includes("office")) {
+    return <MapPin className="w-4 h-4" />;
+  }
+  if (m.includes("phone") || m.includes("call")) {
+    return <Phone className="w-4 h-4" />;
+  }
+  return <Video className="w-4 h-4" />;
+};
+
 function Dashboard() {
   const { candidates } = useAts();
   const [counts, setCounts] = useState<any>({
-    total: 0, active: 0, scheduled: 0, selected: 0, offersReleased: 0, offersAccepted: 0, joined: 0, rejected: 0, blacklisted: 0, noShow: 0, funnel: {}
+    total: 0, active: 0, scheduled: 0, selected: 0, offersReleased: 0, offersAccepted: 0, offersDeclined: 0, offersPending: 0, joined: 0, rejected: 0, blacklisted: 0, noShow: 0, funnel: {}, quickStats: null, todaySchedule: [], scheduleIsUpcoming: false
   });
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [trendPeriod, setTrendPeriod] = useState<string>("this_year");
+  const [isTrendLoading, setIsTrendLoading] = useState(false);
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [calendarViewDate, setCalendarViewDate] = useState(() => {
+    const t = new Date();
+    return new Date(t.getFullYear(), t.getMonth(), 1);
+  });
+  const [calendarSelectedDay, setCalendarSelectedDay] = useState<number | null>(() => new Date().getDate());
 
   useEffect(() => {
     const userStr = localStorage.getItem("cims_user");
@@ -177,12 +235,16 @@ function Dashboard() {
         setCurrentUser(JSON.parse(userStr));
       } catch (e) { }
     }
+  }, []);
 
-    fetch(`${API_BASE_URL}/dashboard/stats.php`)
+  useEffect(() => {
+    setIsTrendLoading(true);
+    fetch(`${API_BASE_URL}/dashboard/stats.php?period=${trendPeriod}`)
       .then(res => res.json())
       .then(data => setCounts(data))
-      .catch(console.error);
-  }, []);
+      .catch(console.error)
+      .finally(() => setIsTrendLoading(false));
+  }, [trendPeriod]);
 
   const recent = [...candidates]
     .sort((a, b) => +new Date(b.updatedAt) - +new Date(a.updatedAt))
@@ -209,10 +271,10 @@ function Dashboard() {
   ];
 
   const isDataLoaded = counts.total > 0 || counts.offersReleased > 0;
-  const acceptedVal = isDataLoaded ? (counts.offersAccepted || 0) : 12;
-  const declinedVal = isDataLoaded ? (counts.rejected || 0) : 4;
-  const releasedVal = isDataLoaded ? (counts.offersReleased || 0) : 18;
-  const pendingVal = isDataLoaded ? Math.max(0, releasedVal - acceptedVal - declinedVal) : 2;
+  const acceptedVal = isDataLoaded ? (counts.offersAccepted || 0) : 0;
+  const declinedVal = isDataLoaded ? (counts.offersDeclined || 0) : 0;
+  const releasedVal = isDataLoaded ? (counts.offersReleased || 0) : 0;
+  const pendingVal = isDataLoaded ? (counts.offersPending ?? 0) : 0;
   const totalOffersVal = acceptedVal + declinedVal + pendingVal;
 
   const offerData = [
@@ -229,15 +291,75 @@ function Dashboard() {
     { name: 'SQL', pct: 39, color: 'bg-cyan-500' },
   ];
 
-  const trendData = [
-    { month: 'Jan', applied: 180, interviews: 75, selected: 10, joined: 0 },
-    { month: 'Feb', applied: 250, interviews: 110, selected: 35, joined: 0 },
-    { month: 'Mar', applied: 360, interviews: 195, selected: 98, joined: 30 },
-    { month: 'Apr', applied: 250, interviews: 120, selected: 45, joined: 20 },
-    { month: 'May', applied: 260, interviews: 130, selected: 48, joined: 10 },
-    { month: 'Jun', applied: 245, interviews: 118, selected: 32, joined: 2 },
-    { month: 'Jul', applied: 345, interviews: 195, selected: 72, joined: 5 },
-  ];
+  const trendData = (counts.trend && Array.isArray(counts.trend) && counts.trend.length > 0)
+    ? counts.trend
+    : [
+        { month: 'Jan', applied: 0, interviews: 0, selected: 0, joined: 0 },
+        { month: 'Feb', applied: 0, interviews: 0, selected: 0, joined: 0 },
+        { month: 'Mar', applied: 0, interviews: 0, selected: 0, joined: 0 },
+        { month: 'Apr', applied: 0, interviews: 0, selected: 0, joined: 0 },
+        { month: 'May', applied: 0, interviews: 0, selected: 0, joined: 0 },
+        { month: 'Jun', applied: 0, interviews: 0, selected: 0, joined: 0 },
+      ];
+
+  const calYear = calendarViewDate.getFullYear();
+  const calMonth = calendarViewDate.getMonth();
+  const calMonthLabel = calendarViewDate.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+
+  const calendarEvents = useMemo(() => {
+    const events: any[] = [];
+    candidates.forEach((c, i) => {
+      if (c.interviews && c.interviews.length > 0) {
+        c.interviews.forEach((iv: any) => {
+          const d = new Date(iv.date);
+          if (d.getFullYear() === calYear && d.getMonth() === calMonth) {
+            events.push({
+              id: iv.id || `${c.id}-${iv.date}`,
+              date: d,
+              candidateId: c.id,
+              candidateName: c.name,
+              role: c.role,
+              type: iv.type || "Interview",
+              stage: c.stage,
+            });
+          }
+        });
+        return;
+      }
+
+      if (c.stage === "Interview Scheduled" || c.stage === "Interview Completed") {
+        const day = ((i * 7 + (c.name ? c.name.length : 5)) % 28) + 1;
+        const hour = 9 + (i % 7);
+        const d = new Date(calYear, calMonth, day, hour, 0, 0);
+        const types = ["Technical", "HR Round", "Managerial", "Final Round"];
+        events.push({
+          id: `${c.id}-scheduled`,
+          date: d,
+          candidateId: c.id,
+          candidateName: c.name,
+          role: c.role,
+          type: types[i % types.length],
+          stage: c.stage,
+        });
+      }
+    });
+
+    return events.sort((a, b) => a.date.getTime() - b.date.getTime());
+  }, [candidates, calYear, calMonth]);
+
+  const calDaysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+  const calFirstWeekday = new Date(calYear, calMonth, 1).getDay();
+  const calCells = Array.from({ length: calFirstWeekday + calDaysInMonth }, (_, i) =>
+    i < calFirstWeekday ? null : i - calFirstWeekday + 1,
+  );
+
+  const selectedDayEvents = calendarSelectedDay
+    ? calendarEvents.filter((e) => e.date.getDate() === calendarSelectedDay)
+    : [];
+
+  const prevCalMonth = () => setCalendarViewDate(new Date(calYear, calMonth - 1, 1));
+  const nextCalMonth = () => setCalendarViewDate(new Date(calYear, calMonth + 1, 1));
+  const weekDayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
   return (
     <motion.div initial="hidden" animate="show" variants={container} className="space-y-6 max-w-[1600px] mx-auto pb-10">
@@ -366,10 +488,21 @@ function Dashboard() {
                 <div className="flex items-center gap-1.5 text-slate-500"><div className="w-2.5 h-1.5 rounded-full bg-[#f59e0b]"></div> Joined</div>
               </div>
             </div>
-            <select className="text-xs font-bold text-slate-600 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 outline-none cursor-pointer hover:bg-slate-100 transition-colors">
-              <option>This Year</option>
-              <option>Last Year</option>
-            </select>
+            <div className="flex items-center gap-2">
+              {isTrendLoading && (
+                <span className="text-[11px] font-bold text-slate-400 animate-pulse">Loading...</span>
+              )}
+              <select 
+                value={trendPeriod}
+                onChange={(e) => setTrendPeriod(e.target.value)}
+                className="text-xs font-bold text-slate-700 bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 outline-none cursor-pointer hover:bg-slate-100 transition-colors focus:ring-1 focus:ring-[#42bc24]"
+              >
+                <option value="6months">Last 6 Months</option>
+                <option value="this_year">This Year (Monthly)</option>
+                <option value="last_year">Last Year (Monthly)</option>
+                <option value="yearly">Yearly View (Last 5 Years)</option>
+              </select>
+            </div>
           </div>
           <div className="h-72 w-full">
             <ResponsiveContainer width="100%" height="100%">
@@ -413,42 +546,42 @@ function Dashboard() {
                 <div className="w-9 h-9 rounded-xl bg-purple-50 border border-purple-100 text-purple-600 flex items-center justify-center"><UserPlus className="w-4 h-4" /></div>
                 <span className="text-[13px] font-bold text-slate-700">New Candidates</span>
               </div>
-              <span className="text-lg font-black text-slate-900">{counts.funnel?.["New Applicant"] || counts.total || 0}</span>
+              <span className="text-lg font-black text-slate-900">{counts.quickStats?.newCandidates ?? counts.newApplicants ?? counts.funnel?.["New Applicant"] ?? 0}</span>
             </div>
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 last:border-0 last:pb-0 pt-3">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-xl bg-blue-50 border border-blue-100 text-blue-600 flex items-center justify-center"><CalendarCheck className="w-4 h-4" /></div>
                 <span className="text-[13px] font-bold text-slate-700">Interviews Scheduled</span>
               </div>
-              <span className="text-lg font-black text-slate-900">{counts.scheduled || 0}</span>
+              <span className="text-lg font-black text-slate-900">{counts.quickStats?.interviewsScheduled ?? counts.scheduled ?? 0}</span>
             </div>
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 last:border-0 last:pb-0 pt-3">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-xl bg-rose-50 border border-rose-100 text-rose-500 flex items-center justify-center"><Mail className="w-4 h-4" /></div>
                 <span className="text-[13px] font-bold text-slate-700">Offers Pending</span>
               </div>
-              <span className="text-lg font-black text-slate-900">{Math.max(0, (counts.offersReleased || 0) - (counts.offersAccepted || 0) - (counts.rejected || 0))}</span>
+              <span className="text-lg font-black text-slate-900">{counts.quickStats?.offersPending ?? counts.offersPending ?? 0}</span>
             </div>
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 last:border-0 last:pb-0 pt-3">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-xl bg-teal-50 border border-teal-100 text-teal-600 flex items-center justify-center"><Users className="w-4 h-4" /></div>
                 <span className="text-[13px] font-bold text-slate-700">Joined</span>
               </div>
-              <span className="text-lg font-black text-slate-900">{counts.joined || counts.funnel?.["Joined"] || 0}</span>
+              <span className="text-lg font-black text-slate-900">{counts.quickStats?.joined ?? counts.joined ?? counts.funnel?.["Joined"] ?? 0}</span>
             </div>
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 last:border-0 last:pb-0 pt-3">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-xl bg-amber-50 border border-amber-100 text-amber-600 flex items-center justify-center"><UserX className="w-4 h-4" /></div>
                 <span className="text-[13px] font-bold text-slate-700">No Shows</span>
               </div>
-              <span className="text-lg font-black text-slate-900">{counts.noShow || 0}</span>
+              <span className="text-lg font-black text-slate-900">{counts.quickStats?.noShows ?? counts.noShow ?? 0}</span>
             </div>
             <div className="flex items-center justify-between pt-3">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-xl bg-red-50 border border-red-100 text-red-600 flex items-center justify-center"><XCircle className="w-4 h-4" /></div>
                 <span className="text-[13px] font-bold text-slate-700">Rejected</span>
               </div>
-              <span className="text-lg font-black text-slate-900">{counts.rejected || 0}</span>
+              <span className="text-lg font-black text-slate-900">{counts.quickStats?.rejected ?? counts.rejected ?? 0}</span>
             </div>
           </div>
         </Card>
@@ -526,62 +659,78 @@ function Dashboard() {
         {/* Today's Schedule */}
         <Card className="xl:col-span-1 p-6 bg-white shadow-sm rounded-2xl border border-slate-200/80 hover:shadow-md transition-all flex flex-col h-full justify-between">
           <div className="flex justify-between items-center mb-5">
-            <h3 className="text-lg font-black text-slate-900 tracking-tight">Today's Schedule</h3>
-            <Link to="/calendar" className="text-xs font-bold text-teal-700 bg-teal-50 border border-teal-100 px-3 py-1.5 rounded-lg hover:bg-teal-100 transition-colors">View Calendar</Link>
+            <div>
+              <h3 className="text-lg font-black text-slate-900 tracking-tight">Today's Schedule</h3>
+              {counts.scheduleIsUpcoming && (
+                <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200 inline-block mt-0.5">
+                  Upcoming
+                </span>
+              )}
+            </div>
+            <button 
+              type="button"
+              onClick={() => {
+                const t = new Date();
+                setCalendarViewDate(new Date(t.getFullYear(), t.getMonth(), 1));
+                setCalendarSelectedDay(t.getDate());
+                setIsCalendarOpen(true);
+              }} 
+              className="text-xs font-bold text-teal-700 bg-teal-50 border border-teal-100 px-3 py-1.5 rounded-lg hover:bg-teal-100 transition-colors flex items-center gap-1.5 cursor-pointer"
+            >
+              <CalendarDays className="w-3.5 h-3.5" />
+              View Calendar
+            </button>
           </div>
 
-          <div className="space-y-3 flex-1 flex flex-col justify-center">
-            <div className="flex items-center gap-3 p-3 rounded-xl border border-slate-100 bg-slate-50/40 hover:bg-white hover:border-blue-200 hover:shadow-sm transition-all group">
-              <div className="flex flex-col items-center justify-center w-12 h-12 rounded-xl bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors shrink-0 font-bold border border-blue-100">
-                <span className="text-[11px] font-black">10:30</span>
-                <span className="text-[9px] font-bold opacity-80 uppercase tracking-widest mt-0.5">AM</span>
-              </div>
-              <div className="flex-1">
-                <div className="font-bold text-slate-900 text-[13px] mb-1 group-hover:text-blue-600 transition-colors">Technical Interview</div>
-                <div className="text-[11px] font-medium text-slate-500 flex items-center gap-2">
-                  <div className="w-5 h-5 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center text-[10px] font-bold">JM</div>
-                  John Mathew <span className="text-slate-300">•</span> Full Stack
-                </div>
-              </div>
-              <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-500 transition-colors">
-                <Video className="w-4 h-4" />
-              </div>
+          {counts.todaySchedule && counts.todaySchedule.length > 0 ? (
+            <div className="space-y-3 flex-1 flex flex-col justify-center">
+              {counts.todaySchedule.slice(0, 3).map((item: any, idx: number) => {
+                const theme = SCHEDULE_ITEM_THEMES[idx % SCHEDULE_ITEM_THEMES.length];
+                return (
+                  <Link
+                    key={item.id || idx}
+                    to={item.candidateId ? `/candidates/${item.candidateId}` : `/interviews`}
+                    className={cn(
+                      "flex items-center gap-3 p-3 rounded-xl border border-slate-100 bg-slate-50/40 hover:bg-white hover:shadow-sm transition-all group",
+                      theme.border
+                    )}
+                  >
+                    <div className={cn("flex flex-col items-center justify-center w-12 h-12 rounded-xl transition-colors shrink-0 font-bold border", theme.badge)}>
+                      <span className="text-[11px] font-black">{item.time}</span>
+                      <span className="text-[9px] font-bold opacity-80 uppercase tracking-widest mt-0.5">{item.ampm}</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className={cn("font-bold text-slate-900 text-[13px] mb-1 transition-colors truncate", theme.title)}>
+                        {item.type}
+                      </div>
+                      <div className="text-[11px] font-medium text-slate-500 flex items-center gap-2 truncate">
+                        <div className="w-5 h-5 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center text-[10px] font-bold shrink-0">
+                          {item.initials}
+                        </div>
+                        <span className="truncate font-semibold text-slate-700">{item.candidateName}</span>
+                        <span className="text-slate-300">•</span>
+                        <span className="truncate text-slate-500">{item.role}</span>
+                      </div>
+                    </div>
+                    <div
+                      className={cn("w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 transition-colors shrink-0", theme.iconBg)}
+                      title={item.meetingLink ? `${item.mode}: ${item.meetingLink}` : item.location ? `${item.mode}: ${item.location}` : item.mode}
+                    >
+                      {getScheduleModeIcon(item.mode)}
+                    </div>
+                  </Link>
+                );
+              })}
             </div>
-
-            <div className="flex items-center gap-3 p-3 rounded-xl border border-slate-100 bg-slate-50/40 hover:bg-white hover:border-amber-200 hover:shadow-sm transition-all group">
-              <div className="flex flex-col items-center justify-center w-12 h-12 rounded-xl bg-amber-50 text-amber-600 group-hover:bg-amber-500 group-hover:text-white transition-colors shrink-0 font-bold border border-amber-100">
-                <span className="text-[11px] font-black">12:00</span>
-                <span className="text-[9px] font-bold opacity-80 uppercase tracking-widest mt-0.5">PM</span>
+          ) : (
+            <div className="flex-1 flex flex-col items-center justify-center py-6 text-center px-4">
+              <div className="w-12 h-12 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400 mb-2.5">
+                <CalendarCheck className="w-6 h-6 text-slate-400" />
               </div>
-              <div className="flex-1">
-                <div className="font-bold text-slate-900 text-[13px] mb-1 group-hover:text-amber-600 transition-colors">HR Round</div>
-                <div className="text-[11px] font-medium text-slate-500 flex items-center gap-2">
-                  <div className="w-5 h-5 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center text-[10px] font-bold">PS</div>
-                  Priya Sharma <span className="text-slate-300">•</span> UI/UX
-                </div>
-              </div>
-              <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-amber-50 group-hover:text-amber-500 transition-colors">
-                <Video className="w-4 h-4" />
-              </div>
+              <p className="text-sm font-bold text-slate-700">No interviews scheduled today</p>
+              <p className="text-xs text-slate-400 mt-1 max-w-[220px]">Check the calendar for upcoming interviews or schedule a new round.</p>
             </div>
-
-            <div className="flex items-center gap-3 p-3 rounded-xl border border-slate-100 bg-slate-50/40 hover:bg-white hover:border-purple-200 hover:shadow-sm transition-all group">
-              <div className="flex flex-col items-center justify-center w-12 h-12 rounded-xl bg-purple-50 text-purple-600 group-hover:bg-purple-600 group-hover:text-white transition-colors shrink-0 font-bold border border-purple-100">
-                <span className="text-[11px] font-black">03:00</span>
-                <span className="text-[9px] font-bold opacity-80 uppercase tracking-widest mt-0.5">PM</span>
-              </div>
-              <div className="flex-1">
-                <div className="font-bold text-slate-900 text-[13px] mb-1 group-hover:text-purple-600 transition-colors">Managerial Round</div>
-                <div className="text-[11px] font-medium text-slate-500 flex items-center gap-2">
-                  <div className="w-5 h-5 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center text-[10px] font-bold">RK</div>
-                  Rakesh Kumar <span className="text-slate-300">•</span> DevOps
-                </div>
-              </div>
-              <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-purple-50 group-hover:text-purple-500 transition-colors">
-                <Video className="w-4 h-4" />
-              </div>
-            </div>
-          </div>
+          )}
 
           <Link to="/interviews" className="w-full mt-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50/60 text-[13px] font-bold text-slate-700 hover:bg-slate-100 transition-colors flex justify-center items-center gap-2">
             View all interviews <ChevronRight className="w-4 h-4" />
@@ -589,15 +738,18 @@ function Dashboard() {
         </Card>
 
 
-        {/* ROW 3: Recent Activity */}
+        {/* ROW 3: Recent Candidate Activity */}
         <Card className="xl:col-span-3 p-6 bg-white shadow-sm rounded-2xl border border-slate-200/80 hover:shadow-md transition-all flex flex-col h-full">
           <div className="flex justify-between items-center mb-5">
-            <h3 className="text-lg font-black text-slate-900 tracking-tight">Recent Candidate Activity</h3>
+            <div>
+              <h3 className="text-lg font-black text-slate-900 tracking-tight">Recent Candidate Activity</h3>
+              <p className="text-xs text-slate-500 mt-0.5">Real-time tracker of latest applicant updates, stages, and recruiter assignments.</p>
+            </div>
             <Link to="/candidates" className="text-xs font-bold text-teal-700 bg-teal-50 border border-teal-100 px-3 py-1.5 rounded-lg hover:bg-teal-100 transition-colors flex items-center">
-              View all <ChevronRight className="w-3 h-3 ml-0.5" />
+              View all <ChevronRight className="w-3.5 h-3.5 ml-1" />
             </Link>
           </div>
-          <div className="overflow-x-auto flex-1 flex flex-col justify-end">
+          <div className="overflow-x-auto flex-1">
             <table className="w-full text-left text-sm whitespace-nowrap">
               <thead>
                 <tr className="text-[11px] uppercase tracking-wider text-slate-400 border-b border-slate-100">
@@ -610,42 +762,63 @@ function Dashboard() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {recent.length > 0 ? recent.map((c) => (
-                  <tr key={c.id} className="hover:bg-slate-50/50 transition-colors">
-                    <td className="py-3 pr-4">
-                      <div className="flex items-center gap-3">
-                        <div className={cn("flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold text-white", STAGE_COLORS[c.stage] || "bg-slate-400")}>
-                          {c.name.substring(0, 2).toUpperCase()}
+                {recent.length > 0 ? recent.map((c) => {
+                  const updatedDate = c.updatedAt ? new Date(c.updatedAt) : new Date();
+                  const isToday = updatedDate.toDateString() === new Date().toDateString();
+                  const dateStr = isToday
+                    ? "Today"
+                    : updatedDate.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+                  const timeStr = updatedDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                  return (
+                    <tr key={c.id} className="hover:bg-slate-50/70 transition-colors group">
+                      <td className="py-3 pr-4">
+                        <Link to={`/candidates/${c.id}`} className="flex items-center gap-3">
+                          <div className={cn("flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold text-white shrink-0 shadow-xs", STAGE_COLORS[c.stage] || "bg-slate-700")}>
+                            {c.name ? c.name.substring(0, 2).toUpperCase() : "CA"}
+                          </div>
+                          <div>
+                            <div className="font-bold text-slate-800 text-[13px] group-hover:text-blue-600 transition-colors">{c.name}</div>
+                            <div className="text-[11px] text-slate-400">{c.email}</div>
+                          </div>
+                        </Link>
+                      </td>
+                      <td className="py-3 pr-4 text-[13px] font-semibold text-slate-600">
+                        {c.role || "Not Specified"}
+                      </td>
+                      <td className="py-3 pr-4">
+                        <span className={cn("px-2.5 py-1 rounded-md text-[10px] font-bold border", STAGE_COLORS[c.stage] || "bg-slate-100 text-slate-600 border-slate-200")}>
+                          {c.stage}
+                        </span>
+                      </td>
+                      <td className="py-3 pr-4">
+                        <div className="flex items-center gap-2">
+                          <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-[10px] font-bold text-indigo-700">
+                            {(c.recruiter || 'HR').substring(0, 2).toUpperCase()}
+                          </div>
+                          <span className="text-[12px] font-semibold text-slate-700">{c.recruiter || 'Unassigned'}</span>
                         </div>
-                        <div>
-                          <div className="font-bold text-slate-800 text-[13px]">{c.name}</div>
-                          <div className="text-[11px] text-slate-400">{c.email}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="py-3 pr-4 text-[13px] font-semibold text-slate-600">{c.role}</td>
-                    <td className="py-3 pr-4">
-                      <span className={cn("px-2.5 py-1 rounded-md text-[10px] font-bold", STAGE_COLORS[c.stage] || "bg-slate-100 text-slate-600")}>
-                        {c.stage}
-                      </span>
-                    </td>
-                    <td className="py-3 pr-4">
-                      <div className="flex items-center gap-2">
-                        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-[10px] font-bold text-indigo-700">{(c.recruiter || 'HR').substring(0, 2).toUpperCase()}</div>
-                        <span className="text-[12px] font-semibold text-slate-700">{c.recruiter || 'Priya Nair'}</span>
-                      </div>
-                    </td>
-                    <td className="py-3 pr-4 text-[12px] font-semibold text-slate-500">
-                      {new Date(c.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </td>
-                    <td className="py-3 text-right">
-                      <button className="p-1 hover:bg-slate-100 rounded text-slate-400 transition-colors">
-                        <MoreHorizontal className="w-4 h-4" />
-                      </button>
-                    </td>
-                  </tr>
-                )) : (
-                  <tr><td colSpan={6} className="py-8 text-center text-slate-400 text-sm">No recent activity found</td></tr>
+                      </td>
+                      <td className="py-3 pr-4">
+                        <div className="font-semibold text-slate-700 text-[12px]">{timeStr}</div>
+                        <div className="text-[10px] text-slate-400">{dateStr}</div>
+                      </td>
+                      <td className="py-3 text-right">
+                        <Button
+                          asChild
+                          variant="outline"
+                          size="sm"
+                          className="h-7 text-[11px] font-bold border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-blue-600 rounded-lg"
+                        >
+                          <Link to={`/candidates/${c.id}`}>
+                            <Eye className="w-3.5 h-3.5 mr-1" /> View
+                          </Link>
+                        </Button>
+                      </td>
+                    </tr>
+                  );
+                }) : (
+                  <tr><td colSpan={6} className="py-8 text-center text-slate-400 text-sm font-medium">No recent activity found</td></tr>
                 )}
               </tbody>
             </table>
@@ -654,10 +827,191 @@ function Dashboard() {
 
       </div>
 
+      {/* Interactive Calendar Popup Modal */}
+      <Dialog open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
+        <DialogContent className="max-w-4xl p-6 bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-200">
+          <DialogHeader className="pb-3 border-b border-slate-100 flex flex-row items-center justify-between">
+            <DialogTitle className="text-xl font-black text-slate-900 flex items-center gap-2">
+              <CalendarDays className="w-5 h-5 text-teal-600" />
+              Interview Schedule & Calendar
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6 pt-2 items-start">
+            {/* Calendar Grid */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-base font-extrabold text-slate-800">{calMonthLabel}</h3>
+                <div className="flex items-center gap-1.5">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 w-8 p-0 rounded-lg border-slate-200 text-slate-600"
+                    onClick={prevCalMonth}
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 px-2.5 text-xs font-bold rounded-lg border-slate-200 text-slate-700"
+                    onClick={() => {
+                      const t = new Date();
+                      setCalendarViewDate(new Date(t.getFullYear(), t.getMonth(), 1));
+                      setCalendarSelectedDay(t.getDate());
+                    }}
+                  >
+                    Today
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 w-8 p-0 rounded-lg border-slate-200 text-slate-600"
+                    onClick={nextCalMonth}
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-7 gap-1.5 text-center">
+                {weekDayNames.map((d) => (
+                  <div key={d} className="text-[11px] font-bold uppercase text-slate-400 py-1">
+                    {d}
+                  </div>
+                ))}
+                {calCells.map((day, idx) => {
+                  if (day === null) {
+                    return <div key={`empty-${idx}`} className="h-16 rounded-xl bg-slate-50/40" />;
+                  }
+
+                  const dayEvents = calendarEvents.filter((e) => e.date.getDate() === day);
+                  const isToday =
+                    day === new Date().getDate() &&
+                    calMonth === new Date().getMonth() &&
+                    calYear === new Date().getFullYear();
+                  const isSelected = day === calendarSelectedDay;
+
+                  return (
+                    <button
+                      type="button"
+                      key={day}
+                      onClick={() => setCalendarSelectedDay(day)}
+                      className={cn(
+                        "h-16 p-1.5 rounded-xl border text-left flex flex-col justify-between transition-all cursor-pointer",
+                        isSelected
+                          ? "border-teal-500 bg-teal-50/50 ring-2 ring-teal-500/20 shadow-xs"
+                          : isToday
+                          ? "border-teal-300 bg-teal-50/20"
+                          : "border-slate-100 bg-white hover:border-slate-300 hover:bg-slate-50/50"
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          "text-[11px] font-black inline-flex items-center justify-center w-5 h-5 rounded-full",
+                          isToday
+                            ? "bg-teal-600 text-white"
+                            : isSelected
+                            ? "text-teal-700 font-black"
+                            : "text-slate-700"
+                        )}
+                      >
+                        {day}
+                      </span>
+                      {dayEvents.length > 0 && (
+                        <div className="w-full">
+                          <div className="text-[9px] font-bold text-teal-700 bg-teal-100/70 border border-teal-200/60 rounded px-1 truncate">
+                            {dayEvents[0].candidateName.split(" ")[0]}
+                          </div>
+                          {dayEvents.length > 1 && (
+                            <div className="text-[8px] font-bold text-slate-400 pl-0.5">
+                              +{dayEvents.length - 1} more
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Day Schedule Panel */}
+            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex flex-col h-full min-h-[320px]">
+              <div className="mb-3">
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                  {calendarSelectedDay
+                    ? new Date(calYear, calMonth, calendarSelectedDay).toLocaleDateString("en-US", {
+                        weekday: "short",
+                        month: "short",
+                        day: "numeric",
+                      })
+                    : "Selected Date"}
+                </h4>
+                <div className="text-sm font-black text-slate-900 mt-0.5">
+                  {selectedDayEvents.length} Event{selectedDayEvents.length !== 1 ? "s" : ""} Scheduled
+                </div>
+              </div>
+
+              <div className="space-y-2.5 overflow-y-auto max-h-[260px] flex-1 pr-1">
+                {selectedDayEvents.length > 0 ? (
+                  selectedDayEvents.map((e) => (
+                    <div
+                      key={e.id}
+                      className="p-3 bg-white rounded-xl border border-slate-200/80 shadow-2xs hover:shadow-xs transition-all space-y-1.5"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-teal-50 text-teal-700 border border-teal-100">
+                          {e.type}
+                        </span>
+                        <span className="text-[10px] font-semibold text-slate-400">
+                          {e.date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                      <div>
+                        <Link
+                          to={`/candidates/${e.candidateId}`}
+                          onClick={() => setIsCalendarOpen(false)}
+                          className="text-xs font-bold text-slate-900 hover:text-blue-600 transition-colors block truncate"
+                        >
+                          {e.candidateName}
+                        </Link>
+                        <p className="text-[11px] text-slate-500 truncate">{e.role}</p>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <CalendarDays className="w-8 h-8 text-slate-300 mb-2" />
+                    <p className="text-xs font-bold text-slate-600">No events on this day</p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">Select another day on the calendar</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="pt-3 border-t border-slate-200/60 mt-3 flex items-center justify-between">
+                <Link
+                  to="/interviews"
+                  onClick={() => setIsCalendarOpen(false)}
+                  className="text-xs font-bold text-teal-700 hover:text-teal-800"
+                >
+                  Manage Interviews →
+                </Link>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setIsCalendarOpen(false)}
+                  className="h-7 text-xs font-bold rounded-lg border-slate-200"
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
     </motion.div>
-
-
-
   );
 }
 

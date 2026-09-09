@@ -3,7 +3,7 @@ require_once __DIR__ . '/jwt_utils.php';
 
 // Try to get token from Authorization header or cookie
 $jwt = null;
-$headers = array_change_key_case(getallheaders(), CASE_LOWER);
+$headers = function_exists('getallheaders') ? array_change_key_case(getallheaders(), CASE_LOWER) : [];
 if (isset($headers['authorization']) && strpos($headers['authorization'], 'Bearer ') === 0) {
     $jwt = substr($headers['authorization'], 7);
 } elseif (isset($_COOKIE['auth_token'])) {

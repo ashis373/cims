@@ -1,9 +1,12 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { API_BASE_URL } from "@/config/api";
+import { getAuthHeaders } from "@/services/candidate-api";
+import { toast } from "sonner";
 import {
   BarChart,
   Bar,
@@ -28,50 +31,155 @@ import {
   Download,
   ChevronRight,
   TrendingUp,
-  PieChart as PieChartIcon
+  PieChart as PieChartIcon,
+  Calendar,
+  ExternalLink,
+  User,
+  ThumbsUp,
+  ThumbsDown,
+  X
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface TopStatProps {
   title: string;
   value: number | string;
-  icon: any;
-  tone: string;
-  borderTone: string;
+  pct?: number;
+  icon: React.ElementType;
+  theme: 'blue' | 'emerald' | 'purple' | 'amber' | 'cyan' | 'rose' | 'teal' | 'zinc' | 'orange';
+  trendLabel?: string;
 }
 
-function TopStat({ title, value, icon: Icon, tone, borderTone }: TopStatProps) {
+function TopStat({ title, value, pct, icon: Icon, theme, trendLabel }: TopStatProps) {
+  const styles = {
+    blue: { 
+      cardBg: "bg-blue-50/40",
+      badge: "bg-blue-50 text-blue-700 border-blue-100", 
+      border: "border-blue-200/70 hover:border-blue-400",
+      iconBg: "bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-blue-500/20", 
+      glow: "from-white to-transparent",
+      trendText: "text-blue-700 bg-white/80"
+    },
+    emerald: { 
+      cardBg: "bg-emerald-50/40",
+      badge: "bg-emerald-50 text-emerald-700 border-emerald-100", 
+      border: "border-emerald-200/70 hover:border-emerald-400",
+      iconBg: "bg-gradient-to-br from-[#42bc24] to-[#36961c] text-white shadow-emerald-500/20", 
+      glow: "from-white to-transparent",
+      trendText: "text-emerald-700 bg-white/80"
+    },
+    purple: { 
+      cardBg: "bg-purple-50/40",
+      badge: "bg-purple-50 text-purple-700 border-purple-100", 
+      border: "border-purple-200/70 hover:border-purple-400",
+      iconBg: "bg-gradient-to-br from-purple-500 to-indigo-600 text-white shadow-purple-500/20", 
+      glow: "from-white to-transparent",
+      trendText: "text-purple-700 bg-white/80"
+    },
+    amber: { 
+      cardBg: "bg-amber-50/40",
+      badge: "bg-amber-50 text-amber-700 border-amber-100", 
+      border: "border-amber-200/70 hover:border-amber-400",
+      iconBg: "bg-gradient-to-br from-amber-500 to-orange-500 text-white shadow-amber-500/20", 
+      glow: "from-white to-transparent",
+      trendText: "text-amber-700 bg-white/80"
+    },
+    cyan: { 
+      cardBg: "bg-cyan-50/40",
+      badge: "bg-cyan-50 text-cyan-700 border-cyan-100", 
+      border: "border-cyan-200/70 hover:border-cyan-400",
+      iconBg: "bg-gradient-to-br from-cyan-500 to-teal-600 text-white shadow-cyan-500/20", 
+      glow: "from-white to-transparent",
+      trendText: "text-cyan-700 bg-white/80"
+    },
+    rose: { 
+      cardBg: "bg-rose-50/40",
+      badge: "bg-rose-50 text-rose-700 border-rose-100", 
+      border: "border-rose-200/70 hover:border-rose-400",
+      iconBg: "bg-gradient-to-br from-rose-500 to-red-600 text-white shadow-rose-500/20", 
+      glow: "from-white to-transparent",
+      trendText: "text-rose-700 bg-white/80"
+    },
+    teal: { 
+      cardBg: "bg-teal-50/40",
+      badge: "bg-teal-50 text-teal-700 border-teal-100", 
+      border: "border-teal-200/70 hover:border-teal-400",
+      iconBg: "bg-gradient-to-br from-teal-500 to-emerald-600 text-white shadow-teal-500/20", 
+      glow: "from-white to-transparent",
+      trendText: "text-teal-700 bg-white/80"
+    },
+    zinc: { 
+      cardBg: "bg-slate-50/60",
+      badge: "bg-slate-100 text-slate-700 border-slate-200", 
+      border: "border-slate-300/70 hover:border-slate-400",
+      iconBg: "bg-gradient-to-br from-slate-600 to-slate-800 text-white shadow-slate-500/20", 
+      glow: "from-white to-transparent",
+      trendText: "text-slate-700 bg-white/80"
+    },
+    orange: { 
+      cardBg: "bg-orange-50/40",
+      badge: "bg-orange-50 text-orange-700 border-orange-100", 
+      border: "border-orange-200/70 hover:border-orange-400",
+      iconBg: "bg-gradient-to-br from-orange-500 to-amber-600 text-white shadow-orange-500/20", 
+      glow: "from-white to-transparent",
+      trendText: "text-orange-700 bg-white/80"
+    }
+  }[theme];
+
   return (
     <Card
       className={cn(
-        "p-5 bg-white shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] rounded-3xl relative overflow-hidden group border-t-[3px] flex-1 min-w-[160px]",
-        borderTone,
+        "relative overflow-hidden shadow-xs border rounded-xl flex-1 min-w-[150px] flex flex-col p-3.5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-sm group",
+        styles.cardBg,
+        styles.border
       )}
     >
-      <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-gradient-to-br from-transparent to-black/[0.02] rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500" />
-      <div className="flex items-start justify-between relative z-10">
-        <div>
-          <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-            {title}
+      <div className={cn("absolute top-0 right-0 -mt-3 -mr-3 w-20 h-20 bg-gradient-to-br to-transparent rounded-full blur-xl pointer-events-none opacity-60", styles.glow)} />
+      
+      <div className="flex items-start justify-between mb-1.5 relative z-10">
+        <div className="text-[10.5px] font-bold text-slate-500 uppercase tracking-wider pr-1.5 leading-tight truncate">
+          {title}
+        </div>
+        <div className={cn("p-1.5 rounded-lg shrink-0 shadow-xs", styles.iconBg)}>
+          <Icon className="w-3.5 h-3.5" />
+        </div>
+      </div>
+      
+      <div className="mt-auto relative z-10 pt-1">
+        <div className="text-2xl font-black tracking-tight text-slate-900 leading-none mb-1.5">
+          {value}
+        </div>
+        {pct !== undefined ? (
+          <div className="flex items-center gap-1.5 text-[9.5px] font-bold text-slate-400">
+            <span className={cn("inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded font-bold", styles.trendText)}>
+              +{pct}%
+            </span>
+            <span className="text-slate-400 font-medium truncate">this month</span>
           </div>
-          <div className="text-3xl font-black tracking-tight text-slate-900">{value}</div>
-        </div>
-        <div
-          className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl", tone)}
-        >
-          <Icon className="h-5 w-5" />
-        </div>
+        ) : trendLabel ? (
+          <div className="flex items-center gap-1.5 text-[9.5px] font-bold text-slate-400">
+            <span className={cn("inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded font-bold", styles.trendText)}>
+              {trendLabel}
+            </span>
+          </div>
+        ) : null}
       </div>
     </Card>
   );
 }
 
 const mockHistory = [
-  { id: "HIS-001", candidateName: "Tom Hanks", position: "Backend Developer", type: "Technical", date: "2026-05-10T10:00:00", interviewer: "Mike Johnson", result: "Passed", score: 8.5 },
-  { id: "HIS-002", candidateName: "Emma Watson", position: "Product Designer", type: "Final Round", date: "2026-05-12T14:30:00", interviewer: "Sarah Smith", result: "Failed", score: 5.0 },
-  { id: "HIS-003", candidateName: "Robert Downey", position: "Data Analyst", type: "HR", date: "2026-05-15T11:00:00", interviewer: "John Doe", result: "Passed", score: 9.0 },
-  { id: "HIS-004", candidateName: "Chris Hemsworth", position: "Marketing Lead", type: "Technical", date: "2026-05-20T09:00:00", interviewer: "Sarah Smith", result: "No Show", score: null },
-  { id: "HIS-005", candidateName: "Mark Ruffalo", position: "Security Engineer", type: "Technical", date: "2026-05-25T13:00:00", interviewer: "Mike Johnson", result: "Passed", score: 7.5 },
-  { id: "HIS-006", candidateName: "Natalie Portman", position: "Frontend Dev", type: "Technical", date: "2026-06-01T10:00:00", interviewer: "John Doe", result: "Passed", score: 8.0 },
+  { id: "HIS-001", candidateName: "Tom Hanks", candidateEmail: "tom.hanks@example.com", position: "Backend Developer", department: "Software Development", type: "Technical", date: "2026-05-10T10:00:00", interviewer: "Mike Johnson", result: "Passed", score: 8.5, feedback: "Demonstrated strong knowledge of databases and microservices architecture.", recommendation: "Strong Hire" },
+  { id: "HIS-002", candidateName: "Emma Watson", candidateEmail: "emma.watson@example.com", position: "Product Designer", department: "Multimedia Design", type: "Final Round", date: "2026-05-12T14:30:00", interviewer: "Sarah Smith", result: "Failed", score: 5.0, feedback: "Needs more portfolio work with complex enterprise SaaS workflows.", recommendation: "Do Not Hire" },
+  { id: "HIS-003", candidateName: "Robert Downey", candidateEmail: "robert.d@example.com", position: "Data Analyst", department: "Software Development", type: "HR", date: "2026-05-15T11:00:00", interviewer: "John Doe", result: "Passed", score: 9.0, feedback: "Exceptional analytical skills, great communication, culture fit.", recommendation: "Strong Hire" },
+  { id: "HIS-004", candidateName: "Chris Hemsworth", candidateEmail: "chris.h@example.com", position: "Marketing Lead", department: "Digital Marketing", type: "Technical", date: "2026-05-20T09:00:00", interviewer: "Sarah Smith", result: "No Show", score: null, feedback: "Candidate did not attend interview session.", recommendation: "Do Not Hire" },
+  { id: "HIS-005", candidateName: "Mark Ruffalo", candidateEmail: "mark.r@example.com", position: "Security Engineer", department: "Software Development", type: "Technical", date: "2026-05-25T13:00:00", interviewer: "Mike Johnson", result: "Passed", score: 7.5, feedback: "Good fundamentals on OWASP and cloud IAM rules.", recommendation: "Hire" },
+  { id: "HIS-006", candidateName: "Natalie Portman", candidateEmail: "natalie.p@example.com", position: "Frontend Dev", department: "Software Development", type: "Technical", date: "2026-06-01T10:00:00", interviewer: "John Doe", result: "Passed", score: 8.0, feedback: "Solid React knowledge, clean coding practices.", recommendation: "Hire" },
 ];
 
 const getResultBadge = (result: string) => {
@@ -87,126 +195,252 @@ const getResultBadge = (result: string) => {
   }
 };
 
-const monthData = [
-  { name: 'Jan', count: 12 },
-  { name: 'Feb', count: 19 },
-  { name: 'Mar', count: 15 },
-  { name: 'Apr', count: 22 },
-  { name: 'May', count: 28 },
-  { name: 'Jun', count: 10 },
-];
-
 export default function InterviewsHistory() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [interviewerFilter, setInterviewerFilter] = useState("all");
   const [page, setPage] = useState(1);
-  const perPage = 5;
+  const perPage = 8;
+  const [historyList, setHistoryList] = useState<any[]>(mockHistory);
+  const [viewItem, setViewItem] = useState<any | null>(null);
+
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/candidates/interviews.php`, {
+      credentials: 'include',
+      headers: getAuthHeaders(false)
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          const formatted = data.map((i: any) => {
+            let result = "Passed";
+            if (i.status === "Cancelled" || i.status === "No Show") {
+              result = "No Show";
+            } else if (i.recommendation === "Do Not Hire" || (i.rating && Number(i.rating) < 3)) {
+              result = "Failed";
+            } else if (i.recommendation === "Hire" || i.recommendation === "Strong Hire" || (i.rating && Number(i.rating) >= 3)) {
+              result = "Passed";
+            }
+
+            const rawScore = i.rating ? Number(i.rating) * 2 : null;
+
+            return {
+              id: i.id,
+              candidate_id: i.candidate_id,
+              candidateName: i.candidateName,
+              candidateEmail: i.candidateEmail,
+              position: i.position,
+              department: i.department,
+              type: i.type,
+              date: i.date,
+              interviewer: i.interviewer || "Unassigned",
+              result,
+              score: rawScore,
+              feedback: i.feedback,
+              recommendation: i.recommendation,
+              notes: i.notes,
+              mode: i.mode
+            };
+          });
+
+          setHistoryList(formatted);
+        }
+      })
+      .catch(console.error);
+  }, []);
+
+  const uniqueInterviewers = useMemo(() => {
+    return Array.from(new Set(historyList.map(h => h.interviewer).filter(Boolean)));
+  }, [historyList]);
+
+  const uniqueTypes = useMemo(() => {
+    return Array.from(new Set(historyList.map(h => h.type).filter(Boolean)));
+  }, [historyList]);
 
   const filteredHistory = useMemo(() => {
-    return mockHistory.filter(item => {
-      const matchesSearch = item.candidateName.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                            item.position.toLowerCase().includes(searchTerm.toLowerCase());
+    return historyList.filter(item => {
+      const name = (item.candidateName || "").toLowerCase();
+      const pos = (item.position || "").toLowerCase();
+      const search = searchTerm.toLowerCase();
+
+      const matchesSearch = name.includes(search) || pos.includes(search);
       const matchesStatus = statusFilter === "all" || item.result.toLowerCase() === statusFilter.toLowerCase();
-      return matchesSearch && matchesStatus;
+      const matchesType = typeFilter === "all" || (item.type || "").toLowerCase() === typeFilter.toLowerCase();
+      const matchesInterviewer = interviewerFilter === "all" || (item.interviewer || "").toLowerCase() === interviewerFilter.toLowerCase();
+
+      return matchesSearch && matchesStatus && matchesType && matchesInterviewer;
     });
-  }, [searchTerm, statusFilter]);
+  }, [historyList, searchTerm, statusFilter, typeFilter, interviewerFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filteredHistory.length / perPage));
-  const paginated = filteredHistory.slice((page - 1) * perPage, page * perPage);
+  const safePage = Math.min(page, totalPages);
+  const paginated = filteredHistory.slice((safePage - 1) * perPage, safePage * perPage);
 
-  const totalInterviews = mockHistory.length;
-  const passed = mockHistory.filter(i => i.result === "Passed").length;
-  const failed = mockHistory.filter(i => i.result === "Failed").length;
-  const noShow = mockHistory.filter(i => i.result === "No Show").length;
+  const totalInterviews = historyList.length;
+  const passed = historyList.filter(i => i.result === "Passed").length;
+  const failed = historyList.filter(i => i.result === "Failed").length;
+  const noShow = historyList.filter(i => i.result === "No Show").length;
   
-  const scoredInterviews = mockHistory.filter(i => i.score !== null);
+  const scoredInterviews = historyList.filter(i => i.score !== null);
   const avgScore = scoredInterviews.length > 0 ? (scoredInterviews.reduce((acc, curr) => acc + (curr.score || 0), 0) / scoredInterviews.length).toFixed(1) : "0.0";
 
   const donutData = [
-    { name: "Passed", value: passed, color: "#10b981" },
-    { name: "Failed", value: failed, color: "#ef4444" },
-    { name: "No Show", value: noShow, color: "#f59e0b" },
+    { name: "Passed", value: passed || 1, color: "#10b981" },
+    { name: "Failed", value: failed || 0, color: "#ef4444" },
+    { name: "No Show", value: noShow || 0, color: "#f59e0b" },
   ];
+
+  const monthData = useMemo(() => {
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const counts: Record<string, number> = {};
+    months.forEach(m => counts[m] = 0);
+
+    historyList.forEach(item => {
+      if (item.date) {
+        const d = new Date(item.date);
+        const m = months[d.getMonth()];
+        if (m) counts[m] = (counts[m] || 0) + 1;
+      }
+    });
+
+    return months.map(name => ({ name, count: counts[name] || 0 })).filter(m => m.count > 0 || ["Jan", "Feb", "Mar", "Apr", "May", "Jun"].includes(m.name)).slice(0, 6);
+  }, [historyList]);
+
+  const handleExportExcel = () => {
+    const csvContent = "data:text/csv;charset=utf-8," +
+      ["Candidate,Position,Type,Date,Interviewer,Result,Score,Recommendation"]
+        .concat(filteredHistory.map(i => `"${i.candidateName}","${i.position}","${i.type}","${new Date(i.date).toLocaleDateString()}","${i.interviewer}","${i.result}","${i.score || 'N/A'}","${i.recommendation || 'N/A'}"`))
+        .join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `Interview_History_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success("Interview History exported to CSV successfully!");
+  };
+
+  const handleExportPDF = () => {
+    window.print();
+  };
 
   return (
     <div className="space-y-6 pb-10">
-      {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Interview History</h1>
-          <p className="text-[13px] text-slate-500 mt-1">
+      {/* Top Banner (Signature Dark Teal / Cyan Gradient) */}
+      <div className="relative overflow-hidden rounded-[28px] bg-gradient-to-r from-[#000C22] via-[#0B2524] to-[#0D2823] shadow-lg border border-teal-900/40 p-8 sm:p-10 text-white flex flex-col xl:flex-row items-start xl:items-center justify-between gap-6">
+        <div className="relative z-10 flex flex-col justify-center max-w-xl">
+          <h1 className="text-3xl sm:text-4xl font-black tracking-tight mb-2 text-white">Interview History</h1>
+          <p className="text-[#60C042] text-[14px] sm:text-[15px] font-medium leading-relaxed">
             Complete record of all past interviews, evaluation scores, and historical hiring analytics.
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <Button variant="outline" className="h-10 rounded-xl font-bold border-slate-200 text-slate-600 bg-white">
-            <Download className="w-4 h-4 mr-2" />
-            Export to Excel
+        <div className="relative z-10 flex flex-wrap items-center gap-4 self-stretch xl:self-auto justify-between xl:justify-end">
+          <div className="relative w-full sm:w-[280px]">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-teal-300/70" />
+            <Input
+              placeholder="Search candidate, role..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 h-11 w-full bg-white/10 text-[13px] text-white placeholder:text-teal-200/60 rounded-xl border border-white/20 focus-visible:bg-white/15 focus-visible:ring-1 focus-visible:ring-teal-400 transition-all shadow-sm"
+            />
+          </div>
+          <Button
+            asChild
+            className="h-11 px-5 text-[13px] font-bold btn-primary hover:opacity-95 text-white transition-all rounded-xl shadow-md"
+          >
+            <Link to="/interviews/upcoming">
+              <Calendar className="mr-1.5 h-4 w-4" /> Upcoming
+            </Link>
           </Button>
-          <Button variant="outline" className="h-10 rounded-xl font-bold border-slate-200 text-slate-600 bg-white">
-            <Download className="w-4 h-4 mr-2" />
-            Export to PDF
-          </Button>
+          <div className="shrink-0 group cursor-pointer hidden sm:block">
+            <span className="text-7xl drop-shadow-2xl inline-block origin-bottom hover:animate-bounce cursor-default select-none">
+              📊
+            </span>
+          </div>
         </div>
       </div>
 
       {/* Top Stats */}
-      <div className="flex flex-wrap gap-4">
-        <TopStat title="Total Conducted" value={totalInterviews} icon={Briefcase} tone="bg-blue-50 text-blue-600" borderTone="border-blue-500" />
-        <TopStat title="Passed" value={passed} icon={CheckCircle2} tone="bg-emerald-50 text-emerald-600" borderTone="border-emerald-500" />
-        <TopStat title="Failed" value={failed} icon={XCircle} tone="bg-red-50 text-red-600" borderTone="border-red-500" />
-        <TopStat title="No Show" value={noShow} icon={AlertCircle} tone="bg-amber-50 text-amber-600" borderTone="border-amber-500" />
-        <TopStat title="Average Score" value={`${avgScore}/10`} icon={Star} tone="bg-purple-50 text-purple-600" borderTone="border-purple-500" />
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+        <TopStat title="Total Conducted" value={totalInterviews} icon={Briefcase} theme="blue" trendLabel="all completed" />
+        <TopStat title="Passed" value={passed} icon={CheckCircle2} theme="emerald" trendLabel="cleared rounds" />
+        <TopStat title="Failed" value={failed} icon={XCircle} theme="rose" trendLabel="rejected" />
+        <TopStat title="No Show" value={noShow} icon={AlertCircle} theme="amber" trendLabel="candidate absent" />
+        <TopStat title="Average Score" value={`${avgScore}/10`} icon={Star} theme="purple" trendLabel="aggregate rating" />
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 items-start">
         {/* Left Area: Filters & Table */}
         <div className="xl:col-span-3 space-y-4">
           <Card className="p-3 bg-white border-border/50 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] rounded-3xl">
-            <div className="flex flex-wrap gap-3 items-center">
-              <div className="relative flex-1 min-w-[200px]">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-                <Input
-                  placeholder="Search candidate or position..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-9 h-9 text-xs bg-slate-50 border-slate-200 rounded-lg"
-                />
+            <div className="flex flex-wrap gap-3 items-center justify-between">
+              <div className="flex flex-wrap gap-3 items-center flex-1">
+                <div className="relative flex-1 min-w-[200px]">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+                  <Input
+                    placeholder="Search candidate or position..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-9 h-9 text-xs bg-slate-50 border-slate-200 rounded-lg"
+                  />
+                </div>
+
+                <select
+                  className="h-9 w-[130px] rounded-lg border border-slate-200 bg-white px-3 text-xs shadow-sm font-semibold text-slate-700"
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                >
+                  <option value="all">All Results</option>
+                  <option value="passed">Passed</option>
+                  <option value="failed">Failed</option>
+                  <option value="no show">No Show</option>
+                </select>
+
+                <select
+                  className="h-9 w-[130px] rounded-lg border border-slate-200 bg-white px-3 text-xs shadow-sm font-semibold text-slate-700"
+                  value={typeFilter}
+                  onChange={(e) => setTypeFilter(e.target.value)}
+                >
+                  <option value="all">All Types</option>
+                  {uniqueTypes.map(t => (
+                    <option key={t} value={t.toLowerCase()}>{t}</option>
+                  ))}
+                </select>
+
+                <select
+                  className="h-9 w-[130px] rounded-lg border border-slate-200 bg-white px-3 text-xs shadow-sm font-semibold text-slate-700"
+                  value={interviewerFilter}
+                  onChange={(e) => setInterviewerFilter(e.target.value)}
+                >
+                  <option value="all">All Interviewers</option>
+                  {uniqueInterviewers.map(i => (
+                    <option key={i} value={i.toLowerCase()}>{i}</option>
+                  ))}
+                </select>
               </div>
 
-              <select
-                className="h-9 w-[130px] rounded-lg border border-slate-200 bg-white px-3 text-xs shadow-sm font-semibold text-slate-700"
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-              >
-                <option value="all">All Results</option>
-                <option value="passed">Passed</option>
-                <option value="failed">Failed</option>
-                <option value="no show">No Show</option>
-              </select>
-
-              <select
-                className="h-9 w-[130px] rounded-lg border border-slate-200 bg-white px-3 text-xs shadow-sm font-semibold text-slate-700"
-              >
-                <option value="all">All Types</option>
-                <option value="technical">Technical</option>
-                <option value="hr">HR</option>
-              </select>
-
-              <select
-                className="h-9 w-[130px] rounded-lg border border-slate-200 bg-white px-3 text-xs shadow-sm font-semibold text-slate-700"
-              >
-                <option value="all">All Interviewers</option>
-                <option value="john doe">John Doe</option>
-                <option value="sarah smith">Sarah Smith</option>
-              </select>
-
-              <Button
-                variant="outline"
-                className="h-9 text-xs font-semibold rounded-lg bg-white border-slate-200"
-              >
-                <Filter className="mr-1.5 h-3.5 w-3.5" /> Filters
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleExportExcel}
+                  className="h-9 rounded-lg font-bold border-slate-200 text-slate-600 bg-white hover:bg-slate-50 text-xs"
+                >
+                  <Download className="w-3.5 h-3.5 mr-1.5" />
+                  Excel
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleExportPDF}
+                  className="h-9 rounded-lg font-bold border-slate-200 text-slate-600 bg-white hover:bg-slate-50 text-xs"
+                >
+                  <Download className="w-3.5 h-3.5 mr-1.5" />
+                  PDF
+                </Button>
+              </div>
             </div>
           </Card>
 
@@ -229,10 +463,23 @@ export default function InterviewsHistory() {
                   {paginated.map((inv) => (
                     <tr key={inv.id} className="hover:bg-slate-50 transition-colors">
                       <td className="px-4 py-3">
-                        <div className="font-bold text-slate-900 text-[12px]">{inv.candidateName}</div>
+                        {inv.candidate_id ? (
+                          <Link to={`/candidates/${inv.candidate_id}`} className="font-bold text-slate-900 text-[12px] hover:text-blue-600 cursor-pointer block">
+                            {inv.candidateName}
+                          </Link>
+                        ) : (
+                          <div 
+                            onClick={() => setViewItem(inv)} 
+                            className="font-bold text-slate-900 text-[12px] hover:text-blue-600 cursor-pointer"
+                          >
+                            {inv.candidateName}
+                          </div>
+                        )}
+                        <div className="text-slate-500 text-[10px] mt-0.5">{inv.candidateEmail || inv.department}</div>
                       </td>
                       <td className="px-4 py-3">
                         <div className="font-bold text-slate-700">{inv.position}</div>
+                        <div className="text-slate-500 text-[10px]">{inv.department}</div>
                       </td>
                       <td className="px-4 py-3">
                         <span className="font-medium text-slate-700 bg-slate-100 px-2 py-0.5 rounded-full">
@@ -245,7 +492,7 @@ export default function InterviewsHistory() {
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1.5">
                           <div className="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-[8px] font-bold text-slate-600">
-                            {inv.interviewer.charAt(0)}
+                            {(inv.interviewer || "U").charAt(0)}
                           </div>
                           <span className="font-medium text-slate-700">{inv.interviewer}</span>
                         </div>
@@ -264,7 +511,12 @@ export default function InterviewsHistory() {
                       </td>
                       <td className="px-4 py-3 text-right">
                         <div className="flex items-center justify-end gap-1.5">
-                          <Button variant="outline" size="sm" className="h-7 text-[10px] font-bold border-slate-200 text-slate-600 hover:bg-slate-50">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="h-7 text-[10px] font-bold border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-blue-600"
+                            onClick={() => setViewItem(inv)}
+                          >
                             <Eye className="w-3.5 h-3.5 mr-1" /> View Details
                           </Button>
                         </div>
@@ -285,8 +537,8 @@ export default function InterviewsHistory() {
             {/* Pagination Footer */}
             <div className="flex items-center justify-between p-4 border-t border-slate-100 bg-white">
               <div className="text-[11px] font-medium text-slate-500">
-                Showing {Math.min(filteredHistory.length, (page - 1) * perPage + 1)} to{" "}
-                {Math.min(filteredHistory.length, page * perPage)} of {filteredHistory.length} interviews
+                Showing {Math.min(filteredHistory.length, (safePage - 1) * perPage + 1)} to{" "}
+                {Math.min(filteredHistory.length, safePage * perPage)} of {filteredHistory.length} interviews
               </div>
               <div className="flex items-center gap-1">
                 <Button
@@ -294,18 +546,18 @@ export default function InterviewsHistory() {
                   size="icon"
                   className="h-7 w-7 rounded border-slate-200"
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={page === 1}
+                  disabled={safePage === 1}
                 >
                   <ChevronRight className="h-3.5 w-3.5 rotate-180" />
                 </Button>
                 {Array.from({ length: totalPages }).map((_, i) => (
                   <Button
                     key={i}
-                    variant={page === i + 1 ? "default" : "ghost"}
+                    variant={safePage === i + 1 ? "default" : "ghost"}
                     size="icon"
                     className={cn(
                       "h-7 w-7 rounded text-[11px] font-bold",
-                      page === i + 1 ? "bg-indigo-600 text-white" : "text-slate-600",
+                      safePage === i + 1 ? "bg-indigo-600 text-white" : "text-slate-600",
                     )}
                     onClick={() => setPage(i + 1)}
                   >
@@ -317,7 +569,7 @@ export default function InterviewsHistory() {
                   size="icon"
                   className="h-7 w-7 rounded border-slate-200"
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={page === totalPages}
+                  disabled={safePage === totalPages}
                 >
                   <ChevronRight className="h-3.5 w-3.5" />
                 </Button>
@@ -387,6 +639,92 @@ export default function InterviewsHistory() {
           </Card>
         </div>
       </div>
+
+      {/* View Interview Details Modal */}
+      <Dialog open={!!viewItem} onOpenChange={(open) => !open && setViewItem(null)}>
+        <DialogContent className="max-w-lg rounded-2xl p-6 bg-white shadow-xl">
+          <DialogHeader className="pb-3 border-b border-slate-100">
+            <DialogTitle className="text-base font-extrabold text-slate-900 flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-indigo-600" />
+              Interview Evaluation Record
+            </DialogTitle>
+          </DialogHeader>
+
+          {viewItem && (
+            <div className="space-y-4 pt-1">
+              <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-black text-sm">
+                    {(viewItem.candidateName || "C").charAt(0)}
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-slate-900">{viewItem.candidateName}</h4>
+                    <p className="text-xs text-slate-500">{viewItem.position} • {viewItem.department}</p>
+                  </div>
+                </div>
+                {viewItem.candidate_id && (
+                  <Link 
+                    to={`/candidates/${viewItem.candidate_id}`}
+                    className="text-xs font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1 bg-white px-2.5 py-1.5 rounded-lg border border-indigo-100 shadow-xs"
+                  >
+                    Profile <ExternalLink className="w-3 h-3" />
+                  </Link>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 text-xs">
+                <div className="p-3 rounded-xl border border-slate-100 bg-white">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Interview Round</span>
+                  <span className="font-bold text-slate-800 text-[13px]">{viewItem.type}</span>
+                </div>
+
+                <div className="p-3 rounded-xl border border-slate-100 bg-white">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Interviewer</span>
+                  <span className="font-bold text-slate-800 text-[13px]">{viewItem.interviewer || "Unassigned"}</span>
+                </div>
+
+                <div className="p-3 rounded-xl border border-slate-100 bg-white">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Conducted Date</span>
+                  <div className="font-bold text-slate-800">
+                    {new Date(viewItem.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-xl border border-slate-100 bg-white">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Outcome & Recommendation</span>
+                  <span className={cn("inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 font-bold text-[11px] border ring-1 ring-inset", getResultBadge(viewItem.result))}>
+                    {viewItem.result} {viewItem.recommendation ? `(${viewItem.recommendation})` : ''}
+                  </span>
+                </div>
+              </div>
+
+              {viewItem.score !== null && viewItem.score !== undefined && (
+                <div className="p-3 rounded-xl border border-slate-100 bg-white text-xs flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-slate-600">Evaluation Score</span>
+                  <span className="font-black text-slate-900 text-sm">{viewItem.score} / 10</span>
+                </div>
+              )}
+
+              {viewItem.feedback && (
+                <div className="p-3 rounded-xl border border-slate-100 bg-slate-50 text-xs">
+                  <span className="text-[10px] font-bold text-slate-400 block uppercase mb-1">Feedback & Notes</span>
+                  <p className="text-slate-700 leading-relaxed">{viewItem.feedback}</p>
+                </div>
+              )}
+
+              <div className="flex justify-end pt-2 border-t border-slate-100">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setViewItem(null)}
+                  className="px-5 py-2 text-xs font-bold rounded-xl"
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

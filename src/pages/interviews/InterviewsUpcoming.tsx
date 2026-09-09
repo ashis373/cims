@@ -1,8 +1,10 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { API_BASE_URL } from "@/config/api";
+import { getAuthHeaders } from "@/services/candidate-api";
 import {
   Select,
   SelectContent,
@@ -30,40 +32,144 @@ import {
   CalendarDays,
   Video,
   MapPin,
+  BellRing,
+  ExternalLink,
+  Mail,
+  Phone,
+  User,
   MessageSquareWarning,
-  ChevronRight,
-  BellRing
+  ChevronRight
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
 
 interface TopStatProps {
   title: string;
   value: number | string;
-  icon: any;
-  tone: string;
-  borderTone: string;
+  pct?: number;
+  icon: React.ElementType;
+  theme: 'blue' | 'emerald' | 'purple' | 'amber' | 'cyan' | 'rose' | 'teal' | 'zinc' | 'orange';
+  trendLabel?: string;
 }
 
-function TopStat({ title, value, icon: Icon, tone, borderTone }: TopStatProps) {
+function TopStat({ title, value, pct, icon: Icon, theme, trendLabel }: TopStatProps) {
+  const styles = {
+    blue: { 
+      cardBg: "bg-blue-50/40",
+      badge: "bg-blue-50 text-blue-700 border-blue-100", 
+      border: "border-blue-200/70 hover:border-blue-400",
+      iconBg: "bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-blue-500/20", 
+      glow: "from-white to-transparent",
+      trendText: "text-blue-700 bg-white/80"
+    },
+    emerald: { 
+      cardBg: "bg-emerald-50/40",
+      badge: "bg-emerald-50 text-emerald-700 border-emerald-100", 
+      border: "border-emerald-200/70 hover:border-emerald-400",
+      iconBg: "bg-gradient-to-br from-[#42bc24] to-[#36961c] text-white shadow-emerald-500/20", 
+      glow: "from-white to-transparent",
+      trendText: "text-emerald-700 bg-white/80"
+    },
+    purple: { 
+      cardBg: "bg-purple-50/40",
+      badge: "bg-purple-50 text-purple-700 border-purple-100", 
+      border: "border-purple-200/70 hover:border-purple-400",
+      iconBg: "bg-gradient-to-br from-purple-500 to-indigo-600 text-white shadow-purple-500/20", 
+      glow: "from-white to-transparent",
+      trendText: "text-purple-700 bg-white/80"
+    },
+    amber: { 
+      cardBg: "bg-amber-50/40",
+      badge: "bg-amber-50 text-amber-700 border-amber-100", 
+      border: "border-amber-200/70 hover:border-amber-400",
+      iconBg: "bg-gradient-to-br from-amber-500 to-orange-500 text-white shadow-amber-500/20", 
+      glow: "from-white to-transparent",
+      trendText: "text-amber-700 bg-white/80"
+    },
+    cyan: { 
+      cardBg: "bg-cyan-50/40",
+      badge: "bg-cyan-50 text-cyan-700 border-cyan-100", 
+      border: "border-cyan-200/70 hover:border-cyan-400",
+      iconBg: "bg-gradient-to-br from-cyan-500 to-teal-600 text-white shadow-cyan-500/20", 
+      glow: "from-white to-transparent",
+      trendText: "text-cyan-700 bg-white/80"
+    },
+    rose: { 
+      cardBg: "bg-rose-50/40",
+      badge: "bg-rose-50 text-rose-700 border-rose-100", 
+      border: "border-rose-200/70 hover:border-rose-400",
+      iconBg: "bg-gradient-to-br from-rose-500 to-red-600 text-white shadow-rose-500/20", 
+      glow: "from-white to-transparent",
+      trendText: "text-rose-700 bg-white/80"
+    },
+    teal: { 
+      cardBg: "bg-teal-50/40",
+      badge: "bg-teal-50 text-teal-700 border-teal-100", 
+      border: "border-teal-200/70 hover:border-teal-400",
+      iconBg: "bg-gradient-to-br from-teal-500 to-emerald-600 text-white shadow-teal-500/20", 
+      glow: "from-white to-transparent",
+      trendText: "text-teal-700 bg-white/80"
+    },
+    zinc: { 
+      cardBg: "bg-slate-50/60",
+      badge: "bg-slate-100 text-slate-700 border-slate-200", 
+      border: "border-slate-300/70 hover:border-slate-400",
+      iconBg: "bg-gradient-to-br from-slate-600 to-slate-800 text-white shadow-slate-500/20", 
+      glow: "from-white to-transparent",
+      trendText: "text-slate-700 bg-white/80"
+    },
+    orange: { 
+      cardBg: "bg-orange-50/40",
+      badge: "bg-orange-50 text-orange-700 border-orange-100", 
+      border: "border-orange-200/70 hover:border-orange-400",
+      iconBg: "bg-gradient-to-br from-orange-500 to-amber-600 text-white shadow-orange-500/20", 
+      glow: "from-white to-transparent",
+      trendText: "text-orange-700 bg-white/80"
+    }
+  }[theme];
+
   return (
     <Card
       className={cn(
-        "p-5 bg-white shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] rounded-3xl relative overflow-hidden group border-t-[3px] flex-1 min-w-[160px]",
-        borderTone,
+        "relative overflow-hidden shadow-xs border rounded-xl flex-1 min-w-[150px] flex flex-col p-3.5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-sm group",
+        styles.cardBg,
+        styles.border
       )}
     >
-      <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-gradient-to-br from-transparent to-black/[0.02] rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500" />
-      <div className="flex items-start justify-between relative z-10">
-        <div>
-          <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-            {title}
+      <div className={cn("absolute top-0 right-0 -mt-3 -mr-3 w-20 h-20 bg-gradient-to-br to-transparent rounded-full blur-xl pointer-events-none opacity-60", styles.glow)} />
+      
+      <div className="flex items-start justify-between mb-1.5 relative z-10">
+        <div className="text-[10.5px] font-bold text-slate-500 uppercase tracking-wider pr-1.5 leading-tight truncate">
+          {title}
+        </div>
+        <div className={cn("p-1.5 rounded-lg shrink-0 shadow-xs", styles.iconBg)}>
+          <Icon className="w-3.5 h-3.5" />
+        </div>
+      </div>
+      
+      <div className="mt-auto relative z-10 pt-1">
+        <div className="text-2xl font-black tracking-tight text-slate-900 leading-none mb-1.5">
+          {value}
+        </div>
+        {pct !== undefined ? (
+          <div className="flex items-center gap-1.5 text-[9.5px] font-bold text-slate-400">
+            <span className={cn("inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded font-bold", styles.trendText)}>
+              +{pct}%
+            </span>
+            <span className="text-slate-400 font-medium truncate">this month</span>
           </div>
-          <div className="text-3xl font-black tracking-tight text-slate-900">{value}</div>
-        </div>
-        <div
-          className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl", tone)}
-        >
-          <Icon className="h-5 w-5" />
-        </div>
+        ) : trendLabel ? (
+          <div className="flex items-center gap-1.5 text-[9.5px] font-bold text-slate-400">
+            <span className={cn("inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded font-bold", styles.trendText)}>
+              {trendLabel}
+            </span>
+          </div>
+        ) : null}
       </div>
     </Card>
   );
@@ -98,43 +204,89 @@ export default function InterviewsUpcoming() {
   const [searchTerm, setSearchTerm] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [interviewerFilter, setInterviewerFilter] = useState("all");
+  const [interviewsList, setInterviewsList] = useState<any[]>(mockInterviews);
+  const [selectedInterview, setSelectedInterview] = useState<any | null>(null);
+  const [isViewOpen, setIsViewOpen] = useState(false);
+
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/candidates/interviews.php`, {
+      credentials: 'include',
+      headers: getAuthHeaders(false)
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          setInterviewsList(data);
+        }
+      })
+      .catch(console.error);
+  }, []);
 
   const filteredInterviews = useMemo(() => {
-    return mockInterviews.filter(inv => {
-      const matchesSearch = inv.candidateName.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                            inv.position.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesType = typeFilter === "all" || inv.type.toLowerCase() === typeFilter.toLowerCase();
-      const matchesInterviewer = interviewerFilter === "all" || inv.interviewer.toLowerCase() === interviewerFilter.toLowerCase();
+    return interviewsList.filter(inv => {
+      const name = (inv.candidateName || "").toLowerCase();
+      const pos = (inv.position || "").toLowerCase();
+      const type = (inv.type || "").toLowerCase();
+      const interviewer = (inv.interviewer || "").toLowerCase();
+      const search = searchTerm.toLowerCase();
+
+      const matchesSearch = name.includes(search) || pos.includes(search);
+      const matchesType = typeFilter === "all" || type.includes(typeFilter.toLowerCase());
+      const matchesInterviewer = interviewerFilter === "all" || interviewer.includes(interviewerFilter.toLowerCase());
       return matchesSearch && matchesType && matchesInterviewer;
     });
-  }, [searchTerm, typeFilter, interviewerFilter]);
+  }, [interviewsList, searchTerm, typeFilter, interviewerFilter]);
 
   // Derive Stats
-  const totalScheduled = mockInterviews.length;
-  const todaysInterviews = mockInterviews.filter(i => new Date(i.date).toDateString() === new Date().toDateString()).length;
-  const thisWeek = mockInterviews.length; // mock
-  const feedbackPending = 3; // mock
-  const cancelled = 1; // mock
+  const totalScheduled = interviewsList.length;
+  const todaysInterviews = interviewsList.filter(i => i.date && new Date(i.date).toDateString() === new Date().toDateString()).length;
+  const thisWeek = interviewsList.length;
+  const feedbackPending = interviewsList.filter(i => !i.feedback).length;
+  const cancelled = interviewsList.filter(i => i.status === "Cancelled").length;
 
   return (
     <div className="space-y-6 pb-10">
-      {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Upcoming Interviews</h1>
-          <p className="text-[13px] text-slate-500 mt-1">
-            Manage your scheduled interviews, view today's timeline, and track pending confirmations.
+      {/* Top Banner (Signature Dark Teal / Cyan Gradient) */}
+      <div className="relative overflow-hidden rounded-[28px] bg-gradient-to-r from-[#000C22] via-[#0B2524] to-[#0D2823] shadow-lg border border-teal-900/40 p-8 sm:p-10 text-white flex flex-col xl:flex-row items-start xl:items-center justify-between gap-6">
+        <div className="relative z-10 flex flex-col justify-center max-w-xl">
+          <h1 className="text-3xl sm:text-4xl font-black tracking-tight mb-2 text-white">Upcoming Interviews</h1>
+          <p className="text-[#60C042] text-[14px] sm:text-[15px] font-medium leading-relaxed">
+            Manage your scheduled interviews, view today's timeline, and track candidate evaluations.
           </p>
+        </div>
+        <div className="relative z-10 flex flex-wrap items-center gap-4 self-stretch xl:self-auto justify-between xl:justify-end">
+          <div className="relative w-full sm:w-[280px]">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-teal-300/70" />
+            <Input
+              placeholder="Search candidate, role..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 h-11 w-full bg-white/10 text-[13px] text-white placeholder:text-teal-200/60 rounded-xl border border-white/20 focus-visible:bg-white/15 focus-visible:ring-1 focus-visible:ring-teal-400 transition-all shadow-sm"
+            />
+          </div>
+          <Button
+            asChild
+            className="h-11 px-5 text-[13px] font-bold btn-primary hover:opacity-95 text-white transition-all rounded-xl shadow-md"
+          >
+            <Link to="/calendar">
+              <Calendar className="mr-1.5 h-4 w-4" /> View Calendar
+            </Link>
+          </Button>
+          <div className="shrink-0 group cursor-pointer hidden sm:block">
+            <span className="text-7xl drop-shadow-2xl inline-block origin-bottom hover:animate-bounce cursor-default select-none">
+              🎯
+            </span>
+          </div>
         </div>
       </div>
 
       {/* Top Stats */}
-      <div className="flex flex-wrap gap-4">
-        <TopStat title="Total Scheduled" value={totalScheduled} icon={Calendar} tone="bg-blue-50 text-blue-600" borderTone="border-blue-500" />
-        <TopStat title="Today's Interviews" value={todaysInterviews} icon={Clock} tone="bg-indigo-50 text-indigo-600" borderTone="border-indigo-500" />
-        <TopStat title="This Week" value={thisWeek} icon={CalendarDays} tone="bg-purple-50 text-purple-600" borderTone="border-purple-500" />
-        <TopStat title="Feedback Pending" value={feedbackPending} icon={MessageSquareWarning} tone="bg-amber-50 text-amber-600" borderTone="border-amber-500" />
-        <TopStat title="Cancelled" value={cancelled} icon={XCircle} tone="bg-red-50 text-red-500" borderTone="border-red-500" />
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+        <TopStat title="Total Scheduled" value={totalScheduled} icon={Calendar} theme="blue" trendLabel="all rounds" />
+        <TopStat title="Today's Interviews" value={todaysInterviews} icon={Clock} theme="emerald" trendLabel="active today" />
+        <TopStat title="This Week" value={thisWeek} icon={CalendarDays} theme="purple" trendLabel="scheduled" />
+        <TopStat title="Feedback Pending" value={feedbackPending} icon={MessageSquareWarning} theme="amber" trendLabel="needs action" />
+        <TopStat title="Cancelled" value={cancelled} icon={XCircle} theme="rose" trendLabel="total cancelled" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
@@ -203,9 +355,18 @@ export default function InterviewsUpcoming() {
                     return (
                       <tr key={inv.id} className="hover:bg-slate-50 transition-colors">
                         <td className="px-4 py-3">
-                          <div className="font-bold text-slate-900 text-[12px] hover:text-blue-600 cursor-pointer">
-                            {inv.candidateName}
-                          </div>
+                          {inv.candidate_id ? (
+                            <Link to={`/candidates/${inv.candidate_id}`} className="font-bold text-slate-900 text-[12px] hover:text-blue-600 transition-colors block">
+                              {inv.candidateName}
+                            </Link>
+                          ) : (
+                            <div 
+                              onClick={() => { setSelectedInterview(inv); setIsViewOpen(true); }}
+                              className="font-bold text-slate-900 text-[12px] hover:text-blue-600 cursor-pointer"
+                            >
+                              {inv.candidateName}
+                            </div>
+                          )}
                           <div className="text-slate-500 text-[10px] mt-0.5">{inv.candidateEmail}</div>
                         </td>
                         <td className="px-4 py-3">
@@ -246,7 +407,16 @@ export default function InterviewsUpcoming() {
                         </td>
                         <td className="px-4 py-3 text-right">
                           <div className="flex items-center justify-end gap-1">
-                            <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-blue-600">
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-7 w-7 text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                              title="View interview details"
+                              onClick={() => {
+                                setSelectedInterview(inv);
+                                setIsViewOpen(true);
+                              }}
+                            >
                               <Eye className="h-3.5 w-3.5" />
                             </Button>
                             <DropdownMenu>
@@ -288,7 +458,7 @@ export default function InterviewsUpcoming() {
               Today's Schedule
             </h3>
             <div className="space-y-4 relative before:absolute before:inset-0 before:ml-2 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-slate-200 before:to-transparent">
-              {mockInterviews.filter(i => new Date(i.date).toDateString() === new Date().toDateString()).map((inv, idx) => (
+              {interviewsList.filter(i => i.date && new Date(i.date).toDateString() === new Date().toDateString()).map((inv, idx) => (
                 <div key={idx} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
                   <div className="flex items-center justify-center w-4 h-4 rounded-full border-2 border-white bg-indigo-500 shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2" />
                   <div className="w-[calc(100%-2rem)] md:w-[calc(50%-1.5rem)] p-3 rounded-xl bg-slate-50/80 border border-slate-100 shadow-sm">
@@ -344,6 +514,135 @@ export default function InterviewsUpcoming() {
           </Card>
         </div>
       </div>
+
+      {/* View Interview Details Dialog */}
+      <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
+        <DialogContent className="max-w-md rounded-2xl p-6 bg-white shadow-xl">
+          <DialogHeader className="pb-3 border-b border-slate-100">
+            <div className="flex items-center justify-between pr-6">
+              <DialogTitle className="text-base font-extrabold text-slate-900 flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-blue-600" />
+                Interview Details
+              </DialogTitle>
+            </div>
+          </DialogHeader>
+
+          {selectedInterview && (
+            <div className="space-y-4 pt-1">
+              {/* Candidate Card */}
+              <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-black text-sm">
+                    {(selectedInterview.candidateName || "C").charAt(0)}
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-slate-900">{selectedInterview.candidateName}</h4>
+                    <p className="text-xs text-slate-500">{selectedInterview.candidateEmail || selectedInterview.position}</p>
+                  </div>
+                </div>
+                {selectedInterview.candidate_id && (
+                  <Link 
+                    to={`/candidates/${selectedInterview.candidate_id}`}
+                    className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 bg-white px-2.5 py-1.5 rounded-lg border border-blue-100 shadow-xs"
+                  >
+                    Profile <ExternalLink className="w-3 h-3" />
+                  </Link>
+                )}
+              </div>
+
+              {/* Grid details */}
+              <div className="grid grid-cols-2 gap-3 text-xs">
+                <div className="p-3 rounded-xl border border-slate-100 bg-white">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Interview Round</span>
+                  <span className="font-bold text-slate-800 text-[13px]">{selectedInterview.type || "Technical"}</span>
+                </div>
+
+                <div className="p-3 rounded-xl border border-slate-100 bg-white">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Status</span>
+                  <span className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border", getStatusBadge(selectedInterview.status))}>
+                    {selectedInterview.status || "Scheduled"}
+                  </span>
+                </div>
+
+                <div className="p-3 rounded-xl border border-slate-100 bg-white">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Date & Time</span>
+                  <div className="font-bold text-slate-800">
+                    {new Date(selectedInterview.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                  </div>
+                  <div className="text-[11px] text-slate-500">
+                    {new Date(selectedInterview.date).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-xl border border-slate-100 bg-white">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Interviewer</span>
+                  <div className="font-bold text-slate-800">{selectedInterview.interviewer || "Not Assigned"}</div>
+                  <div className="text-[11px] text-slate-500 capitalize">{selectedInterview.mode || "Online"}</div>
+                </div>
+              </div>
+
+              {/* Position & Department */}
+              <div className="p-3 rounded-xl border border-slate-100 bg-slate-50/50 flex justify-between items-center text-xs">
+                <span className="font-semibold text-slate-500">Target Role:</span>
+                <span className="font-bold text-slate-800">{selectedInterview.position} {selectedInterview.department ? `(${selectedInterview.department})` : ''}</span>
+              </div>
+
+              {/* Meeting Link or Location */}
+              {selectedInterview.meeting_link && (
+                <div className="p-3 rounded-xl border border-blue-100 bg-blue-50/40 text-xs flex justify-between items-center">
+                  <div className="truncate mr-2">
+                    <span className="text-[10px] font-bold text-blue-600 block uppercase">Meeting / Room Link</span>
+                    <a 
+                      href={selectedInterview.meeting_link.startsWith('http') ? selectedInterview.meeting_link : `https://${selectedInterview.meeting_link}`} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="font-semibold text-blue-700 underline truncate block"
+                    >
+                      {selectedInterview.meeting_link}
+                    </a>
+                  </div>
+                  <Video className="w-4 h-4 text-blue-500 shrink-0" />
+                </div>
+              )}
+
+              {/* Notes */}
+              {selectedInterview.notes && (
+                <div className="p-3 rounded-xl border border-slate-100 bg-slate-50 text-xs">
+                  <span className="text-[10px] font-bold text-slate-400 block uppercase mb-1">Notes</span>
+                  <p className="text-slate-700">{selectedInterview.notes}</p>
+                </div>
+              )}
+
+              {/* Feedback if available */}
+              {selectedInterview.feedback && (
+                <div className="p-3 rounded-xl border border-emerald-100 bg-emerald-50/40 text-xs">
+                  <span className="text-[10px] font-bold text-emerald-700 block uppercase mb-1">Feedback</span>
+                  <p className="text-slate-700">{selectedInterview.feedback}</p>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex gap-2 pt-2">
+                {selectedInterview.candidate_id && (
+                  <Link 
+                    to={`/candidates/${selectedInterview.candidate_id}`}
+                    className="flex-1 py-2 px-3 text-center bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs transition-colors"
+                  >
+                    View Full Candidate Profile
+                  </Link>
+                )}
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsViewOpen(false)}
+                  className="px-4 py-2 text-xs font-bold rounded-xl"
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

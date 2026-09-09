@@ -5,7 +5,12 @@ header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization');
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { exit(0); }
 
+header('Content-Type: application/json');
 require_once '../db.php';
+
+$isProduction = (defined('ENVIRONMENT') && ENVIRONMENT === 'production') || 
+                (isset($_ENV['APP_ENV']) && $_ENV['APP_ENV'] === 'production') || 
+                (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on');
 
 // Try to get token from Authorization header or cookie
 $jwt = null;
@@ -25,13 +30,25 @@ if ($jwt) {
             $stmt = $conn->prepare("INSERT IGNORE INTO cims_revoked_tokens (token_signature) VALUES (?)");
             $stmt->execute([$signature]);
         } catch (Exception $e) {
-            // Ignore if it's already revoked or DB error
+            // Log the error instead of silently ignoring it
+            error_log("Logout Error - Failed to revoke token signature: " . $e->getMessage());
         }
     }
 }
 
-// Delete the JWT auth token cookie
-setcookie("auth_token", "", time() - 3600, "/", "", false, true);
+// Delete the JWT auth token cookie (matching domain, path, and secure settings)
+if (PHP_VERSION_ID >= 70300) {
+    setcookie("auth_token", "", [
+        'expires' => time() - 3600,
+        'path' => '/',
+        'domain' => '',
+        'secure' => $isProduction,
+        'httponly' => true,
+        'samesite' => 'Lax'
+    ]);
+} else {
+    setcookie("auth_token", "", time() - 3600, "/", "", $isProduction, true);
+}
 
 // If using any legacy sessions, destroy them
 if (session_status() === PHP_SESSION_NONE) {
@@ -40,10 +57,21 @@ if (session_status() === PHP_SESSION_NONE) {
 $_SESSION = array();
 if (ini_get("session.use_cookies")) {
     $params = session_get_cookie_params();
-    setcookie(session_name(), '', time() - 42000,
-        $params["path"], $params["domain"],
-        $params["secure"], $params["httponly"]
-    );
+    if (PHP_VERSION_ID >= 70300) {
+        setcookie(session_name(), '', [
+            'expires' => time() - 42000,
+            'path' => $params["path"],
+            'domain' => $params["domain"],
+            'secure' => $isProduction || $params["secure"],
+            'httponly' => $params["httponly"],
+            'samesite' => $params["samesite"] ?? 'Lax'
+        ]);
+    } else {
+        setcookie(session_name(), '', time() - 42000,
+            $params["path"], $params["domain"],
+            $isProduction || $params["secure"], $params["httponly"]
+        );
+    }
 }
 session_destroy();
 

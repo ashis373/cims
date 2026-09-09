@@ -8,6 +8,7 @@ import Login from "@/pages/auth/Login";
 import { PrivateRoute } from "@/components/auth/PrivateRoute";
 import { ScrollToTop } from "@/components/common/ScrollToTop";
 import { Loader2 } from "lucide-react";
+import { Toaster } from "@/components/ui/sonner";
 
 // Lazily loaded components
 const Dashboard = lazy(() => import("@/pages/dashboard/Dashboard"));
@@ -76,6 +77,7 @@ function App() {
       <ThemeProvider>
         <BrowserRouter basename={import.meta.env.MODE === 'production' ? '/cims' : '/'}>
           <ScrollToTop />
+          <Toaster position="bottom-right" richColors closeButton />
           <Suspense fallback={
             <div className="flex min-h-screen items-center justify-center">
               <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
@@ -120,6 +122,7 @@ function App() {
                       <Route path="/candidates/:id/edit" element={<CandidateFormPage />} />
 
                       {/* Interviews */}
+                      <Route path="/interviews" element={<InterviewsUpcoming />} />
                       <Route path="/interviews/upcoming" element={<InterviewsUpcoming />} />
                       <Route path="/interviews/feedback-pending" element={<InterviewsFeedback />} />
                       <Route path="/interviews/history" element={<InterviewsHistory />} />

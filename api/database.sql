@@ -404,6 +404,22 @@ CREATE TABLE `cims_recruitment_settings` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `cims_login_attempts`
+--
+
+CREATE TABLE `cims_login_attempts` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `ip_address` varchar(45) NOT NULL,
+  `email` varchar(100) NOT NULL,
+  `attempt_time` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `idx_ip_attempt` (`ip_address`, `attempt_time`),
+  KEY `idx_email_attempt` (`email`, `attempt_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `cims_rejection_reasons`
 --
 

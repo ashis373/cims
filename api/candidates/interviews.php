@@ -16,6 +16,51 @@ else if ($method === 'DELETE') $required_permission = 'can_delete';
 else $required_permission = 'can_view';
 require_once '../auth_middleware.php';
 require_permission('interviews');
+
+if ($method === 'GET') {
+    try {
+        $stmt = $conn->prepare("
+            SELECT 
+                i.id,
+                i.application_id,
+                i.type,
+                i.interviewDate as date,
+                i.end_time,
+                i.mode,
+                i.interviewers as interviewer,
+                i.meeting_link,
+                i.location,
+                i.notes,
+                i.status,
+                i.feedback,
+                i.rating,
+                i.recommendation,
+                i.comments,
+                i.created_by,
+                i.created_at,
+                a.candidate_id,
+                a.role_applied as position,
+                a.department,
+                a.stage,
+                c.name as candidateName,
+                c.email as candidateEmail,
+                c.phone as candidatePhone
+            FROM cims_candidate_interviews i
+            JOIN cims_applications a ON i.application_id = a.id
+            JOIN cims_candidates c ON a.candidate_id = c.id
+            ORDER BY i.interviewDate DESC
+        ");
+        $stmt->execute();
+        $list = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        echo json_encode($list);
+        exit;
+    } catch (Throwable $e) {
+        http_response_code(500);
+        echo json_encode(["error" => $e->getMessage()]);
+        exit;
+    }
+}
+
 if ($method === 'POST') {
     $data = json_decode(file_get_contents("php://input"), true);
     if (!$data || !isset($data['application_id']) || !isset($data['candidate_id'])) {
@@ -104,12 +149,34 @@ if ($method === 'POST') {
             $stmt = $conn->prepare($sql);
             $stmt->execute($params);
         }
-        // Log History
         $now = date('Y-m-d H:i:s');
+        // If interview status is Completed, ensure application stage updates to Interview Completed
+        if (isset($data['status'])) {
+            if ($data['status'] === 'Completed') {
+                $stmtGetApp = $conn->prepare("SELECT application_id FROM cims_candidate_interviews WHERE id = ?");
+                $stmtGetApp->execute([$id]);
+                $appId = $stmtGetApp->fetchColumn();
+                if ($appId) {
+                    $stmtUpdApp = $conn->prepare("UPDATE cims_applications SET stage = 'Interview Completed' WHERE id = ?");
+                    $stmtUpdApp->execute([$appId]);
+                }
+            } elseif ($data['status'] === 'Scheduled' || $data['status'] === 'Rescheduled') {
+                $stmtGetApp = $conn->prepare("SELECT application_id FROM cims_candidate_interviews WHERE id = ?");
+                $stmtGetApp->execute([$id]);
+                $appId = $stmtGetApp->fetchColumn();
+                if ($appId) {
+                    $stmtUpdApp = $conn->prepare("UPDATE cims_applications SET stage = 'Interview Scheduled' WHERE id = ?");
+                    $stmtUpdApp->execute([$appId]);
+                }
+            }
+            $stmtUpdC = $conn->prepare("UPDATE cims_candidates SET updatedAt = ? WHERE id = ?");
+            $stmtUpdC->execute([$now, $data['candidate_id']]);
+        }
+        // Log History
         $statusStr = $data['status'] ?? 'Updated';
         $stmtHist = $conn->prepare("INSERT INTO cims_candidate_history (candidate_id, action, details, createdAt, userId) VALUES (?, ?, ?, ?, ?)");
-        $details = "Interview " . $statusStr . (isset($data['feedback']) ? " - Feedback added" : "");
-        $stmtHist->execute([$data['candidate_id'], 'Interview Updated', $details, $now, isset($payload['user_id']) ? $payload['user_id'] : null]);
+        $details = "Interview " . $statusStr . (isset($data['feedback']) ? " - Feedback: " . substr($data['feedback'], 0, 50) : "");
+        $stmtHist->execute([$data['candidate_id'], 'Interview ' . $statusStr, $details, $now, isset($payload['user_id']) ? $payload['user_id'] : null]);
         $conn->commit();
         echo json_encode(["success" => true, "message" => "Interview updated successfully"]);
     } catch (Throwable $e) {
@@ -121,4 +188,3 @@ if ($method === 'POST') {
     }
 }
 ?>
-
