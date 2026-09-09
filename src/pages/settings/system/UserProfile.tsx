@@ -28,7 +28,9 @@ export default function UserProfile() {
     profile_photo: ""
   });
 
+  const [currentPassword, setCurrentPassword] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [departments, setDepartments] = useState<any[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -82,12 +84,18 @@ export default function UserProfile() {
     if (!profile.designation?.trim()) return toast.error("Designation is required");
     if (!profile.department?.trim()) return toast.error("Department is required");
 
-    if (password && password.length < 6) return toast.error("New Password must be at least 6 characters long");
+    // Password validation if any password field is touched
+    if (password || currentPassword || confirmPassword) {
+      if (!currentPassword) return toast.error("Current password is required to change password");
+      if (!password) return toast.error("New password is required");
+      if (password.length < 6) return toast.error("New Password must be at least 6 characters long");
+      if (password !== confirmPassword) return toast.error("New Password and Confirm Password do not match");
+    }
 
     setIsSaving(true);
     try {
       // Save Profile info
-      await fetch(`${API_BASE_URL}/system/profile.php?action=profile`, {
+      const profileRes = await fetch(`${API_BASE_URL}/system/profile.php?action=profile`, {
         credentials: 'include',
         method: 'PUT',
         headers: getAuthHeaders(true),
@@ -100,20 +108,40 @@ export default function UserProfile() {
         })
       });
 
+      const profileData = await profileRes.json();
+      if (profileData.status !== "success") {
+        toast.error(profileData.message || "Failed to save profile");
+        return;
+      }
+
       // Save Password if set
       if (password) {
-        await fetch(`${API_BASE_URL}/system/profile.php?action=password`, {
+        const passRes = await fetch(`${API_BASE_URL}/system/profile.php?action=password`, {
           credentials: 'include',
           method: 'PUT',
           headers: getAuthHeaders(true),
-          body: JSON.stringify({ new_password: password })
+          body: JSON.stringify({ 
+            current_password: currentPassword,
+            new_password: password 
+          })
         });
+
+        const passData = await passRes.json();
+        if (passData.status !== "success") {
+          toast.error(passData.message || "Failed to update password");
+          return;
+        }
+
+        setCurrentPassword("");
         setPassword("");
+        setConfirmPassword("");
+        toast.success("Profile and password updated successfully");
+        return;
       }
 
       toast.success("Profile saved successfully");
     } catch (err) {
-      toast.error("Failed to save profile");
+      toast.error("An error occurred while saving profile");
     } finally {
       setIsSaving(false);
     }
@@ -401,11 +429,23 @@ export default function UserProfile() {
             <div className="grid grid-cols-1 gap-5 pt-4 border-t border-slate-100 flex-1">
               <div className="space-y-2">
                 <label className="text-[12px] font-bold text-slate-700">Current Password</label>
-                <Input type="password" placeholder="••••••••" className="h-10 rounded-xl bg-slate-50 border-slate-200" />
+                <Input 
+                  type="password" 
+                  value={currentPassword} 
+                  onChange={e => setCurrentPassword(e.target.value)} 
+                  placeholder="••••••••" 
+                  className="h-10 rounded-xl bg-slate-50 border-slate-200" 
+                />
               </div>
               <div className="space-y-2">
                 <label className="text-[12px] font-bold text-slate-700">New Password</label>
-                <Input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" className="h-10 rounded-xl bg-slate-50 border-slate-200" />
+                <Input 
+                  type="password" 
+                  value={password} 
+                  onChange={e => setPassword(e.target.value)} 
+                  placeholder="••••••••" 
+                  className="h-10 rounded-xl bg-slate-50 border-slate-200" 
+                />
                 {password && (
                   <div className="mt-2 space-y-1.5">
                     <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden flex gap-1">
@@ -421,7 +461,13 @@ export default function UserProfile() {
               </div>
               <div className="space-y-2">
                 <label className="text-[12px] font-bold text-slate-700">Confirm Password</label>
-                <Input type="password" placeholder="••••••••" className="h-10 rounded-xl bg-slate-50 border-slate-200" />
+                <Input 
+                  type="password" 
+                  value={confirmPassword} 
+                  onChange={e => setConfirmPassword(e.target.value)} 
+                  placeholder="••••••••" 
+                  className="h-10 rounded-xl bg-slate-50 border-slate-200" 
+                />
               </div>
             </div>
           </Card>

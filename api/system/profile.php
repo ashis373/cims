@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 if (isset($_SERVER['HTTP_ORIGIN'])) { header("Access-Control-Allow-Origin: {$_SERVER['HTTP_ORIGIN']}"); }
 header('Access-Control-Allow-Credentials: true');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
@@ -44,11 +44,36 @@ try {
             echo json_encode(["status" => "success", "message" => "Profile updated"]);
         } 
         elseif ($action === 'password') {
-            // In a real app, verify current password first
-            $hashed = password_hash($data['new_password'], PASSWORD_BCRYPT);
+            $current_password = $data['current_password'] ?? '';
+            $new_password = $data['new_password'] ?? '';
+
+            if (empty($current_password) || empty($new_password)) {
+                http_response_code(400);
+                echo json_encode(["status" => "error", "message" => "Current password and new password are required"]);
+                exit;
+            }
+
+            if (strlen($new_password) < 6) {
+                http_response_code(400);
+                echo json_encode(["status" => "error", "message" => "New password must be at least 6 characters long"]);
+                exit;
+            }
+
+            // Fetch stored hash
+            $stmt = $conn->prepare("SELECT password_hashed FROM cims_users WHERE id = ?");
+            $stmt->execute([$user_id]);
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$user || !password_verify($current_password, $user['password_hashed'])) {
+                http_response_code(400);
+                echo json_encode(["status" => "error", "message" => "Incorrect current password"]);
+                exit;
+            }
+
+            $hashed = password_hash($new_password, PASSWORD_BCRYPT);
             $stmt = $conn->prepare("UPDATE cims_users SET password_hashed=?, last_password_change=CURRENT_TIMESTAMP WHERE id=?");
             $stmt->execute([$hashed, $user_id]);
-            echo json_encode(["status" => "success", "message" => "Password updated"]);
+            echo json_encode(["status" => "success", "message" => "Password updated successfully"]);
         } 
         elseif ($action === 'notifications') {
             $prefs = json_encode($data['preferences']);
