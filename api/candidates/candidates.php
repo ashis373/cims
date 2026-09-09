@@ -124,16 +124,49 @@ if ($method === 'GET') {
             $cid = $row['id'];
             
             $apps = $appsByCand[$cid] ?? [];
+            $cInterviews = $intByCand[$cid] ?? [];
+            $hasFinalRoundCompleted = false;
+            $hasAnyInterviewScheduled = false;
+
+            foreach ($cInterviews as $civ) {
+                $civType = strtolower(trim($civ['type'] ?? ''));
+                $civStatus = $civ['status'] ?? '';
+                if ($civStatus === 'Completed' && ($civType === 'final round' || $civType === 'final')) {
+                    $hasFinalRoundCompleted = true;
+                }
+                if ($civStatus === 'Scheduled' || $civStatus === 'Rescheduled' || $civStatus === 'Completed') {
+                    $hasAnyInterviewScheduled = true;
+                }
+            }
+
             if (!empty($apps)) {
                 $latestApp = $apps[0];
-                $row['stage'] = $latestApp['stage'] ?? null;
+                $appStage = $latestApp['stage'] ?? null;
+
+                // Only move to 'Interview Completed' if the Final Round is completed
+                if ($hasFinalRoundCompleted && in_array($appStage, ['New Applicant', 'Shortlisted', 'HR Call Scheduled', 'Interview Scheduled'])) {
+                    $appStage = 'Interview Completed';
+                    try {
+                        $updAppStmt = $conn->prepare("UPDATE cims_applications SET stage = 'Interview Completed' WHERE id = ?");
+                        $updAppStmt->execute([$latestApp['id']]);
+                    } catch (Throwable $ignore) {}
+                } elseif (!$hasFinalRoundCompleted && $hasAnyInterviewScheduled && in_array($appStage, ['New Applicant', 'Shortlisted', 'HR Call Scheduled'])) {
+                    // Intermediate rounds (Technical, Practical, Managerial, HR Call) keep candidate in 'Interview Scheduled'
+                    $appStage = 'Interview Scheduled';
+                    try {
+                        $updAppStmt = $conn->prepare("UPDATE cims_applications SET stage = 'Interview Scheduled' WHERE id = ?");
+                        $updAppStmt->execute([$latestApp['id']]);
+                    } catch (Throwable $ignore) {}
+                }
+
+                $row['stage'] = $appStage;
                 $row['role'] = $latestApp['role_applied'] ?? null;
                 $row['department'] = $latestApp['department'] ?? null;
                 $row['source'] = $latestApp['source'] ?? null;
                 $row['recruiter'] = $latestApp['recruiter'] ?? null;
                 $row['appliedAt'] = $latestApp['appliedAt'] ?? null;
             } else {
-                $row['stage'] = null;
+                $row['stage'] = $hasFinalRoundCompleted ? 'Interview Completed' : ($hasAnyInterviewScheduled ? 'Interview Scheduled' : null);
                 $row['role'] = null;
                 $row['department'] = null;
                 $row['source'] = null;
@@ -143,7 +176,38 @@ if ($method === 'GET') {
 
             $row['tags'] = json_decode($row['tags'] ?? '[]');
             $row['skills'] = json_decode($row['skills'] ?? '[]');
-            $row['interviews'] = json_decode($row['interviews'] ?? '[]');
+            $dbInterviews = json_decode($row['interviews'] ?? '[]');
+            $candInterviewsList = $intByCand[$cid] ?? [];
+
+            // If cims_candidates.interviews json is empty but candidate has interviews in cims_candidate_interviews, map them
+            if (empty($dbInterviews) && !empty($candInterviewsList)) {
+                $mappedInterviews = [];
+                foreach ($candInterviewsList as $ivRow) {
+                    $mappedInterviews[] = [
+                        'id' => (string)$ivRow['id'],
+                        'application_id' => (string)($ivRow['application_id'] ?? ''),
+                        'date' => $ivRow['interviewDate'] ?? $ivRow['date'] ?? '',
+                        'type' => $ivRow['type'] ?? 'HR Call',
+                        'end_time' => $ivRow['end_time'] ?? null,
+                        'mode' => $ivRow['mode'] ?? 'Online',
+                        'interviewers' => $ivRow['interviewers'] ?? $ivRow['interviewer'] ?? '',
+                        'meeting_link' => $ivRow['meeting_link'] ?? '',
+                        'location' => $ivRow['location'] ?? '',
+                        'notes' => $ivRow['notes'] ?? '',
+                        'status' => $ivRow['status'] ?? 'Scheduled',
+                        'feedback' => $ivRow['feedback'] ?? null,
+                        'rating' => isset($ivRow['rating']) ? (int)$ivRow['rating'] : null,
+                        'recommendation' => $ivRow['recommendation'] ?? null,
+                        'result' => $ivRow['result'] ?? null,
+                        'comments' => $ivRow['comments'] ?? null,
+                        'created_by' => $ivRow['created_by'] ?? 'Admin',
+                        'created_at' => $ivRow['created_at'] ?? $ivRow['createdAt'] ?? null
+                    ];
+                }
+                $row['interviews'] = $mappedInterviews;
+            } else {
+                $row['interviews'] = $dbInterviews;
+            }
             
             $row['activity'] = $histByCand[$cid] ?? [];
             if (empty($row['activity']) && isset($row['appliedAt'])) {

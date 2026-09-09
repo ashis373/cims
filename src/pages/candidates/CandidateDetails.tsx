@@ -13,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ScheduleInterviewDialog } from "@/components/feature/ScheduleInterviewDialog";
 import {
   ArrowLeft,
   ChevronRight,
@@ -210,73 +211,18 @@ export default function CandidateProfile() {
   };
 
   const [scheduleInterviewOpen, setScheduleInterviewOpen] = useState(false);
-  const [editingInterviewId, setEditingInterviewId] = useState<string | null>(null);
-  const [interviewForm, setInterviewForm] = useState({
-    type: "HR Round",
-    date: "",
-    end_time: "",
-    mode: "Online",
-    interviewers: "",
-    meeting_link: "",
-    location: "",
-    notes: "",
-    status: "Scheduled",
-    feedback: "",
-    rating: 0,
-    recommendation: "",
-    comments: "",
-  });
-
-  const handleSaveInterview = async () => {
-    if (!interviewForm.date || !interviewForm.interviewers) {
-      toast.error("Please fill in all required fields (Date, Interviewers)");
-      return;
-    }
-
-    try {
-      if (editingInterviewId) {
-        await updateInterview(candidate.id, editingInterviewId, interviewForm);
-        toast.success("Interview updated");
-      } else {
-        await addInterview(candidate.id, interviewForm);
-        toast.success("Interview scheduled");
-      }
-      setScheduleInterviewOpen(false);
-      setEditingInterviewId(null);
-      setInterviewForm({
-        type: "HR Round", date: "", end_time: "", mode: "Online", interviewers: "", meeting_link: "", location: "", notes: "", status: "Scheduled", feedback: "", rating: 0, recommendation: "", comments: ""
-      });
-      setTimeout(() => window.location.reload(), 1000);
-    } catch (e: any) {
-      toast.error(e.message || "Failed to save interview");
-    }
-  };
+  const [interviewDialogMode, setInterviewDialogMode] = useState<"schedule" | "complete" | "update">("schedule");
+  const [selectedInterviewForDialog, setSelectedInterviewForDialog] = useState<any | null>(null);
 
   const openAddInterview = () => {
-    setInterviewForm({
-      type: "HR Round", date: "", end_time: "", mode: "Online", interviewers: "", meeting_link: "", location: "", notes: "", status: "Scheduled", feedback: "", rating: 0, recommendation: "", comments: ""
-    });
-    setEditingInterviewId(null);
+    setSelectedInterviewForDialog(null);
+    setInterviewDialogMode("schedule");
     setScheduleInterviewOpen(true);
   };
 
   const openEditInterview = (iv: any) => {
-    setInterviewForm({
-      type: iv.type || "HR Round",
-      date: iv.interviewDate ? iv.interviewDate.substring(0, 16) : "",
-      end_time: iv.end_time ? iv.end_time.substring(0, 16) : "",
-      mode: iv.mode || "Online",
-      interviewers: iv.interviewers || "",
-      meeting_link: iv.meeting_link || "",
-      location: iv.location || "",
-      notes: iv.notes || "",
-      status: iv.status || "Scheduled",
-      feedback: iv.feedback || "",
-      rating: iv.rating || 0,
-      recommendation: iv.recommendation || "",
-      comments: iv.comments || ""
-    });
-    setEditingInterviewId(iv.id);
+    setSelectedInterviewForDialog(iv);
+    setInterviewDialogMode(iv.status === "Completed" ? "complete" : "update");
     setScheduleInterviewOpen(true);
   };
 
@@ -308,6 +254,17 @@ export default function CandidateProfile() {
   };
 
   const handleStageSelect = (v: string) => {
+    if (v === "Interview Scheduled") {
+      openAddInterview();
+      return;
+    }
+    if (v === "Interview Completed") {
+      const latest = candidate.interviewsList?.[0] || null;
+      setSelectedInterviewForDialog(latest);
+      setInterviewDialogMode("complete");
+      setScheduleInterviewOpen(true);
+      return;
+    }
     setStage(candidate.id, v as Stage);
     toast.success(`Status updated to ${v}`);
   };
@@ -1558,86 +1515,17 @@ export default function CandidateProfile() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <Dialog open={scheduleInterviewOpen} onOpenChange={setScheduleInterviewOpen}>
-        <DialogContent aria-describedby={undefined} className="max-w-xl bg-white border-0 shadow-2xl rounded-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-lg font-bold text-slate-900">
-              {editingInterviewId ? "Update Interview" : "Schedule Interview"}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="grid grid-cols-2 gap-4 mt-4">
-            <div className="space-y-2">
-              <Label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Interview Stage</Label>
-              <Select value={interviewForm.type} onValueChange={(v) => setInterviewForm({ ...interviewForm, type: v })}>
-                <SelectTrigger className="h-9 text-[12px] font-semibold"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {INTERVIEW_TYPES.map(t => <SelectItem key={t} value={t} className="text-[12px]">{t}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Status</Label>
-              <Select value={interviewForm.status} onValueChange={(v) => setInterviewForm({ ...interviewForm, status: v })}>
-                <SelectTrigger className="h-9 text-[12px] font-semibold"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Scheduled" className="text-[12px]">Scheduled</SelectItem>
-                  <SelectItem value="Completed" className="text-[12px]">Completed</SelectItem>
-                  <SelectItem value="Cancelled" className="text-[12px]">Cancelled</SelectItem>
-                  <SelectItem value="Rescheduled" className="text-[12px]">Rescheduled</SelectItem>
-                  <SelectItem value="No Show" className="text-[12px]">No Show</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Interview Date *</Label>
-              <Input type="date" value={interviewForm.date} onChange={e => setInterviewForm({ ...interviewForm, date: e.target.value })} className="h-9 text-[12px] font-semibold" />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Mode</Label>
-              <Select value={interviewForm.mode} onValueChange={(v) => setInterviewForm({ ...interviewForm, mode: v })}>
-                <SelectTrigger className="h-9 text-[12px] font-semibold"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Online" className="text-[12px]">Online</SelectItem>
-                  <SelectItem value="Offline" className="text-[12px]">Offline</SelectItem>
-                  <SelectItem value="Phone" className="text-[12px]">Phone</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Interviewer(s)</Label>
-              <Input value={interviewForm.interviewers} onChange={e => setInterviewForm({ ...interviewForm, interviewers: e.target.value })} placeholder="e.g. Rahul, Neha" className="h-9 text-[12px] font-semibold" />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Meeting Link / Location</Label>
-              <Input value={interviewForm.meeting_link} onChange={e => setInterviewForm({ ...interviewForm, meeting_link: e.target.value })} placeholder="Zoom link or Office room" className="h-9 text-[12px] font-semibold" />
-            </div>
-
-            {editingInterviewId && interviewForm.status === 'Completed' && (
-              <>
-                <div className="col-span-2 space-y-2 pt-4 border-t border-slate-100">
-                  <Label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Feedback Summary</Label>
-                  <Input value={interviewForm.feedback} onChange={e => setInterviewForm({ ...interviewForm, feedback: e.target.value })} placeholder="Brief feedback summary" className="h-9 text-[12px] font-semibold" />
-                </div>
-                <div className="col-span-2 space-y-2">
-                  <Label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Interviewer Comments</Label>
-                  <Textarea value={interviewForm.comments} onChange={e => setInterviewForm({ ...interviewForm, comments: e.target.value })} placeholder="Detailed comments" className="h-20 text-[12px] font-semibold resize-none" />
-                </div>
-              </>
-            )}
-
-            <div className="col-span-2 space-y-2 mt-2">
-              <Label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Internal Notes</Label>
-              <Textarea value={interviewForm.notes} onChange={e => setInterviewForm({ ...interviewForm, notes: e.target.value })} placeholder="Notes for HR..." className="h-16 text-[12px] font-semibold resize-none" />
-            </div>
-          </div>
-          <div className="flex justify-end gap-3 mt-6">
-            <Button variant="outline" onClick={() => setScheduleInterviewOpen(false)} className="text-[11px] font-bold">Cancel</Button>
-            <Button onClick={handleSaveInterview} className="bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold">
-              {editingInterviewId ? "Save Changes" : "Schedule Interview"}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Unified Schedule / Update / Complete Interview Dialog */}
+      <ScheduleInterviewDialog
+        open={scheduleInterviewOpen}
+        onOpenChange={setScheduleInterviewOpen}
+        candidate={candidate}
+        mode={interviewDialogMode}
+        existingInterview={selectedInterviewForDialog}
+        onSuccess={() => {
+          setTimeout(() => window.location.reload(), 500);
+        }}
+      />
 
       <Dialog open={sendEmailOpen} onOpenChange={setSendEmailOpen}>
         <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden bg-white rounded-2xl border-0 shadow-2xl">

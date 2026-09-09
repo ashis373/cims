@@ -7,14 +7,21 @@ import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, MoreVertical, MapPin, CalendarDays } from "lucide-react";
+import { Plus, MoreVertical, MapPin, CalendarDays, Lock } from "lucide-react";
 import { API_BASE_URL } from "@/config/api";
+import { ScheduleInterviewDialog } from "@/components/feature/ScheduleInterviewDialog";
 
 export function KanbanBoard({ candidates }: { candidates: Candidate[] }) {
   const { setStage } = useAts();
   const [dragId, setDragId] = useState<string | null>(null);
   const [overStage, setOverStage] = useState<Stage | null>(null);
   const [searchParams] = useSearchParams();
+
+  // Modal dialog states for controlled interview stages
+  const [interviewDialogOpen, setInterviewDialogOpen] = useState(false);
+  const [interviewDialogCandidate, setInterviewDialogCandidate] = useState<Candidate | null>(null);
+  const [interviewDialogMode, setInterviewDialogMode] = useState<"schedule" | "complete" | "update">("schedule");
+  const [interviewDialogExisting, setInterviewDialogExisting] = useState<any | null>(null);
 
   const activeStatus = searchParams.get("status")?.toLowerCase();
 
@@ -23,8 +30,85 @@ export function KanbanBoard({ candidates }: { candidates: Candidate[] }) {
     return PIPELINE_STAGES.filter((s) => s.toLowerCase().includes(activeStatus));
   }, [activeStatus]);
 
+  // Strict recruitment funnel progression hierarchy (0-indexed)
+  const STAGE_ORDER: Record<string, number> = {
+    "New Applicant": 0,
+    "Shortlisted": 1,
+    "HR Call Scheduled": 2,
+    "Interview Scheduled": 3,
+    "Interview Completed": 4,
+    "Offer Released": 5,
+    "Offer Accepted": 6,
+    "Offer Declined": 6,
+    "Offer Expired": 6,
+    "Joined": 7,
+    "Rejected": 8,
+    "No Show": 8,
+    "On Hold": 8,
+  };
+
+  const handleCandidateDrop = async (targetStage: Stage) => {
+    if (!dragId) return;
+    const currentDragId = dragId;
+    const c = candidates.find((x) => x.id === currentDragId);
+    setDragId(null);
+    setOverStage(null);
+
+    if (!c || c.stage === targetStage) return;
+
+    // RULE 1: Disallow moving terminal/decision stages backwards
+    if (c.stage === "Joined" || c.stage === "Offer Accepted") {
+      toast.error(`Cannot move candidate out of ${c.stage}`);
+      return;
+    }
+
+    const currentRank = STAGE_ORDER[c.stage] ?? 0;
+    const targetRank = STAGE_ORDER[targetStage] ?? 0;
+
+    // RULE 2: No drag backward to previous stages (Reject/No Show/On Hold are allowed exits)
+    const isSpecialExit = ["Rejected", "No Show", "On Hold"].includes(targetStage);
+    if (!isSpecialExit && targetRank < currentRank) {
+      toast.error(`Cannot move candidate backward from "${c.stage}" to "${targetStage}"`);
+      return;
+    }
+
+    // RULE 3: Interview Completed cannot be dragged back to Interview Scheduled or prior
+    if (c.stage === "Interview Completed" && targetRank <= STAGE_ORDER["Interview Completed"] && !isSpecialExit) {
+      toast.error(`Interview Completed candidates can only proceed forward to Offer Released or Rejected.`);
+      return;
+    }
+
+    // RULE 4: Dropping into "Interview Scheduled" -> Open Schedule Interview Modal Form
+    if (targetStage === "Interview Scheduled") {
+      const latestInterview = c.interviewsList?.[0] || c.interviews?.[0] || null;
+      setInterviewDialogCandidate(c);
+      setInterviewDialogMode("schedule");
+      setInterviewDialogExisting(latestInterview);
+      setInterviewDialogOpen(true);
+      return;
+    }
+
+    // RULE 5: Dropping into "Interview Completed" -> Open Update Interview Modal (Completed)
+    if (targetStage === "Interview Completed") {
+      const latestInterview = c.interviewsList?.[0] || c.interviews?.[0] || null;
+      setInterviewDialogCandidate(c);
+      setInterviewDialogMode("complete");
+      setInterviewDialogExisting(latestInterview);
+      setInterviewDialogOpen(true);
+      return;
+    }
+
+    // Normal forward progression stages proceed with direct drag/drop update
+    try {
+      await setStage(currentDragId, targetStage);
+      toast.success(`Candidate moved forward to ${targetStage}`);
+    } catch (e) {
+      // Handled by store
+    }
+  };
+
   return (
-    <div className="flex gap-4 overflow-x-auto pb-2 pt-8 scrollbar-thin -scale-y-100 min-h-[400px]">
+    <div className="flex gap-4 overflow-x-auto pb-4 pt-4 scrollbar-thin min-h-[400px]">
       {visibleStages.map((stage) => {
         const items = candidates.filter((c) => c.stage === stage);
         const stageColorClass = STAGE_COLORS[stage] || "bg-slate-500/12 text-slate-700";
@@ -35,38 +119,31 @@ export function KanbanBoard({ candidates }: { candidates: Candidate[] }) {
           <div
             key={stage}
             className={cn(
-              "-scale-y-100 flex w-[280px] shrink-0 flex-col rounded-xl border border-transparent transition-all duration-300",
+              "flex w-[280px] shrink-0 flex-col rounded-xl border border-transparent transition-all duration-300 select-none",
               overStage === stage
                 ? cn(stageColorClass, "border-opacity-30 ring-2 ring-opacity-20")
                 : "bg-transparent",
             )}
             onDragOver={(e) => {
               e.preventDefault();
+              e.dataTransfer.dropEffect = "move";
               setOverStage(stage);
             }}
             onDragLeave={() => setOverStage((s) => (s === stage ? null : s))}
-            onDrop={async () => {
-              if (dragId) {
-                const currentDragId = dragId;
-                const c = candidates.find((x) => x.id === currentDragId);
-                if (c && c.stage !== stage) {
-                  try {
-                    await setStage(currentDragId, stage);
-                    toast.success(`Candidate moved to ${stage}`);
-                  } catch (e) {
-                    // Error is handled and toasted by ats-store
-                  }
-                }
-              }
-              setDragId(null);
-              setOverStage(null);
-            }}
+            onDrop={() => handleCandidateDrop(stage)}
           >
             <div className="flex items-center justify-between px-3 py-3 mb-2">
-              <span className={cn("text-[13px] font-bold tracking-tight", textClass)}>{stage}</span>
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span className={cn("text-[13px] font-bold tracking-tight truncate", textClass)}>{stage}</span>
+                {(stage === "Interview Scheduled" || stage === "Interview Completed") && (
+                  <span title="Controlled interview stage - opening interview form on drop">
+                    <Lock className="w-3 h-3 text-slate-400 shrink-0 inline-block" />
+                  </span>
+                )}
+              </div>
               <Badge
                 className={cn(
-                  "text-[10px] font-bold px-2 py-0 hover:bg-opacity-80 rounded-full bg-white",
+                  "text-[10px] font-bold px-2 py-0 hover:bg-opacity-80 rounded-full bg-white shrink-0",
                   textClass,
                 )}
               >
@@ -87,20 +164,29 @@ export function KanbanBoard({ candidates }: { candidates: Candidate[] }) {
                   >
                     <Card
                       draggable
-                      onDragStart={() => setDragId(c.id)}
-                      onDragEnd={() => setDragId(null)}
+                      onDragStart={(e) => {
+                        e.stopPropagation();
+                        e.dataTransfer.setData("text/plain", c.id);
+                        e.dataTransfer.effectAllowed = "move";
+                        setDragId(c.id);
+                      }}
+                      onDragEnd={() => {
+                        setDragId(null);
+                        setOverStage(null);
+                      }}
                       className={cn(
-                        "cursor-grab active:cursor-grabbing p-4 bg-white border-border/50 hover:border-slate-300 transition-all shadow-[0_2px_8px_-4px_rgba(0,0,0,0.05)] rounded-2xl relative group",
-                        dragId === c.id && "opacity-40",
+                        "cursor-grab active:cursor-grabbing p-4 bg-white border-border/50 hover:border-slate-300 transition-all shadow-[0_2px_8px_-4px_rgba(0,0,0,0.05)] rounded-2xl relative group select-none",
+                        dragId === c.id && "opacity-40 ring-2 ring-primary/40",
                       )}
                     >
-                      <Link to={`/candidates/${c.id}`} className="block">
+                      <Link to={`/candidates/${c.id}`} draggable={false} className="block select-none pointer-events-auto">
                         <div className="flex items-center gap-2.5 mb-2">
                           {c.photo ? (
                             <img
                               src={`${API_BASE_URL}/../uploads/candidates/photos/${c.photo}`}
                               alt={c.name}
-                              className="h-9 w-9 rounded-full object-cover shrink-0 border border-slate-200"
+                              draggable={false}
+                              className="h-9 w-9 rounded-full object-cover shrink-0 border border-slate-200 pointer-events-none select-none"
                             />
                           ) : (
                             <div
@@ -175,6 +261,15 @@ export function KanbanBoard({ candidates }: { candidates: Candidate[] }) {
           </div>
         );
       })}
+
+      {/* Controlled Interview Stages Dialog (Schedule Interview / Update & Complete Interview) */}
+      <ScheduleInterviewDialog
+        open={interviewDialogOpen}
+        onOpenChange={setInterviewDialogOpen}
+        candidate={interviewDialogCandidate}
+        mode={interviewDialogMode}
+        existingInterview={interviewDialogExisting}
+      />
     </div>
   );
 }

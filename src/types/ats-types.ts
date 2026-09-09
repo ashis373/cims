@@ -48,7 +48,7 @@ export const DEPARTMENT_COLORS: Record<Department, string> = {
   "Business Development": "bg-emerald-500/12 text-emerald-700 dark:text-emerald-300 border-emerald-500/25",
 };
 
-export const INTERVIEW_TYPES = ["HR Call", "Technical", "Practical", "Managerial"] as const;
+export const INTERVIEW_TYPES = ["HR Call", "Technical", "Practical", "Managerial", "Final Round"] as const;
 export type InterviewType = (typeof INTERVIEW_TYPES)[number];
 
 export interface Interview {

@@ -35,6 +35,7 @@ if ($method === 'GET') {
                 i.feedback,
                 i.rating,
                 i.recommendation,
+                i.result,
                 i.comments,
                 i.created_by,
                 i.created_at,
@@ -73,16 +74,19 @@ if ($method === 'POST') {
         $conn->beginTransaction();
         $stmt = $conn->prepare("INSERT INTO cims_candidate_interviews (
             application_id, type, interviewDate, end_time, mode, interviewers, 
-            meeting_link, location, notes, status, created_by, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            meeting_link, location, notes, status, created_by, created_at,
+            feedback, rating, recommendation, result, comments
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
         $now = date('Y-m-d H:i:s');
         $date = !empty($data['date']) ? date('Y-m-d H:i:s', strtotime($data['date'])) : $now;
         $endTime = !empty($data['end_time']) ? date('Y-m-d H:i:s', strtotime($data['end_time'])) : null;
         $status = $data['status'] ?? 'Scheduled';
         $createdBy = $data['created_by'] ?? 'Admin';
+        $resultVal = $data['result'] ?? ($data['recommendation'] === 'Do Not Hire' ? 'Failed' : 'Passed');
+
         $stmt->execute([
             $data['application_id'],
-            $data['type'] ?? 'HR Round',
+            $data['type'] ?? 'HR Call',
             $date,
             $endTime,
             $data['mode'] ?? 'Online',
@@ -92,7 +96,12 @@ if ($method === 'POST') {
             $data['notes'] ?? '',
             $status,
             $createdBy,
-            $now
+            $now,
+            $data['feedback'] ?? null,
+            isset($data['rating']) ? (int)$data['rating'] : null,
+            $data['recommendation'] ?? null,
+            $resultVal,
+            $data['comments'] ?? null
         ]);
         $interviewId = $conn->lastInsertId();
         // Update candidate stage if it is New Applicant or Shortlisted
@@ -129,7 +138,7 @@ if ($method === 'POST') {
     $id = $_GET['id'];
     try {
         $conn->beginTransaction();
-        $fields = ['type', 'interviewDate', 'end_time', 'mode', 'interviewers', 'meeting_link', 'location', 'notes', 'status', 'feedback', 'rating', 'recommendation', 'comments'];
+        $fields = ['type', 'interviewDate', 'end_time', 'mode', 'interviewers', 'meeting_link', 'location', 'notes', 'status', 'feedback', 'rating', 'recommendation', 'result', 'comments'];
         $updateStrs = [];
         $params = [];
         foreach ($fields as $f) {
@@ -152,19 +161,24 @@ if ($method === 'POST') {
         $now = date('Y-m-d H:i:s');
         // If interview status is Completed, ensure application stage updates to Interview Completed
         if (isset($data['status'])) {
-            if ($data['status'] === 'Completed') {
-                $stmtGetApp = $conn->prepare("SELECT application_id FROM cims_candidate_interviews WHERE id = ?");
-                $stmtGetApp->execute([$id]);
-                $appId = $stmtGetApp->fetchColumn();
-                if ($appId) {
-                    $stmtUpdApp = $conn->prepare("UPDATE cims_applications SET stage = 'Interview Completed' WHERE id = ?");
-                    $stmtUpdApp->execute([$appId]);
-                }
-            } elseif ($data['status'] === 'Scheduled' || $data['status'] === 'Rescheduled') {
-                $stmtGetApp = $conn->prepare("SELECT application_id FROM cims_candidate_interviews WHERE id = ?");
-                $stmtGetApp->execute([$id]);
-                $appId = $stmtGetApp->fetchColumn();
-                if ($appId) {
+            $stmtGetApp = $conn->prepare("SELECT application_id, type FROM cims_candidate_interviews WHERE id = ?");
+            $stmtGetApp->execute([$id]);
+            $ivRow = $stmtGetApp->fetch(PDO::FETCH_ASSOC);
+            $appId = $ivRow['application_id'] ?? null;
+            $ivType = strtolower(trim($data['type'] ?? $ivRow['type'] ?? ''));
+
+            if ($appId) {
+                if ($data['status'] === 'Completed') {
+                    // Only move application stage to 'Interview Completed' if it's the Final Round
+                    if ($ivType === 'final round' || $ivType === 'final') {
+                        $stmtUpdApp = $conn->prepare("UPDATE cims_applications SET stage = 'Interview Completed' WHERE id = ?");
+                        $stmtUpdApp->execute([$appId]);
+                    } else {
+                        // Intermediate completed rounds (Technical, Practical, Managerial, HR Call) keep the candidate in 'Interview Scheduled'
+                        $stmtUpdApp = $conn->prepare("UPDATE cims_applications SET stage = 'Interview Scheduled' WHERE id = ?");
+                        $stmtUpdApp->execute([$appId]);
+                    }
+                } elseif ($data['status'] === 'Scheduled' || $data['status'] === 'Rescheduled') {
                     $stmtUpdApp = $conn->prepare("UPDATE cims_applications SET stage = 'Interview Scheduled' WHERE id = ?");
                     $stmtUpdApp->execute([$appId]);
                 }

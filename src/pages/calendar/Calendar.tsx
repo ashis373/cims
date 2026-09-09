@@ -15,45 +15,40 @@ interface CalEvent {
   role: string;
   type: string;
   stage: Stage;
+  interviewer?: string;
+  mode?: string;
+  status?: string;
 }
 
 function buildEvents(candidates: Candidate[], year: number, month: number): CalEvent[] {
   const events: CalEvent[] = [];
 
-  candidates.forEach((c, i) => {
-    if (c.interviews.length > 0) {
-      c.interviews.forEach((iv) => {
-        const d = new Date(iv.date);
-        if (d.getFullYear() === year && d.getMonth() === month) {
-          events.push({
-            id: iv.id,
-            date: d,
-            candidateId: c.id,
-            candidateName: c.name,
-            role: c.role,
-            type: iv.type,
-            stage: c.stage,
-          });
-        }
-      });
-      return;
-    }
+  candidates.forEach((c) => {
+    const candidateInterviews = (c.interviews && c.interviews.length > 0) 
+      ? c.interviews 
+      : (c.interviewsList && c.interviewsList.length > 0) 
+        ? c.interviewsList 
+        : [];
 
-    if (c.stage === "Interview Scheduled" || c.stage === "Interview Completed") {
-      const day = ((i * 7 + c.name.length) % 28) + 1;
-      const hour = 9 + (i % 7);
-      const d = new Date(year, month, day, hour, 0, 0);
-      const types = ["Online", "Phone", "In-person"];
-      events.push({
-        id: `${c.id}-scheduled`,
-        date: d,
-        candidateId: c.id,
-        candidateName: c.name,
-        role: c.role,
-        type: types[i % types.length],
-        stage: c.stage,
-      });
-    }
+    candidateInterviews.forEach((iv: any) => {
+      const dateStr = iv.date || iv.interviewDate;
+      if (!dateStr) return;
+      const d = new Date(dateStr);
+      if (!isNaN(d.getTime()) && d.getFullYear() === year && d.getMonth() === month) {
+        events.push({
+          id: String(iv.id || `${c.id}-${d.getTime()}`),
+          date: d,
+          candidateId: c.id,
+          candidateName: c.name,
+          role: c.role || "Candidate",
+          type: iv.type || "Interview",
+          stage: c.stage,
+          interviewer: iv.interviewers || iv.interviewer || "Unassigned",
+          mode: iv.mode || "Online",
+          status: iv.status || "Scheduled",
+        });
+      }
+    });
   });
 
   return events.sort((a, b) => a.date.getTime() - b.date.getTime());

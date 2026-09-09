@@ -45,6 +45,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
 
 interface TopStatProps {
   title: string;
@@ -200,6 +201,7 @@ export default function InterviewsHistory() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
   const [interviewerFilter, setInterviewerFilter] = useState("all");
+  const [dateFilter, setDateFilter] = useState("all");
   const [page, setPage] = useState(1);
   const perPage = 8;
   const [historyList, setHistoryList] = useState<any[]>(mockHistory);
@@ -214,13 +216,15 @@ export default function InterviewsHistory() {
       .then(data => {
         if (Array.isArray(data) && data.length > 0) {
           const formatted = data.map((i: any) => {
-            let result = "Passed";
-            if (i.status === "Cancelled" || i.status === "No Show") {
-              result = "No Show";
-            } else if (i.recommendation === "Do Not Hire" || (i.rating && Number(i.rating) < 3)) {
-              result = "Failed";
-            } else if (i.recommendation === "Hire" || i.recommendation === "Strong Hire" || (i.rating && Number(i.rating) >= 3)) {
-              result = "Passed";
+            let result = i.result;
+            if (!result) {
+              if (i.status === "Cancelled" || i.status === "No Show") {
+                result = "No Show";
+              } else if (i.recommendation === "Do Not Hire" || (i.rating && Number(i.rating) < 3)) {
+                result = "Failed";
+              } else {
+                result = "Passed";
+              }
             }
 
             const rawScore = i.rating ? Number(i.rating) * 2 : null;
@@ -234,13 +238,19 @@ export default function InterviewsHistory() {
               department: i.department,
               type: i.type,
               date: i.date,
+              end_time: i.end_time,
               interviewer: i.interviewer || "Unassigned",
               result,
               score: rawScore,
+              rating: i.rating,
               feedback: i.feedback,
+              comments: i.comments,
               recommendation: i.recommendation,
               notes: i.notes,
-              mode: i.mode
+              mode: i.mode,
+              meeting_link: i.meeting_link,
+              location: i.location,
+              status: i.status
             };
           });
 
@@ -259,19 +269,49 @@ export default function InterviewsHistory() {
   }, [historyList]);
 
   const filteredHistory = useMemo(() => {
-    return historyList.filter(item => {
-      const name = (item.candidateName || "").toLowerCase();
-      const pos = (item.position || "").toLowerCase();
-      const search = searchTerm.toLowerCase();
+    const today = new Date();
+    const todayStr = today.toDateString();
 
-      const matchesSearch = name.includes(search) || pos.includes(search);
-      const matchesStatus = statusFilter === "all" || item.result.toLowerCase() === statusFilter.toLowerCase();
-      const matchesType = typeFilter === "all" || (item.type || "").toLowerCase() === typeFilter.toLowerCase();
-      const matchesInterviewer = interviewerFilter === "all" || (item.interviewer || "").toLowerCase() === interviewerFilter.toLowerCase();
+    return historyList
+      .filter(item => {
+        const name = (item.candidateName || "").toLowerCase();
+        const pos = (item.position || "").toLowerCase();
+        const search = searchTerm.toLowerCase();
 
-      return matchesSearch && matchesStatus && matchesType && matchesInterviewer;
-    });
-  }, [historyList, searchTerm, statusFilter, typeFilter, interviewerFilter]);
+        const matchesSearch = name.includes(search) || pos.includes(search);
+        const matchesStatus = statusFilter === "all" || item.result.toLowerCase() === statusFilter.toLowerCase();
+        const matchesType = typeFilter === "all" || (item.type || "").toLowerCase() === typeFilter.toLowerCase();
+        const matchesInterviewer = interviewerFilter === "all" || (item.interviewer || "").toLowerCase() === interviewerFilter.toLowerCase();
+
+        let matchesDate = true;
+        if (dateFilter !== "all" && item.date) {
+          const itemDate = new Date(item.date);
+          if (dateFilter === "today") {
+            matchesDate = itemDate.toDateString() === todayStr;
+          } else if (dateFilter === "week") {
+            const diffDays = Math.abs((today.getTime() - itemDate.getTime()) / (1000 * 3600 * 24));
+            matchesDate = diffDays <= 7;
+          } else if (dateFilter === "month") {
+            matchesDate = itemDate.getMonth() === today.getMonth() && itemDate.getFullYear() === today.getFullYear();
+          }
+        }
+
+        return matchesSearch && matchesStatus && matchesType && matchesInterviewer && matchesDate;
+      })
+      .sort((a, b) => {
+        const isTodayA = a.date ? new Date(a.date).toDateString() === todayStr : false;
+        const isTodayB = b.date ? new Date(b.date).toDateString() === todayStr : false;
+
+        // 1. Prioritize Today's interviews at the very top
+        if (isTodayA && !isTodayB) return -1;
+        if (!isTodayA && isTodayB) return 1;
+
+        // 2. Otherwise sort by date descending (newest first)
+        const timeA = a.date ? new Date(a.date).getTime() : 0;
+        const timeB = b.date ? new Date(b.date).getTime() : 0;
+        return timeB - timeA;
+      });
+  }, [historyList, searchTerm, statusFilter, typeFilter, interviewerFilter, dateFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filteredHistory.length / perPage));
   const safePage = Math.min(page, totalPages);
@@ -419,6 +459,17 @@ export default function InterviewsHistory() {
                     <option key={i} value={i.toLowerCase()}>{i}</option>
                   ))}
                 </select>
+
+                <select
+                  className="h-9 w-[125px] rounded-lg border border-slate-200 bg-white px-3 text-xs shadow-sm font-semibold text-slate-700"
+                  value={dateFilter}
+                  onChange={(e) => setDateFilter(e.target.value)}
+                >
+                  <option value="all">All Dates</option>
+                  <option value="today">Today</option>
+                  <option value="week">This Week</option>
+                  <option value="month">This Month</option>
+                </select>
               </div>
 
               <div className="flex items-center gap-2">
@@ -486,8 +537,29 @@ export default function InterviewsHistory() {
                           {inv.type}
                         </span>
                       </td>
-                      <td className="px-4 py-3 font-bold text-slate-700">
-                        {new Date(inv.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                      <td className="px-4 py-3">
+                        <div className="font-bold text-slate-800 text-[12px] flex items-center gap-1.5">
+                          {(() => {
+                            if (!inv.date) return "-";
+                            const d = new Date(inv.date);
+                            const isToday = new Date().toDateString() === d.toDateString();
+                            return (
+                              <>
+                                <span>{d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
+                                {isToday && (
+                                  <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700">
+                                    Today
+                                  </span>
+                                )}
+                              </>
+                            );
+                          })()}
+                        </div>
+                        {inv.date && (
+                          <div className="text-slate-400 text-[10px] font-semibold mt-0.5">
+                            {new Date(inv.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </div>
+                        )}
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1.5">
@@ -672,45 +744,98 @@ export default function InterviewsHistory() {
                 )}
               </div>
 
+              {/* Comprehensive Database Fields Grid */}
               <div className="grid grid-cols-2 gap-3 text-xs">
                 <div className="p-3 rounded-xl border border-slate-100 bg-white">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Interview Round</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Interview Round (Type)</span>
                   <span className="font-bold text-slate-800 text-[13px]">{viewItem.type}</span>
                 </div>
 
                 <div className="p-3 rounded-xl border border-slate-100 bg-white">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Interviewer</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Interview Status</span>
+                  <Badge className={cn("text-[10px] font-bold uppercase", 
+                    viewItem.status === "Completed" ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
+                    viewItem.status === "Scheduled" ? "bg-blue-50 text-blue-700 border-blue-200" :
+                    "bg-slate-100 text-slate-700"
+                  )}>
+                    {viewItem.status || "Completed"}
+                  </Badge>
+                </div>
+
+                <div className="p-3 rounded-xl border border-slate-100 bg-white">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Interviewer(s)</span>
                   <span className="font-bold text-slate-800 text-[13px]">{viewItem.interviewer || "Unassigned"}</span>
                 </div>
 
                 <div className="p-3 rounded-xl border border-slate-100 bg-white">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Conducted Date</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Mode</span>
+                  <span className="font-bold text-slate-800 text-[13px]">{viewItem.mode || "Offline"}</span>
+                </div>
+
+                <div className="p-3 rounded-xl border border-slate-100 bg-white">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Interview Date & Time</span>
                   <div className="font-bold text-slate-800">
                     {new Date(viewItem.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                    {viewItem.date && ` at ${new Date(viewItem.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
                   </div>
                 </div>
 
                 <div className="p-3 rounded-xl border border-slate-100 bg-white">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Outcome & Recommendation</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">End Time</span>
+                  <div className="font-bold text-slate-800">
+                    {viewItem.end_time ? new Date(viewItem.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "—"}
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-xl border border-slate-100 bg-white">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Result & Recommendation</span>
                   <span className={cn("inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 font-bold text-[11px] border ring-1 ring-inset", getResultBadge(viewItem.result))}>
                     {viewItem.result} {viewItem.recommendation ? `(${viewItem.recommendation})` : ''}
                   </span>
                 </div>
-              </div>
 
-              {viewItem.score !== null && viewItem.score !== undefined && (
-                <div className="p-3 rounded-xl border border-slate-100 bg-white text-xs flex items-center justify-between">
-                  <span className="text-[11px] font-bold text-slate-600">Evaluation Score</span>
-                  <span className="font-black text-slate-900 text-sm">{viewItem.score} / 10</span>
+                <div className="p-3 rounded-xl border border-slate-100 bg-white">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Rating</span>
+                  <span className="font-bold text-amber-600 text-[13px]">
+                    {viewItem.rating ? `${'⭐'.repeat(viewItem.rating)} (${viewItem.rating}/5)` : `${viewItem.score || 8}/10`}
+                  </span>
                 </div>
-              )}
+
+                {(viewItem.meeting_link || viewItem.location) && (
+                  <div className="col-span-2 p-3 rounded-xl border border-slate-100 bg-white">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Meeting Link / Location</span>
+                    <span className="font-bold text-slate-800 text-[12px] break-all">{viewItem.meeting_link || viewItem.location}</span>
+                  </div>
+                )}
+              </div>
 
               {viewItem.feedback && (
                 <div className="p-3 rounded-xl border border-slate-100 bg-slate-50 text-xs">
-                  <span className="text-[10px] font-bold text-slate-400 block uppercase mb-1">Feedback & Notes</span>
-                  <p className="text-slate-700 leading-relaxed">{viewItem.feedback}</p>
+                  <span className="text-[10px] font-bold text-slate-400 block uppercase mb-1">Feedback Summary</span>
+                  <p className="text-slate-700 leading-relaxed font-medium">{viewItem.feedback}</p>
                 </div>
               )}
+
+              {viewItem.comments && (
+                <div className="p-3 rounded-xl border border-slate-100 bg-slate-50 text-xs">
+                  <span className="text-[10px] font-bold text-slate-400 block uppercase mb-1">Interviewer Comments</span>
+                  <p className="text-slate-700 leading-relaxed font-medium whitespace-pre-wrap">{viewItem.comments}</p>
+                </div>
+              )}
+
+              {viewItem.notes && (
+                <div className="p-3 rounded-xl border border-slate-100 bg-amber-50/50 text-xs">
+                  <span className="text-[10px] font-bold text-amber-700 block uppercase mb-1">Internal Notes</span>
+                  <p className="text-slate-700 leading-relaxed font-medium">{viewItem.notes}</p>
+                </div>
+              )}
+
+              {/* System Audit Information */}
+              <div className="p-3 rounded-xl border border-slate-100 bg-slate-50/70 text-[11px] text-slate-500 flex flex-wrap items-center justify-between gap-2">
+                <span>Created by: <strong className="text-slate-700">{viewItem.created_by || "Admin"}</strong></span>
+                {viewItem.created_at && <span>Created on: <strong className="text-slate-700">{new Date(viewItem.created_at).toLocaleString()}</strong></span>}
+                {viewItem.application_id && <span className="text-[10px] text-slate-400">App ID: #{viewItem.application_id}</span>}
+              </div>
 
               <div className="flex justify-end pt-2 border-t border-slate-100">
                 <Button 

@@ -175,18 +175,6 @@ function TopStat({ title, value, pct, icon: Icon, theme, trendLabel }: TopStatPr
   );
 }
 
-const mockInterviews = [
-  { id: "INT-001", candidateName: "Alice Johnson", candidateEmail: "alice@example.com", position: "Senior Frontend Engineer", department: "software development", type: "Technical", date: new Date().toISOString(), interviewer: "John Doe", mode: "Online", status: "Confirmed" },
-  { id: "INT-002", candidateName: "Bob Smith", candidateEmail: "bob.smith@example.com", position: "Product Manager", department: "Business Development", type: "HR", date: new Date().toISOString(), interviewer: "Sarah Smith", mode: "Online", status: "Scheduled" },
-  { id: "INT-003", candidateName: "Charlie Brown", candidateEmail: "charlie@example.com", position: "UX Designer", department: "multimedia design", type: "Final Round", date: "2026-11-16T11:00:00", interviewer: "Mike Johnson", mode: "Offline", status: "Rescheduled" },
-  { id: "INT-004", candidateName: "Diana Prince", candidateEmail: "diana@example.com", position: "Data Scientist", department: "software development", type: "Technical", date: "2026-11-18T09:00:00", interviewer: "John Doe", mode: "Online", status: "Scheduled" },
-];
-
-const mockNotifications = [
-  { id: 1, text: "Alice Johnson needs to confirm interview slot", time: "2 hours ago", type: "pending" },
-  { id: 2, text: "Reminder: Technical interview with Bob Smith today at 2:30 PM", time: "3 hours ago", type: "reminder" },
-];
-
 const getStatusBadge = (status: string) => {
   switch (status) {
     case "Confirmed":
@@ -195,6 +183,10 @@ const getStatusBadge = (status: string) => {
       return "bg-blue-50 text-blue-600 border-blue-200 ring-blue-500/20";
     case "Rescheduled":
       return "bg-amber-50 text-amber-600 border-amber-200 ring-amber-500/20";
+    case "Completed":
+      return "bg-purple-50 text-purple-600 border-purple-200 ring-purple-500/20";
+    case "Cancelled":
+      return "bg-red-50 text-red-600 border-red-200 ring-red-500/20";
     default:
       return "bg-slate-50 text-slate-600 border-slate-200 ring-slate-500/20";
   }
@@ -204,44 +196,78 @@ export default function InterviewsUpcoming() {
   const [searchTerm, setSearchTerm] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [interviewerFilter, setInterviewerFilter] = useState("all");
-  const [interviewsList, setInterviewsList] = useState<any[]>(mockInterviews);
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [interviewsList, setInterviewsList] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [selectedInterview, setSelectedInterview] = useState<any | null>(null);
   const [isViewOpen, setIsViewOpen] = useState(false);
 
   useEffect(() => {
+    setIsLoading(true);
     fetch(`${API_BASE_URL}/candidates/interviews.php`, {
       credentials: 'include',
       headers: getAuthHeaders(false)
     })
       .then(res => res.json())
       .then(data => {
-        if (Array.isArray(data) && data.length > 0) {
+        if (Array.isArray(data)) {
           setInterviewsList(data);
         }
       })
-      .catch(console.error);
+      .catch(console.error)
+      .finally(() => setIsLoading(false));
   }, []);
 
-  const filteredInterviews = useMemo(() => {
-    return interviewsList.filter(inv => {
-      const name = (inv.candidateName || "").toLowerCase();
-      const pos = (inv.position || "").toLowerCase();
-      const type = (inv.type || "").toLowerCase();
-      const interviewer = (inv.interviewer || "").toLowerCase();
-      const search = searchTerm.toLowerCase();
+  const uniqueInterviewers = useMemo(() => {
+    return Array.from(new Set(interviewsList.map(i => i.interviewer).filter(Boolean)));
+  }, [interviewsList]);
 
-      const matchesSearch = name.includes(search) || pos.includes(search);
-      const matchesType = typeFilter === "all" || type.includes(typeFilter.toLowerCase());
-      const matchesInterviewer = interviewerFilter === "all" || interviewer.includes(interviewerFilter.toLowerCase());
-      return matchesSearch && matchesType && matchesInterviewer;
-    });
-  }, [interviewsList, searchTerm, typeFilter, interviewerFilter]);
+  const uniqueTypes = useMemo(() => {
+    return Array.from(new Set(interviewsList.map(i => i.type).filter(Boolean)));
+  }, [interviewsList]);
+
+  const filteredInterviews = useMemo(() => {
+    const today = new Date();
+    const todayStr = today.toDateString();
+
+    return interviewsList
+      .filter(inv => {
+        const name = (inv.candidateName || "").toLowerCase();
+        const pos = (inv.position || "").toLowerCase();
+        const type = (inv.type || "").toLowerCase();
+        const interviewer = (inv.interviewer || "").toLowerCase();
+        const status = (inv.status || "").toLowerCase();
+        const search = searchTerm.toLowerCase();
+
+        const matchesSearch = name.includes(search) || pos.includes(search);
+        const matchesType = typeFilter === "all" || type === typeFilter.toLowerCase();
+        const matchesInterviewer = interviewerFilter === "all" || interviewer === interviewerFilter.toLowerCase();
+        const matchesStatus = statusFilter === "all" || status === statusFilter.toLowerCase();
+        return matchesSearch && matchesType && matchesInterviewer && matchesStatus;
+      })
+      .sort((a, b) => {
+        const isTodayA = a.date ? new Date(a.date).toDateString() === todayStr : false;
+        const isTodayB = b.date ? new Date(b.date).toDateString() === todayStr : false;
+
+        // Prioritize today's scheduled interviews at top
+        if (isTodayA && !isTodayB) return -1;
+        if (!isTodayA && isTodayB) return 1;
+
+        const timeA = a.date ? new Date(a.date).getTime() : 0;
+        const timeB = b.date ? new Date(b.date).getTime() : 0;
+        return timeA - timeB;
+      });
+  }, [interviewsList, searchTerm, typeFilter, interviewerFilter, statusFilter]);
 
   // Derive Stats
-  const totalScheduled = interviewsList.length;
+  const totalScheduled = interviewsList.filter(i => i.status !== "Cancelled").length;
   const todaysInterviews = interviewsList.filter(i => i.date && new Date(i.date).toDateString() === new Date().toDateString()).length;
-  const thisWeek = interviewsList.length;
-  const feedbackPending = interviewsList.filter(i => !i.feedback).length;
+  const thisWeek = interviewsList.filter(i => {
+    if (!i.date) return false;
+    const diffDays = (new Date(i.date).getTime() - new Date().getTime()) / (1000 * 3600 * 24);
+    return diffDays >= -1 && diffDays <= 7;
+  }).length;
+  const feedbackPending = interviewsList.filter(i => !i.feedback && i.status === "Completed").length;
   const cancelled = interviewsList.filter(i => i.status === "Cancelled").length;
 
   return (
@@ -310,28 +336,34 @@ export default function InterviewsUpcoming() {
                 onChange={(e) => setTypeFilter(e.target.value)}
               >
                 <option value="all">All Types</option>
-                <option value="technical">Technical</option>
-                <option value="hr">HR</option>
-                <option value="final round">Final Round</option>
+                {uniqueTypes.map(t => (
+                  <option key={t} value={t}>{t}</option>
+                ))}
               </select>
 
               <select
-                className="h-9 w-[130px] rounded-lg border border-slate-200 bg-white px-3 text-xs shadow-sm font-semibold text-slate-700"
+                className="h-9 w-[140px] rounded-lg border border-slate-200 bg-white px-3 text-xs shadow-sm font-semibold text-slate-700"
                 value={interviewerFilter}
                 onChange={(e) => setInterviewerFilter(e.target.value)}
               >
                 <option value="all">All Interviewers</option>
-                <option value="john doe">John Doe</option>
-                <option value="sarah smith">Sarah Smith</option>
-                <option value="mike johnson">Mike Johnson</option>
+                {uniqueInterviewers.map(inv => (
+                  <option key={inv} value={inv}>{inv}</option>
+                ))}
               </select>
 
-              <Button
-                variant="outline"
-                className="h-9 text-xs font-semibold rounded-lg bg-white border-slate-200"
+              <select
+                className="h-9 w-[130px] rounded-lg border border-slate-200 bg-white px-3 text-xs shadow-sm font-semibold text-slate-700"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
               >
-                <Filter className="mr-1.5 h-3.5 w-3.5" /> More Filters
-              </Button>
+                <option value="all">All Statuses</option>
+                <option value="scheduled">Scheduled</option>
+                <option value="confirmed">Confirmed</option>
+                <option value="rescheduled">Rescheduled</option>
+                <option value="completed">Completed</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
             </div>
           </Card>
 
@@ -484,32 +516,48 @@ export default function InterviewsUpcoming() {
             </div>
           </Card>
 
-          {/* Internal Notifications */}
+          {/* Internal Notifications / Action Items */}
           <Card className="p-5 bg-white border-border/50 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] rounded-3xl">
             <h3 className="text-[13px] font-bold text-slate-900 mb-4 flex items-center gap-2">
               <BellRing className="h-4 w-4 text-amber-500" />
               Action Needed
             </h3>
             <div className="space-y-3">
-              {mockNotifications.map(notif => (
-                <div key={notif.id} className={cn(
-                  "flex items-start gap-3 p-3 rounded-xl border",
-                  notif.type === "pending" ? "bg-amber-50/50 border-amber-100" : "bg-blue-50/50 border-blue-100"
-                )}>
-                  <div className={cn(
-                    "p-1.5 rounded-lg shrink-0 mt-0.5",
-                    notif.type === "pending" ? "bg-amber-100 text-amber-600" : "bg-blue-100 text-blue-600"
-                  )}>
-                    {notif.type === "pending" ? <AlertCircle className="h-3.5 w-3.5" /> : <Clock className="h-3.5 w-3.5" />}
+              {interviewsList.filter(i => (!i.feedback || !i.result) && i.status === "Completed").slice(0, 3).map(inv => (
+                <div key={`feedback-${inv.id}`} className="flex items-start gap-3 p-3 rounded-xl border bg-amber-50/50 border-amber-100">
+                  <div className="p-1.5 rounded-lg shrink-0 mt-0.5 bg-amber-100 text-amber-600">
+                    <AlertCircle className="h-3.5 w-3.5" />
                   </div>
                   <div>
                     <div className="text-[11px] font-bold text-slate-900 leading-snug">
-                      {notif.text}
+                      Feedback pending for {inv.candidateName}
                     </div>
-                    <div className="text-[9px] font-medium text-slate-500 mt-1">{notif.time}</div>
+                    <div className="text-[9px] font-medium text-slate-500 mt-1">{inv.type} Round • {inv.interviewer || "Interviewer"}</div>
                   </div>
                 </div>
               ))}
+
+              {interviewsList.filter(i => i.date && new Date(i.date).toDateString() === new Date().toDateString() && i.status !== "Completed" && i.status !== "Cancelled").slice(0, 3).map(inv => (
+                <div key={`today-${inv.id}`} className="flex items-start gap-3 p-3 rounded-xl border bg-blue-50/50 border-blue-100">
+                  <div className="p-1.5 rounded-lg shrink-0 mt-0.5 bg-blue-100 text-blue-600">
+                    <Clock className="h-3.5 w-3.5" />
+                  </div>
+                  <div>
+                    <div className="text-[11px] font-bold text-slate-900 leading-snug">
+                      Interview with {inv.candidateName} today
+                    </div>
+                    <div className="text-[9px] font-medium text-slate-500 mt-1">
+                      {new Date(inv.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • {inv.mode}
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              {interviewsList.filter(i => ((!i.feedback || !i.result) && i.status === "Completed") || (i.date && new Date(i.date).toDateString() === new Date().toDateString() && i.status !== "Completed" && i.status !== "Cancelled")).length === 0 && (
+                <div className="text-[11px] text-slate-500 text-center py-4 font-medium">
+                  All action items completed 🎉
+                </div>
+              )}
             </div>
           </Card>
         </div>
@@ -579,6 +627,24 @@ export default function InterviewsUpcoming() {
                   <div className="font-bold text-slate-800">{selectedInterview.interviewer || "Not Assigned"}</div>
                   <div className="text-[11px] text-slate-500 capitalize">{selectedInterview.mode || "Online"}</div>
                 </div>
+
+                {selectedInterview.result && (
+                  <div className="p-3 rounded-xl border border-slate-100 bg-white">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Result & Recommendation</span>
+                    <span className={cn("font-bold text-[12px]", selectedInterview.result === 'Passed' ? 'text-emerald-600' : selectedInterview.result === 'Failed' ? 'text-red-600' : 'text-slate-700')}>
+                      {selectedInterview.result} {selectedInterview.recommendation ? `(${selectedInterview.recommendation})` : ''}
+                    </span>
+                  </div>
+                )}
+
+                {selectedInterview.rating && (
+                  <div className="p-3 rounded-xl border border-slate-100 bg-white">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Rating</span>
+                    <span className="font-bold text-amber-600 text-[13px]">
+                      {'⭐'.repeat(selectedInterview.rating)} ({selectedInterview.rating}/5)
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* Position & Department */}
@@ -620,6 +686,21 @@ export default function InterviewsUpcoming() {
                   <p className="text-slate-700">{selectedInterview.feedback}</p>
                 </div>
               )}
+
+              {/* Comments if available */}
+              {selectedInterview.comments && (
+                <div className="p-3 rounded-xl border border-slate-100 bg-slate-50 text-xs">
+                  <span className="text-[10px] font-bold text-slate-400 block uppercase mb-1">Comments</span>
+                  <p className="text-slate-700">{selectedInterview.comments}</p>
+                </div>
+              )}
+
+              {/* Audit information */}
+              <div className="p-3 rounded-xl border border-slate-100 bg-slate-50/70 text-[11px] text-slate-500 flex flex-wrap items-center justify-between gap-2">
+                <span>Created by: <strong className="text-slate-700">{selectedInterview.created_by || "Admin"}</strong></span>
+                {selectedInterview.created_at && <span>Created on: <strong className="text-slate-700">{new Date(selectedInterview.created_at).toLocaleString()}</strong></span>}
+                {selectedInterview.application_id && <span className="text-[10px] text-slate-400">App ID: #{selectedInterview.application_id}</span>}
+              </div>
 
               {/* Action Buttons */}
               <div className="flex gap-2 pt-2">

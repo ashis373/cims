@@ -157,6 +157,7 @@ CREATE TABLE `cims_candidate_interviews` (
   `created_at` datetime DEFAULT current_timestamp(),
   `rating` int(11) DEFAULT NULL,
   `recommendation` varchar(50) DEFAULT NULL,
+  `result` varchar(50) DEFAULT 'Passed',
   `comments` text DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 

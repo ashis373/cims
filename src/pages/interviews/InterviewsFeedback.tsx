@@ -171,24 +171,27 @@ export default function InterviewsFeedback() {
   const [searchTerm, setSearchTerm] = useState("");
   const [interviewerFilter, setInterviewerFilter] = useState("all");
   const [departmentFilter, setDepartmentFilter] = useState("all");
-  const [pendingList, setPendingList] = useState<any[]>(mockPending);
+  const [pendingList, setPendingList] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Modals state
   const [viewItem, setViewItem] = useState<any | null>(null);
   const [submitItem, setSubmitItem] = useState<any | null>(null);
   const [rating, setRating] = useState(4);
   const [recommendation, setRecommendation] = useState<string>("Strong Hire");
+  const [resultVal, setResultVal] = useState<string>("Passed");
   const [feedbackText, setFeedbackText] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
+    setIsLoading(true);
     fetch(`${API_BASE_URL}/candidates/interviews.php`, {
       credentials: 'include',
       headers: getAuthHeaders(false)
     })
       .then(res => res.json())
       .then(data => {
-        if (Array.isArray(data) && data.length > 0) {
+        if (Array.isArray(data)) {
           const now = Date.now();
           const pending = data
             .filter((i: any) => !i.feedback || i.feedback.trim() === '')
@@ -200,12 +203,11 @@ export default function InterviewsFeedback() {
                 daysPending,
               };
             });
-          if (pending.length > 0) {
-            setPendingList(pending);
-          }
+          setPendingList(pending);
         }
       })
-      .catch(console.error);
+      .catch(console.error)
+      .finally(() => setIsLoading(false));
   }, []);
 
   const handleRemind = (item: any) => {
@@ -227,6 +229,7 @@ export default function InterviewsFeedback() {
           feedback: feedbackText || "Feedback submitted.",
           rating: rating,
           recommendation: recommendation,
+          result: resultVal || (recommendation === "Do Not Hire" ? "Failed" : "Passed"),
           status: "Completed"
         });
       }
@@ -237,6 +240,7 @@ export default function InterviewsFeedback() {
       setFeedbackText("");
       setRating(4);
       setRecommendation("Strong Hire");
+      setResultVal("Passed");
     } catch (err: any) {
       toast.error(err.message || "Failed to submit feedback");
     } finally {

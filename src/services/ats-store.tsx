@@ -298,6 +298,7 @@ export function AtsProvider({ children }: { children: ReactNode }) {
           } as Candidate;
           
           mutate((prev) => prev.map((c) => (c.id === id ? next : c)));
+          await refresh();
         } catch (e) {
           const error = e as Error;
           toast.error(error.message || "Database error");
@@ -311,9 +312,21 @@ export function AtsProvider({ children }: { children: ReactNode }) {
         try {
           await putInterviewAPI(interviewId, { ...patch, candidate_id: candidateId });
           
+          const ivType = (patch.type || "").toLowerCase();
+          const isCompleted = patch.status === "Completed";
+          const isFinalRound = ivType === "final round" || ivType === "final";
+          
+          let nextStage = target.stage;
+          if (isCompleted && isFinalRound) {
+            nextStage = "Interview Completed";
+          } else if (target.stage === "New Applicant" || target.stage === "Shortlisted" || target.stage === "HR Call Scheduled") {
+            nextStage = "Interview Scheduled";
+          }
+
           const next = {
             ...target,
             updatedAt: now(),
+            stage: nextStage,
             interviewsList: target.interviewsList?.map((iv: any) => iv.id === interviewId ? { ...iv, ...patch } : iv),
             activity: [
               ...target.activity,
@@ -321,12 +334,13 @@ export function AtsProvider({ children }: { children: ReactNode }) {
                 id: uid(),
                 at: now(),
                 kind: "interview",
-                message: `Interview updated: ${patch.status || "Updated"}`,
+                message: `Interview ${patch.status || "Updated"}${patch.feedback ? `: ${patch.feedback.substring(0, 50)}` : ""}`,
               },
             ],
           } as Candidate;
           
           mutate((prev) => prev.map((c) => (c.id === candidateId ? next : c)));
+          await refresh();
         } catch (e) {
           const error = e as Error;
           toast.error(error.message || "Database error");
