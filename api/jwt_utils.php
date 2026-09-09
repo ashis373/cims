@@ -10,48 +10,26 @@
 // It is included globally in backend API files to secure 
 // endpoints and ensure that requests are authenticated.
 // ============================================================
-$envFile = dirname(__DIR__) . '/.env';
-if (file_exists($envFile)) {
-    $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-    foreach ($lines as $line) {
-        if (strpos(trim($line), '#') === 0) continue;
-        if (strpos($line, '=') !== false) {
-            list($name, $value) = explode('=', $line, 2);
-            $name = trim($name);
-            $value = trim($value);
-            if (!array_key_exists($name, $_SERVER) && !array_key_exists($name, $_ENV)) {
-                putenv(sprintf('%s=%s', $name, $value));
-                $_ENV[$name] = $value;
-                $_SERVER[$name] = $value;
-            }
-        }
-    }
+
+// Autoload Composer dependencies (vlucas/phpdotenv, etc.)
+require_once __DIR__ . '/vendor/autoload.php';
+
+$dotenvPath = dirname(__DIR__);
+if (file_exists($dotenvPath . '/.env')) {
+    $dotenv = Dotenv\Dotenv::createImmutable($dotenvPath);
+    $dotenv->safeLoad();
 }
-
-
-
 
 // ============================================================
 // GET JWT SECRET FROM .ENV
 // ============================================================
-//
-// Example .env:
-//
-// JWT_SECRET=a2e8....................
-//
-// IMPORTANT:
-// This secret stays on the PHP SERVER.
-// It is NEVER sent to the browser/frontend.
-//
-// This is the ORIGINAL PRIVATE SECRET KEY.
-// HMAC-SHA256 uses this secret to create the JWT signature.
-// ============================================================
-
-$secret = getenv('JWT_SECRET');
+$secret = $_ENV['JWT_SECRET'] ?? getenv('JWT_SECRET');
 if (!$secret) {
     die(json_encode(["status" => "error", "message" => "CRITICAL ERROR: JWT_SECRET environment variable is not set."]));
 }
-define('JWT_SECRET', $secret);
+if (!defined('JWT_SECRET')) {
+    define('JWT_SECRET', $secret);
+}
 
 // ============================================================
 // BASE64 URL ENCODING & DECODING
@@ -70,8 +48,6 @@ function base64url_encode($data) {
 function base64url_decode($data) {
     return base64_decode(str_pad(strtr($data, '-_', '+/'), strlen($data) % 4, '=', STR_PAD_RIGHT));
 }
-
-
 
 // ============================================================
 // GENERATE JWT
@@ -108,10 +84,6 @@ function generate_jwt($payload) {
     return $base64UrlHeader . "." . $base64UrlPayload . "." . $base64UrlSignature;
 }
 
-
-
-
-
 // ============================================================
 // VALIDATE JWT
 // ============================================================
@@ -143,8 +115,6 @@ function generate_jwt($payload) {
 // The JWT_SECRET is NEVER received from the browser.
 // PHP already has it from the server's .env file.
 // ============================================================
-
-
 function validate_jwt($jwt) {
     $parts = explode('.', $jwt);
     if (count($parts) !== 3) return false;
@@ -190,4 +160,3 @@ function decrypt_data($data) {
     $decrypted = openssl_decrypt($encrypted, $method, $key, OPENSSL_RAW_DATA, $iv);
     return $decrypted !== false ? $decrypted : $data;
 }
-?>

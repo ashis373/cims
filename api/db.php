@@ -1,7 +1,20 @@
 <?php
-define('ENVIRONMENT', 'development'); // Change to 'production' for live server
+// Autoload Composer dependencies (vlucas/phpdotenv, phpmailer, etc.)
+require_once __DIR__ . '/vendor/autoload.php';
 
-// 1. Log all errors to a dedicated file in the api folder
+// Initialize and load environment variables safely using phpdotenv
+$dotenvPath = dirname(__DIR__);
+if (file_exists($dotenvPath . '/.env')) {
+    $dotenv = Dotenv\Dotenv::createImmutable($dotenvPath);
+    $dotenv->safeLoad();
+    // Validate required environment variables in production
+    $dotenv->required(['DB_HOST', 'DB_NAME', 'DB_USER']);
+}
+
+// Set environment mode from .env or default to production for security
+define('ENVIRONMENT', $_ENV['APP_ENV'] ?? 'production');
+
+// 1. Log all errors securely
 ini_set('log_errors', 1);
 ini_set('error_log', __DIR__ . '/error.log');
 
@@ -79,22 +92,25 @@ register_shutdown_function(function() {
     }
 });
 
-// local server credentials
-$host = "localhost";
-$dbname = "cims";
-$username = "root";
-$password = "";
+// Database credentials loaded via $_ENV without hardcoded fallback credentials
+$host = $_ENV['DB_HOST'] ?? null;
+$dbname = $_ENV['DB_NAME'] ?? null;
+$username = $_ENV['DB_USER'] ?? null;
+$password = $_ENV['DB_PASSWORD'] ?? '';
 
-
-//server credensials
-
-
-
+if (!$host || !$dbname || !$username) {
+    error_log("CRITICAL ERROR: Missing Database Configuration in .env");
+    if (ENVIRONMENT === 'development') {
+        die(json_encode(["status" => "error", "message" => "CRITICAL ERROR: Missing Database Configuration in .env"]));
+    } else {
+        die(json_encode(["status" => "error", "message" => "Database configuration error. Please contact support."]));
+    }
+}
 
 date_default_timezone_set('Asia/Kolkata');
 
 try {
-    $conn = new PDO("mysql:host=$host;dbname=$dbname", $username, $password);
+    $conn = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8mb4", $username, $password);
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     // Explicitly set fetch mode to associative array globally
     $conn->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
