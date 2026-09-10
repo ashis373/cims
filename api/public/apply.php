@@ -104,6 +104,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $photo = uploadFile('photo', true);
     $resume = uploadFile('resume', false);
 
+    $job_id = !empty($_POST['job_id']) ? (int)$_POST['job_id'] : null;
+
     try {
         $id = substr(str_shuffle("0123456789abcdefghijklmnopqrstuvwxyz"), 0, 16);
         $t = date('Y-m-d H:i:s');
@@ -114,12 +116,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Website', 0, 1, ?, ?)
         ");
         $stmt->execute([$id, $name, $email, $phone, $alternateMobile, $location, $preferredLocation, $experience, $relevantExperience, $currentCompany, $currentDesignation, $currentCtc, $expectedCtc, $noticePeriod, $skills, $photo, $resume, $linkedInProfile, $t, $t]);
-        $stmtApp = $conn->prepare("
-            INSERT INTO cims_applications (candidate_id, role_applied, department, source, appliedAt, stage, recruiter)
-            VALUES (?, ?, ?, 'Website', ?, 'New Applicant', 'Unassigned')
-        ");
-        $stmtApp->execute([$id, $role, $department, $t]);
         
+        $stmtApp = $conn->prepare("
+            INSERT INTO cims_applications (candidate_id, job_id, role_applied, department, source, appliedAt, stage, recruiter)
+            VALUES (?, ?, ?, ?, 'Website', ?, 'New Applicant', 'Unassigned')
+        ");
+        $stmtApp->execute([$id, $job_id, $role, $department, $t]);
+        
+        if ($job_id) {
+            $updJob = $conn->prepare("UPDATE cims_jobs SET applications = applications + 1 WHERE id = ?");
+            $updJob->execute([$job_id]);
+        }
+
         $stmtHist = $conn->prepare("
             INSERT INTO cims_candidate_history (candidate_id, action, details, createdAt, userId)
             VALUES (?, 'created', 'Application received from Careers Page', ?, NULL)

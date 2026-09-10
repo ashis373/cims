@@ -1,3 +1,12 @@
-﻿<Files "error.log">
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # If the requested file with .php extension exists as a file, rewrite to it
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME}.php -f
+    RewriteRule ^(.*)$ $1.php [L,QSA]
+</IfModule>
+
+<Files "error.log">
     Require all denied
 </Files>
