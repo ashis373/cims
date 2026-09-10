@@ -336,22 +336,7 @@ CREATE TABLE `cims_jobs` (
   `internal_notes` text DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- --------------------------------------------------------
 
---
--- Table structure for table `cims_job_openings`
---
-
-CREATE TABLE `cims_job_openings` (
-  `id` int(11) NOT NULL,
-  `title` varchar(255) NOT NULL,
-  `department` varchar(100) DEFAULT NULL,
-  `status` varchar(50) DEFAULT 'Open',
-  `createdBy` int(11) DEFAULT NULL,
-  `createdAt` datetime DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- --------------------------------------------------------
 
 --
 -- Table structure for table `cims_permissions`
@@ -615,12 +600,7 @@ ALTER TABLE `cims_email_templates`
 ALTER TABLE `cims_jobs`
   ADD PRIMARY KEY (`id`);
 
---
--- Indexes for table `cims_job_openings`
---
-ALTER TABLE `cims_job_openings`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `createdBy` (`createdBy`);
+
 
 --
 -- Indexes for table `cims_permissions`
@@ -770,11 +750,7 @@ ALTER TABLE `cims_email_templates`
 ALTER TABLE `cims_jobs`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
---
--- AUTO_INCREMENT for table `cims_job_openings`
---
-ALTER TABLE `cims_job_openings`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
 
 --
 -- AUTO_INCREMENT for table `cims_permissions`
@@ -833,7 +809,7 @@ ALTER TABLE `cims_users`
 --
 ALTER TABLE `cims_applications`
   ADD CONSTRAINT `cims_applications_ibfk_1` FOREIGN KEY (`candidate_id`) REFERENCES `cims_candidates` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `cims_applications_ibfk_2` FOREIGN KEY (`job_id`) REFERENCES `cims_job_openings` (`id`) ON DELETE SET NULL;
+  ADD CONSTRAINT `cims_applications_ibfk_2` FOREIGN KEY (`job_id`) REFERENCES `cims_jobs` (`id`) ON DELETE SET NULL;
 
 --
 -- Constraints for table `cims_candidate_documents`
@@ -873,11 +849,6 @@ ALTER TABLE `cims_candidate_rejections`
   ADD CONSTRAINT `cims_candidate_rejections_ibfk_1` FOREIGN KEY (`candidate_id`) REFERENCES `cims_candidates` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `cims_candidate_rejections_ibfk_2` FOREIGN KEY (`application_id`) REFERENCES `cims_applications` (`id`) ON DELETE CASCADE;
 
---
--- Constraints for table `cims_job_openings`
---
-ALTER TABLE `cims_job_openings`
-  ADD CONSTRAINT `cims_job_openings_ibfk_1` FOREIGN KEY (`createdBy`) REFERENCES `cims_users` (`id`) ON DELETE SET NULL;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

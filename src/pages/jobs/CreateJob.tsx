@@ -125,11 +125,11 @@ export default function CreateJob() {
       });
 
       const data = await res.json();
-      if (res.ok && (data.success || id) && !data.error && !data.message) { // PUT might just return 200 without strict data.success
+      if (res.ok && (data.success || !data.error)) {
         toast.success(id ? "Job updated successfully!" : "Job created successfully!");
         navigate("/jobs/all");
       } else {
-        toast.error(data.message || data.error || "Failed to create job.");
+        toast.error(data.message || data.error || "Failed to save job.");
       }
     } catch (e) {
       toast.error("Network error. Please try again.");

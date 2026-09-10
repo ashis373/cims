@@ -245,8 +245,8 @@ export default function AllJobs() {
         headers: getAuthHeaders(false)
       });
       const data = await res.json();
-      if (res.ok && !data.error && !data.message) {
-        setJobs(jobs.filter(j => j.id !== jobId));
+      if (res.ok && (data.success || !data.error)) {
+        setJobs(prevJobs => prevJobs.filter(j => j.id !== jobId && j.job_id !== jobId));
         toast.success("Job deleted successfully");
       } else {
         toast.error(data.message || data.error || "Failed to delete job");
@@ -266,8 +266,8 @@ export default function AllJobs() {
         body: JSON.stringify({ job_id: jobId, status: newStatus })
       });
       const data = await res.json();
-      if (res.ok && !data.error && !data.message) {
-        setJobs(jobs.map(j => j.id === jobId ? { ...j, status: newStatus } : j));
+      if (res.ok && (data.success || !data.error)) {
+        setJobs(prevJobs => prevJobs.map(j => (j.id === jobId || j.job_id === jobId) ? { ...j, status: newStatus } : j));
         toast.success(`Job marked as ${newStatus}`);
       } else {
         toast.error(data.message || data.error || "Failed to update status");
