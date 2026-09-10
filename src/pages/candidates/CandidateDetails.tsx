@@ -13,6 +13,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { ScheduleInterviewDialog } from "@/components/feature/ScheduleInterviewDialog";
 import {
   ArrowLeft,
@@ -31,6 +37,7 @@ import {
   ShieldAlert,
   Download,
   MoreVertical,
+  MoreHorizontal,
   Plus,
   MessageSquare,
   Activity,
@@ -40,6 +47,11 @@ import {
   Briefcase,
   Wallet,
   Target,
+  Video,
+  Star,
+  ExternalLink,
+  MessageSquareWarning,
+  XCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -211,8 +223,14 @@ export default function CandidateProfile() {
   };
 
   const [scheduleInterviewOpen, setScheduleInterviewOpen] = useState(false);
-  const [interviewDialogMode, setInterviewDialogMode] = useState<"schedule" | "complete" | "update">("schedule");
+  const [interviewDialogMode, setInterviewDialogMode] = useState<"schedule" | "complete" | "update" | "feedback">("schedule");
   const [selectedInterviewForDialog, setSelectedInterviewForDialog] = useState<any | null>(null);
+  const [selectedInterviewForView, setSelectedInterviewForView] = useState<any | null>(null);
+  const [isInterviewViewOpen, setIsInterviewViewOpen] = useState(false);
+
+  const [cancelInterviewDialogItem, setCancelInterviewDialogItem] = useState<any | null>(null);
+  const [cancellationReason, setCancellationReason] = useState("Candidate unavailable");
+  const [cancellationCustomReason, setCancellationCustomReason] = useState("");
 
   const openAddInterview = () => {
     setSelectedInterviewForDialog(null);
@@ -224,6 +242,59 @@ export default function CandidateProfile() {
     setSelectedInterviewForDialog(iv);
     setInterviewDialogMode(iv.status === "Completed" ? "complete" : "update");
     setScheduleInterviewOpen(true);
+  };
+
+  const openAddFeedback = (iv: any) => {
+    setSelectedInterviewForDialog(iv);
+    setInterviewDialogMode("feedback");
+    setScheduleInterviewOpen(true);
+  };
+
+  const openViewInterview = (iv: any) => {
+    setSelectedInterviewForView(iv);
+    setIsInterviewViewOpen(true);
+  };
+
+  const promptCancelInterview = (iv: any) => {
+    setCancelInterviewDialogItem(iv);
+    setCancellationReason("Candidate unavailable");
+    setCancellationCustomReason("");
+  };
+
+  const handleConfirmCancelInterview = async () => {
+    if (!cancelInterviewDialogItem) return;
+    const finalReason = cancellationReason === "Other" 
+      ? (cancellationCustomReason.trim() || "Other reason") 
+      : cancellationReason;
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/candidates/interviews.php?id=${cancelInterviewDialogItem.id}`, {
+        credentials: 'include',
+        method: "PUT",
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          candidate_id: candidate?.id,
+          status: "Cancelled",
+          result: "Cancelled",
+          cancellation_reason: finalReason,
+          notes: cancelInterviewDialogItem.notes 
+            ? `${cancelInterviewDialogItem.notes}\n[Cancelled: ${finalReason}]` 
+            : `Cancellation Reason: ${finalReason}`
+        })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast.success("Interview cancelled successfully");
+        setCancelInterviewDialogItem(null);
+        if (refresh) refresh();
+        else setTimeout(() => window.location.reload(), 300);
+      } else {
+        toast.error(data.error || "Failed to cancel interview");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Error cancelling interview");
+    }
   };
 
   if (!candidate) {
@@ -253,7 +324,25 @@ export default function CandidateProfile() {
     }
   };
 
+  const [stageReasonDialogOpen, setStageReasonDialogOpen] = useState(false);
+  const [targetStagePending, setTargetStagePending] = useState<Stage | null>(null);
+  const [stageReasonInput, setStageReasonInput] = useState("");
+
   const handleStageSelect = (v: string) => {
+    // Prevent early stages from directly moving to Offer or Joined without completing interview rounds
+    const isEarlyStage = ["New Applicant", "Shortlisted", "HR Call Scheduled"].includes(candidate.stage);
+    const isOfferOrJoined = ["Offer Released", "Offer Accepted", "Offer Declined", "Offer Expired", "Joined"].includes(v);
+    if (isEarlyStage && isOfferOrJoined) {
+      toast.error(`Candidates in ${candidate.stage} must go through interview rounds before an offer can be released.`);
+      return;
+    }
+
+    // Interview Scheduled is locked - must complete the interview workflow first
+    if (candidate.stage === "Interview Scheduled" && isOfferOrJoined) {
+      toast.error(`Interview Scheduled is locked. The interview must be conducted and completed before releasing an offer.`);
+      return;
+    }
+
     if (v === "Interview Scheduled") {
       openAddInterview();
       return;
@@ -265,8 +354,26 @@ export default function CandidateProfile() {
       setScheduleInterviewOpen(true);
       return;
     }
+
+    // Prompt for reason when moving to outcome states
+    if (["Rejected", "No Show", "Offer Declined", "Offer Expired"].includes(v)) {
+      setTargetStagePending(v as Stage);
+      setStageReasonInput("");
+      setStageReasonDialogOpen(true);
+      return;
+    }
+
     setStage(candidate.id, v as Stage);
     toast.success(`Status updated to ${v}`);
+  };
+
+  const confirmStageReason = () => {
+    if (!targetStagePending) return;
+    setStage(candidate.id, targetStagePending, stageReasonInput.trim() || undefined);
+    toast.success(`Status updated to ${targetStagePending}`);
+    setStageReasonDialogOpen(false);
+    setTargetStagePending(null);
+    setStageReasonInput("");
   };
 
   const confirmBlacklist = () => {
@@ -773,40 +880,104 @@ export default function CandidateProfile() {
             <div className="col-span-1 lg:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Interview History */}
               <Card id="interviews" className={cn("col-span-1 p-5 bg-white border shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] rounded-2xl flex flex-col transition-all duration-300", activeTab === "Interviews" ? "border-purple-500 ring-1 ring-purple-500 shadow-purple-100" : "border-border/50")}>
-                <h3 className="text-[13px] font-bold text-slate-900 mb-4">Interview History</h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-[13px] font-bold text-slate-900">Interview History</h3>
+                  <Button
+                    variant="ghost"
+                    className="h-6 px-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 text-[11px] font-bold"
+                    onClick={openAddInterview}
+                  >
+                    <Plus className="h-3.5 w-3.5 mr-1" /> Schedule Interview
+                  </Button>
+                </div>
                 <div className="overflow-x-auto flex-1">
                   <table className="w-full text-left text-[11px]">
-                    <thead className="border-b border-slate-100 text-slate-400 font-bold">
+                    <thead className="border-b border-slate-100 text-slate-400 font-bold bg-slate-50/50">
                         <tr>
-                          <th className="py-2.5 px-2">Interview Type</th>
-                          <th className="py-2.5 px-2">Date & Time</th>
-                          <th className="py-2.5 px-2">Mode</th>
-                          <th className="py-2.5 px-2">Interviewer</th>
-                          <th className="py-2.5 px-2 text-right">Status</th>
+                          <th className="py-2.5 px-3">Interview Type</th>
+                          <th className="py-2.5 px-3">Date & Time</th>
+                          <th className="py-2.5 px-3">Mode</th>
+                          <th className="py-2.5 px-3">Interviewer</th>
+                          <th className="py-2.5 px-3">Status</th>
+                          <th className="py-2.5 px-3 text-right">Actions</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-50 font-semibold text-slate-700">
-                        {candidate.interviewsList?.map((iv: any, i: number) => (
-                          <tr key={i} className="cursor-pointer hover:bg-slate-50 transition-colors" onClick={() => openEditInterview(iv)}>
-                            <td className="py-3 px-2 font-bold text-slate-900">{iv.type || "-"}</td>
-                            <td className="py-3 px-2 text-slate-500">{iv.interviewDate ? formatDateTime(iv.interviewDate) : "-"}</td>
-                            <td className="py-3 px-2 text-slate-500">{iv.mode || "-"}</td>
-                            <td className="py-3 px-2 text-slate-500">{iv.interviewers || "-"}</td>
-                            <td className="py-3 px-2 text-right">
-                              <Badge className={cn("text-[9px] font-bold uppercase border-transparent hover:opacity-80 px-2 py-0.5", 
-                                iv.status === "Scheduled" ? "bg-blue-50 text-blue-600" :
-                                iv.status === "Completed" ? "bg-emerald-50 text-emerald-600" :
-                                iv.status === "Cancelled" ? "bg-red-50 text-red-600" : "bg-slate-100 text-slate-600"
-                              )}>
-                                {iv.status}
-                              </Badge>
-                            </td>
-                          </tr>
-                        ))}
+                        {candidate.interviewsList?.map((iv: any, i: number) => {
+                          const isScheduled = iv.status === "Scheduled" || iv.status === "Confirmed" || iv.status === "Rescheduled";
+                          const isCompleted = iv.status === "Completed";
+                          const feedbackPending = isCompleted && (!iv.feedback || !iv.rating);
+
+                          return (
+                            <tr key={i} className="hover:bg-slate-50/80 transition-colors group">
+                              <td className="py-3 px-3">
+                                <span className="font-bold text-slate-900 block">{iv.type || "-"}</span>
+                              </td>
+                              <td className="py-3 px-3 text-slate-600">
+                                {iv.interviewDate ? formatDateTime(iv.interviewDate) : "-"}
+                              </td>
+                              <td className="py-3 px-3">
+                                <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md">
+                                  {iv.mode === "Online" ? (
+                                    <Video className="w-3 h-3 text-blue-500" />
+                                  ) : iv.mode === "Phone" ? (
+                                    <Phone className="w-3 h-3 text-emerald-500" />
+                                  ) : (
+                                    <MapPin className="w-3 h-3 text-amber-500" />
+                                  )}
+                                  {iv.mode || "Online"}
+                                </span>
+                              </td>
+                              <td className="py-3 px-3 text-slate-600">{iv.interviewers || "-"}</td>
+                              <td className="py-3 px-3">
+                                <Badge className={cn("text-[9.5px] font-bold uppercase border-transparent px-2 py-0.5", 
+                                  isScheduled ? "bg-blue-50 text-blue-600" :
+                                  isCompleted ? "bg-purple-50 text-purple-600" :
+                                  iv.status === "Cancelled" ? "bg-red-50 text-red-600" : "bg-slate-100 text-slate-600"
+                                )}>
+                                  {iv.status}
+                                </Badge>
+                              </td>
+                              <td className="py-3 px-3 text-right">
+                                <div className="flex items-center justify-end">
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-slate-700 rounded-lg">
+                                        <MoreVertical className="h-3.5 w-3.5" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="rounded-xl border border-border/50 shadow-lg min-w-[140px]">
+                                      <DropdownMenuItem onClick={() => openViewInterview(iv)} className="text-[11px] font-semibold cursor-pointer">
+                                        <Eye className="w-3.5 h-3.5 mr-2 text-slate-400" /> View Details
+                                      </DropdownMenuItem>
+                                      
+                                      {isScheduled && (
+                                        <>
+                                          <DropdownMenuItem onClick={() => openEditInterview(iv)} className="text-[11px] font-semibold cursor-pointer">
+                                            <Pencil className="w-3.5 h-3.5 mr-2 text-slate-400" /> Edit
+                                          </DropdownMenuItem>
+                                          <DropdownMenuItem onClick={() => promptCancelInterview(iv)} className="text-[11px] font-semibold text-red-600 focus:text-red-600 cursor-pointer">
+                                            <XCircle className="w-3.5 h-3.5 mr-2 text-red-500" /> Cancel
+                                          </DropdownMenuItem>
+                                        </>
+                                      )}
+
+                                      {feedbackPending && (
+                                        <DropdownMenuItem onClick={() => openAddFeedback(iv)} className="text-[11px] font-semibold text-amber-600 focus:text-amber-600 cursor-pointer">
+                                          <MessageSquareWarning className="w-3.5 h-3.5 mr-2 text-amber-500" /> Add Feedback
+                                        </DropdownMenuItem>
+                                      )}
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
                         {(!candidate.interviewsList || candidate.interviewsList.length === 0) && (
                           <tr>
-                            <td colSpan={5} className="py-6 text-center text-[11px] font-bold text-slate-400">
-                              No interviews scheduled.
+                            <td colSpan={6} className="py-8 text-center text-[11px] font-bold text-slate-400">
+                              No interviews recorded yet.
                             </td>
                           </tr>
                         )}
@@ -1265,7 +1436,7 @@ export default function CandidateProfile() {
                     <div className="text-[10px] text-slate-500 mt-1.5 font-medium bg-slate-50 p-2 rounded-lg border border-slate-100 block">
                             {detail && <div className="mb-1 text-slate-600 font-semibold">{detail}</div>}
                             <div className="font-semibold text-slate-500">
-                              By: {item.author || (item.message.toLowerCase().includes("application received") || item.message.toLowerCase().includes("created") ? "System" : (currentUser?.name || "Administrator"))}
+                              By: {item.author || (item.message.toLowerCase().includes("application received") || item.message.toLowerCase().includes("created") ? "System" : (typeof currentUser === 'string' ? currentUser : "Administrator"))}
                             </div>
                           </div>
                         </div>
@@ -1594,6 +1765,318 @@ export default function CandidateProfile() {
               )}
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+      {/* View Interview Details Modal */}
+      <Dialog open={isInterviewViewOpen} onOpenChange={setIsInterviewViewOpen}>
+        <DialogContent className="max-w-lg rounded-2xl p-6 bg-white shadow-2xl border-0">
+          <DialogHeader className="pb-3 border-b border-slate-100">
+            <div className="flex items-center justify-between pr-6">
+              <DialogTitle className="text-base font-extrabold text-slate-900 flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-blue-600" />
+                Interview Details
+              </DialogTitle>
+            </div>
+          </DialogHeader>
+
+          {selectedInterviewForView && (() => {
+            const isCompleted = selectedInterviewForView.status === "Completed";
+            const hasEvaluation = isCompleted && (selectedInterviewForView.result || selectedInterviewForView.rating || selectedInterviewForView.feedback || selectedInterviewForView.recommendation || selectedInterviewForView.comments);
+
+            return (
+              <div className="space-y-4 pt-1 text-[12px]">
+                {/* Header Badge & Stage */}
+                <div className="p-3.5 bg-slate-50/80 rounded-xl border border-slate-100 flex items-center justify-between">
+                  <div>
+                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Interview Stage</div>
+                    <div className="text-sm font-black text-slate-900 mt-0.5">{selectedInterviewForView.type} Round</div>
+                  </div>
+                  <Badge className={cn("text-[10px] font-bold uppercase border-transparent px-2.5 py-1", 
+                    selectedInterviewForView.status === "Scheduled" ? "bg-blue-50 text-blue-700 ring-1 ring-blue-500/20" :
+                    selectedInterviewForView.status === "Completed" ? "bg-purple-50 text-purple-700 ring-1 ring-purple-500/20" :
+                    selectedInterviewForView.status === "Cancelled" ? "bg-red-50 text-red-700 ring-1 ring-red-500/20" : "bg-slate-100 text-slate-700"
+                  )}>
+                    {selectedInterviewForView.status}
+                  </Badge>
+                </div>
+
+                {/* Grid 2x2 Details */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="p-3 bg-white rounded-xl border border-slate-100 shadow-xs">
+                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1 mb-1">
+                      <Clock className="w-3 h-3 text-slate-400" /> Date & Time
+                    </div>
+                    <div className="font-bold text-slate-800">
+                      {selectedInterviewForView.interviewDate ? formatDateTime(selectedInterviewForView.interviewDate) : "-"}
+                    </div>
+                  </div>
+
+                  <div className="p-3 bg-white rounded-xl border border-slate-100 shadow-xs">
+                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1 mb-1">
+                      <User className="w-3 h-3 text-slate-400" /> Interviewer
+                    </div>
+                    <div className="font-bold text-slate-800">
+                      {selectedInterviewForView.interviewers || "Unassigned"}
+                    </div>
+                  </div>
+
+                  <div className="p-3 bg-white rounded-xl border border-slate-100 shadow-xs">
+                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1 mb-1">
+                      {selectedInterviewForView.mode === "Online" ? (
+                        <Video className="w-3 h-3 text-blue-500" />
+                      ) : selectedInterviewForView.mode === "Phone" ? (
+                        <Phone className="w-3 h-3 text-emerald-500" />
+                      ) : (
+                        <MapPin className="w-3 h-3 text-amber-500" />
+                      )}{" "}
+                      Mode
+                    </div>
+                    <div className="font-bold text-slate-800">
+                      {selectedInterviewForView.mode || "Online"}
+                    </div>
+                  </div>
+
+                  <div className="p-3 bg-white rounded-xl border border-slate-100 shadow-xs">
+                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1 mb-1">
+                      <CheckCircle2 className="w-3 h-3 text-emerald-500" /> Outcome / Result
+                    </div>
+                    <div className="font-bold text-slate-800 flex items-center gap-1.5">
+                      {isCompleted && selectedInterviewForView.result ? selectedInterviewForView.result : "—"}
+                      {isCompleted && selectedInterviewForView.rating && (
+                        <span className="text-[10px] font-semibold text-slate-500">
+                          ({selectedInterviewForView.rating}/5 ⭐)
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Location or Meeting Link */}
+                {selectedInterviewForView.meeting_link && (
+                  <div className="p-3 bg-blue-50/40 rounded-xl border border-blue-100">
+                    <div className="text-[10px] font-bold text-blue-600 uppercase tracking-wider mb-1">Meeting Link</div>
+                    <a
+                      href={selectedInterviewForView.meeting_link.startsWith("http") ? selectedInterviewForView.meeting_link : `https://${selectedInterviewForView.meeting_link}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="font-bold text-blue-600 hover:text-blue-700 underline flex items-center gap-1.5 truncate"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5 shrink-0" /> {selectedInterviewForView.meeting_link}
+                    </a>
+                  </div>
+                )}
+
+                {selectedInterviewForView.location && (
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Location</div>
+                    <div className="font-bold text-slate-800">{selectedInterviewForView.location}</div>
+                  </div>
+                )}
+
+                {/* Evaluation Details (Only for Completed / Evaluated interviews) */}
+                {hasEvaluation ? (
+                  <div className="space-y-2 pt-1 border-t border-slate-100">
+                    {selectedInterviewForView.recommendation && (
+                      <div className="flex items-center justify-between p-2.5 bg-slate-50 rounded-lg">
+                        <span className="text-[11px] font-bold text-slate-500">Recommendation</span>
+                        <span className="text-[11px] font-bold text-slate-900">{selectedInterviewForView.recommendation}</span>
+                      </div>
+                    )}
+
+                    {selectedInterviewForView.feedback && (
+                      <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Feedback Summary</div>
+                        <div className="text-[11px] text-slate-700 font-medium leading-relaxed whitespace-pre-wrap">
+                          {selectedInterviewForView.feedback}
+                        </div>
+                      </div>
+                    )}
+
+                    {selectedInterviewForView.comments && (
+                      <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Interviewer Comments</div>
+                        <div className="text-[11px] text-slate-700 font-medium leading-relaxed whitespace-pre-wrap">
+                          {selectedInterviewForView.comments}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : null}
+
+                {/* Cancellation Reason */}
+                {(selectedInterviewForView.status === "Cancelled" || selectedInterviewForView.cancellation_reason) && (
+                  <div className="p-3 bg-red-50/50 rounded-xl border border-red-100">
+                    <div className="text-[10px] font-bold text-red-700 uppercase tracking-wider mb-1 flex items-center gap-1">
+                      <XCircle className="w-3.5 h-3.5 text-red-500" /> Cancellation Reason
+                    </div>
+                    <div className="text-[11px] text-red-900 font-semibold leading-relaxed">
+                      {selectedInterviewForView.cancellation_reason || selectedInterviewForView.notes || "Cancelled by administrator"}
+                    </div>
+                  </div>
+                )}
+
+                {/* Internal Notes */}
+                {selectedInterviewForView.notes && selectedInterviewForView.status !== "Cancelled" && (
+                  <div className="p-3 bg-amber-50/40 rounded-xl border border-amber-100">
+                    <div className="text-[10px] font-bold text-amber-700 uppercase tracking-wider mb-1">Internal Notes</div>
+                    <div className="text-[11px] text-amber-900 font-medium leading-relaxed whitespace-pre-wrap">
+                      {selectedInterviewForView.notes}
+                    </div>
+                  </div>
+                )}
+
+                <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2.5">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setIsInterviewViewOpen(false)}
+                    className="h-8 text-xs font-bold px-4"
+                  >
+                    Close
+                  </Button>
+                  {(selectedInterviewForView.status === "Scheduled" || selectedInterviewForView.status === "Confirmed" || selectedInterviewForView.status === "Rescheduled") && (
+                    <Button
+                      onClick={() => {
+                        setIsInterviewViewOpen(false);
+                        openEditInterview(selectedInterviewForView);
+                      }}
+                      className="h-8 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white px-4 shadow-sm"
+                    >
+                      Edit Interview
+                    </Button>
+                  )}
+                  {selectedInterviewForView.status === "Completed" && (!selectedInterviewForView.feedback || !selectedInterviewForView.rating) && (
+                    <Button
+                      onClick={() => {
+                        setIsInterviewViewOpen(false);
+                        openAddFeedback(selectedInterviewForView);
+                      }}
+                      className="h-8 text-xs font-bold bg-purple-600 hover:bg-purple-700 text-white px-4 shadow-sm"
+                    >
+                      Add Feedback
+                    </Button>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
+      {/* Cancel Interview Confirmation Modal */}
+      <Dialog open={cancelInterviewDialogItem !== null} onOpenChange={(open) => !open && setCancelInterviewDialogItem(null)}>
+        <DialogContent className="max-w-md rounded-2xl p-6 bg-white shadow-2xl border-0">
+          <DialogHeader className="pb-3 border-b border-slate-100">
+            <DialogTitle className="text-base font-extrabold text-slate-900 flex items-center gap-2">
+              <XCircle className="w-5 h-5 text-red-600" />
+              Cancel Interview?
+            </DialogTitle>
+          </DialogHeader>
+
+          {cancelInterviewDialogItem && (
+            <div className="space-y-4 pt-1 text-[12px]">
+              <div className="p-3 bg-red-50/50 rounded-xl border border-red-100 text-slate-700 font-medium leading-relaxed">
+                Are you sure you want to cancel this <strong className="text-slate-900">{cancelInterviewDialogItem.type}</strong> interview scheduled for <strong className="text-slate-900">{cancelInterviewDialogItem.interviewDate ? formatDateTime(cancelInterviewDialogItem.interviewDate) : "the scheduled time"}</strong> with <strong className="text-slate-900">{cancelInterviewDialogItem.interviewers || "the interviewer"}</strong>?
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">Cancellation Reason *</Label>
+                <Select value={cancellationReason} onValueChange={setCancellationReason}>
+                  <SelectTrigger className="h-9 text-[12px] font-semibold bg-white border-slate-200">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Candidate unavailable" className="text-[12px]">Candidate unavailable</SelectItem>
+                    <SelectItem value="Interviewer unavailable" className="text-[12px]">Interviewer unavailable</SelectItem>
+                    <SelectItem value="Position put on hold" className="text-[12px]">Position put on hold</SelectItem>
+                    <SelectItem value="Rescheduled" className="text-[12px]">Rescheduled</SelectItem>
+                    <SelectItem value="Other" className="text-[12px]">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {cancellationReason === "Other" && (
+                <div className="space-y-1.5">
+                  <Label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">Specify Reason</Label>
+                  <Input
+                    placeholder="Enter reason for cancellation..."
+                    value={cancellationCustomReason}
+                    onChange={(e) => setCancellationCustomReason(e.target.value)}
+                    className="h-9 text-[12px] font-medium"
+                  />
+                </div>
+              )}
+
+              <p className="text-[11px] text-slate-400 font-medium">
+                Note: Cancelling will keep this record in Interview History for audit purposes and update the candidate's activity history.
+              </p>
+
+              <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setCancelInterviewDialogItem(null)}
+                  className="h-8 text-xs font-bold"
+                >
+                  Keep Interview
+                </Button>
+                <Button
+                  onClick={handleConfirmCancelInterview}
+                  className="h-8 text-xs font-bold bg-red-600 hover:bg-red-700 text-white px-4 shadow-sm"
+                >
+                  Confirm Cancellation
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Stage Transition Reason Modal (for Rejected, No Show, Offer Declined, Offer Expired) */}
+      <Dialog open={stageReasonDialogOpen} onOpenChange={(open) => !open && setStageReasonDialogOpen(false)}>
+        <DialogContent className="max-w-md rounded-2xl p-6 bg-white shadow-2xl border-0">
+          <DialogHeader className="pb-3 border-b border-slate-100">
+            <DialogTitle className="text-base font-extrabold text-slate-900 flex items-center gap-2">
+              <AlertCircle className="w-5 h-5 text-amber-600" />
+              Update Status to {targetStagePending}?
+            </DialogTitle>
+          </DialogHeader>
+
+          {targetStagePending && (
+            <div className="space-y-4 pt-1 text-[12px]">
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-slate-700 font-medium leading-relaxed">
+                Candidate <strong className="text-slate-900">{candidate.name}</strong> will be moved from <strong className="text-slate-900">{candidate.stage}</strong> to <strong className="text-slate-900">{targetStagePending}</strong>.
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">
+                  Reason / Notes {["Rejected", "No Show"].includes(targetStagePending) ? "*" : "(Optional)"}
+                </Label>
+                <Textarea
+                  placeholder={`Enter reason or details for ${targetStagePending}...`}
+                  value={stageReasonInput}
+                  onChange={(e) => setStageReasonInput(e.target.value)}
+                  className="h-20 text-[12px] font-medium resize-none"
+                />
+              </div>
+
+              <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setStageReasonDialogOpen(false);
+                    setTargetStagePending(null);
+                  }}
+                  className="h-8 text-xs font-bold"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={confirmStageReason}
+                  className="h-8 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white px-4 shadow-sm"
+                >
+                  Confirm Status Change
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

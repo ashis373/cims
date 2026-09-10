@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface Props {
   candidates: Candidate[];
@@ -60,7 +61,22 @@ export function CandidateTable({ candidates, selected, onSelectedChange }: Props
               </td>
               <td className="px-3 py-2.5">{c.role}</td>
               <td className="px-3 py-2.5">
-                <Select value={c.stage} onValueChange={(v) => setStage(c.id, v as Stage)}>
+                <Select
+                  value={c.stage}
+                  onValueChange={(v) => {
+                    const isEarly = ["New Applicant", "Shortlisted", "HR Call Scheduled"].includes(c.stage);
+                    const isOfferOrJoined = ["Offer Released", "Offer Accepted", "Offer Declined", "Offer Expired", "Joined"].includes(v);
+                    if (isEarly && isOfferOrJoined) {
+                      toast.error(`Candidates in ${c.stage} must go through interview rounds before an offer can be released.`);
+                      return;
+                    }
+                    if (c.stage === "Interview Scheduled" && isOfferOrJoined) {
+                      toast.error(`Interview Scheduled is locked. The interview must be conducted and completed before releasing an offer.`);
+                      return;
+                    }
+                    setStage(c.id, v as Stage);
+                  }}
+                >
                   <SelectTrigger
                     className={cn("h-7 w-[170px] text-xs border", STAGE_COLORS[c.stage])}
                   >

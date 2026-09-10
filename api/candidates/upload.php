@@ -16,9 +16,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $fileTmpPath = $_FILES['resume']['tmp_name'];
         $originalName = basename($_FILES['resume']['name']);
         
+        // Remove null bytes and path traversal attempts
+        $originalName = str_replace(chr(0), '', $originalName);
         $fileExtension = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
         $isImage = in_array($fileExtension, ['jpg', 'jpeg', 'png']);
         
+        // Strict File Size Restrictions: 1MB for photos, 2MB for resumes/docs
         $maxSize = $isImage ? (1 * 1024 * 1024) : (2 * 1024 * 1024);
         if ($_FILES['resume']['size'] > $maxSize) {
             http_response_code(400);
@@ -40,23 +43,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ];
         $allowedExtensions = ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'];
         
-        $fileMimeType = mime_content_type($fileTmpPath);
-        $fileExtension = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $fileMimeType = finfo_file($finfo, $fileTmpPath);
+        finfo_close($finfo);
         
         if (!in_array($fileMimeType, $allowedMimeTypes) || !in_array($fileExtension, $allowedExtensions)) {
             http_response_code(400);
-            echo json_encode(["error" => "Invalid file type. Only PDF, DOC, DOCX, JPG, and PNG are allowed."]);
+            echo json_encode(["error" => "Invalid file type. Only secure PDF, DOC, DOCX, JPG, and PNG files are allowed."]);
             exit;
         }
+
+        // Deep inspect image files to prevent malicious scripts disguised as images
+        if ($isImage) {
+            $imageInfo = @getimagesize($fileTmpPath);
+            if ($imageInfo === false) {
+                http_response_code(400);
+                echo json_encode(["error" => "Uploaded image is corrupted or invalid."]);
+                exit;
+            }
+        }
         
-        $fileName = time() . '_' . preg_replace("/[^a-zA-Z0-9.-]/", "_", $originalName);
+        // Generate secure random sanitized filename
+        $safeBase = preg_replace("/[^a-zA-Z0-9_-]/", "_", pathinfo($originalName, PATHINFO_FILENAME));
+        $safeBase = substr($safeBase, 0, 40);
+        $randomSuffix = bin2hex(random_bytes(6));
+        $fileName = time() . '_' . $safeBase . '_' . $randomSuffix . '.' . $fileExtension;
         $destPath = $uploadDir . $fileName;
         
         if (move_uploaded_file($fileTmpPath, $destPath)) {
+            chmod($destPath, 0644); // Restrict execution permission
             echo json_encode(["success" => true, "filename" => $fileName]);
         } else {
             http_response_code(500);
-            echo json_encode(["error" => "Error moving the uploaded file."]);
+            echo json_encode(["error" => "Error securely saving the uploaded file."]);
         }
     } else {
         http_response_code(400);

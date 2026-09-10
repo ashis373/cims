@@ -68,36 +68,102 @@ export default function CareersPage() {
   }, [search]);
 
 
+  const isFresher = experience === "Fresher";
+
   const validateForm = () => {
     setFormError("");
-    if (!/^[a-zA-Z\s]{2,50}$/.test(name)) {
+    if (!name.trim()) {
+      setFormError("Full Name is required.");
+      return false;
+    }
+    if (!/^[a-zA-Z\s]{2,50}$/.test(name.trim())) {
       setFormError("Name must contain only letters and be between 2 to 50 characters.");
       return false;
     }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (!email.trim()) {
+      setFormError("Email Address is required.");
+      return false;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
       setFormError("Please enter a valid email address.");
       return false;
     }
-    if (phone && !/^\d{10}$/.test(phone.replace(/\D/g, ''))) {
-      setFormError("Phone number must be exactly 10 digits.");
+    if (!phone.trim()) {
+      setFormError("Phone Number is required.");
       return false;
     }
-    if (alternateMobile && !/^\d{10}$/.test(alternateMobile.replace(/\D/g, ''))) {
+    if (!/^\d{10}$/.test(phone.replace(/\D/g, ''))) {
+      setFormError("Phone number must be a valid 10-digit number.");
+      return false;
+    }
+    if (alternateMobile.trim() && !/^\d{10}$/.test(alternateMobile.replace(/\D/g, ''))) {
       setFormError("Alternate mobile must be exactly 10 digits.");
       return false;
     }
-    if (linkedInProfile && !/^(https?:\/\/)?([\w]+\.)?linkedin\.com\/.*$/i.test(linkedInProfile)) {
+    if (linkedInProfile.trim() && !/^(https?:\/\/)?([\w]+\.)?linkedin\.com\/.*$/i.test(linkedInProfile.trim())) {
       setFormError("Please enter a valid LinkedIn URL.");
       return false;
     }
-    if (currentCtc && !/^\d+(\.\d+)?$/.test(currentCtc.replace(/[^\d.]/g, ''))) {
-      setFormError("Current CTC should contain valid numbers.");
+    if (!location.trim()) {
+      setFormError("Current Location is required.");
       return false;
     }
-    if (expectedCtc && !/^\d+(\.\d+)?$/.test(expectedCtc.replace(/[^\d.]/g, ''))) {
-      setFormError("Expected CTC should contain valid numbers.");
+    if (!preferredLocation.trim()) {
+      setFormError("Preferred Location is required.");
       return false;
     }
+    if (!experience) {
+      setFormError("Total Experience is required.");
+      return false;
+    }
+    if (!relevantExperience) {
+      setFormError("Relevant Experience is required.");
+      return false;
+    }
+
+    // Conditional requirements: Required for experienced candidates, optional for freshers
+    if (!isFresher) {
+      if (!currentCompany.trim()) {
+        setFormError("Current Company is required for experienced candidates.");
+        return false;
+      }
+      if (!currentDesignation.trim()) {
+        setFormError("Current Designation is required for experienced candidates.");
+        return false;
+      }
+      if (!currentCtc.trim()) {
+        setFormError("Current CTC is required for experienced candidates.");
+        return false;
+      }
+    }
+
+    if (currentCtc.trim() && !/^\d+(\.\d+)?$/.test(currentCtc.replace(/[^\d.]/g, ''))) {
+      setFormError("Current CTC should contain valid numbers (e.g. 6 LPA).");
+      return false;
+    }
+
+    if (!expectedCtc.trim()) {
+      setFormError("Expected CTC is required.");
+      return false;
+    }
+    if (!/^\d+(\.\d+)?$/.test(expectedCtc.replace(/[^\d.]/g, ''))) {
+      setFormError("Expected CTC should contain valid numbers (e.g. 10 LPA).");
+      return false;
+    }
+
+    if (!noticePeriod) {
+      setFormError("Notice Period is required.");
+      return false;
+    }
+    if (!skills.trim()) {
+      setFormError("Key Skills are required.");
+      return false;
+    }
+    if (!resume) {
+      setFormError("Please upload your Resume / CV.");
+      return false;
+    }
+
     return true;
   };
 
@@ -105,9 +171,27 @@ export default function CareersPage() {
     e.preventDefault();
     setHasSubmitted(true);
     setFormError("");
-    if (!name || !email || !resume || !selectedJob) {
-      setFormError("Please fill in all required fields and attach your resume.");
-      return;
+    if (resume) {
+      const resumeExt = resume.name.split('.').pop()?.toLowerCase();
+      if (!['pdf', 'doc', 'docx'].includes(resumeExt || '')) {
+        setFormError("Resume must be a PDF, DOC, or DOCX file.");
+        return;
+      }
+      if (resume.size > 5 * 1024 * 1024) {
+        setFormError("Resume file size cannot exceed 5MB.");
+        return;
+      }
+    }
+    if (photo) {
+      const photoExt = photo.name.split('.').pop()?.toLowerCase();
+      if (!['jpg', 'jpeg', 'png'].includes(photoExt || '')) {
+        setFormError("Profile photo must be a JPG or PNG image.");
+        return;
+      }
+      if (photo.size > 1 * 1024 * 1024) {
+        setFormError("Profile photo file size cannot exceed 1MB.");
+        return;
+      }
     }
     if (!validateForm()) return;
 
@@ -617,209 +701,317 @@ export default function CareersPage() {
             </div>
 
             {/* Application Form */}
-            <div className="w-full md:w-[60%] p-8 md:p-12 bg-white relative z-10">
-              <h3 className="text-2xl font-bold text-slate-900 mb-8">Apply for this position</h3>
-
-              {/* Note: I'm preserving the existing form unchanged as per user request to only change UI, but giving it minor tailwind updates to match the new clean look */}
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="space-y-4">
+            <div className="w-full md:w-[60%] p-8 md:p-12 bg-white relative z-10 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between pb-6 mb-8 border-b border-slate-100">
                   <div>
-                    <Label className="text-slate-600 mb-2 block font-bold">Full Name *</Label>
-                    <Input
-                      value={name}
-                      onChange={e => setName(e.target.value)}
-                      placeholder="John Doe"
-                      className={`h-12 rounded-xl focus-visible:ring-indigo-500 ${hasSubmitted && !name ? 'bg-red-50 border-red-400' : 'bg-slate-50 border-slate-200'}`}
-                    />
+                    <h3 className="text-2xl font-black text-slate-900 tracking-tight">Apply for this position</h3>
+                    <p className="text-xs text-slate-500 font-medium mt-1">Please complete the form below. Fields marked with <span className="text-rose-500 font-bold">*</span> are required.</p>
                   </div>
+                  <Badge className="bg-indigo-50 text-indigo-700 border-indigo-100/80 px-3 py-1 text-[11px] font-bold rounded-lg shrink-0">
+                    {selectedJob.type || 'Full Time'}
+                  </Badge>
+                </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <form onSubmit={handleSubmit} className="space-y-8">
+                  {/* Section 1: Personal Information */}
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-slate-400">
+                      <Users className="w-3.5 h-3.5 text-indigo-500" />
+                      Personal Information
+                    </div>
+
                     <div>
-                      <Label className="text-slate-600 mb-2 block font-bold">Email Address *</Label>
+                      <Label className="text-slate-700 text-xs font-bold mb-1.5 block">Full Name <span className="text-rose-500">*</span></Label>
                       <Input
-                        type="email"
-                        value={email}
-                        onChange={e => setEmail(e.target.value)}
-                        placeholder="john@example.com"
-                        className={`h-12 rounded-xl focus-visible:ring-indigo-500 ${hasSubmitted && !email ? 'bg-red-50 border-red-400' : 'bg-slate-50 border-slate-200'}`}
+                        value={name}
+                        onChange={e => setName(e.target.value)}
+                        placeholder="e.g. John Doe"
+                        className={`h-11 rounded-xl text-xs font-semibold focus-visible:ring-indigo-500 ${hasSubmitted && !name ? 'bg-red-50/50 border-red-400' : 'bg-slate-50/60 border-slate-200'}`}
                       />
                     </div>
-                    <div>
-                      <Label className="text-slate-600 mb-2 block font-bold">Phone Number</Label>
-                      <Input
-                        value={phone}
-                        onChange={e => setPhone(e.target.value)}
-                        placeholder="+1 (555) 000-0000"
-                        className="h-12 bg-slate-50 border-slate-200 rounded-xl focus-visible:ring-indigo-500"
-                      />
-                    </div>
-                  </div>
 
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label className="text-slate-600 mb-2 block font-bold">Alternate Mobile</Label>
-                      <Input value={alternateMobile} onChange={e => setAlternateMobile(e.target.value)} placeholder="+1 (555) 000-0000" className="h-12 bg-slate-50 border-slate-200 rounded-xl focus-visible:ring-indigo-500" />
-                    </div>
-                    <div>
-                      <Label className="text-slate-600 mb-2 block font-bold">LinkedIn Profile</Label>
-                      <Input value={linkedInProfile} onChange={e => setLinkedInProfile(e.target.value)} placeholder="https://linkedin.com/in/johndoe" className="h-12 bg-slate-50 border-slate-200 rounded-xl focus-visible:ring-indigo-500" />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label className="text-slate-600 mb-2 block font-bold">Current Location</Label>
-                      <Input value={location} onChange={e => setLocation(e.target.value)} placeholder="New York, NY" className="h-12 bg-slate-50 border-slate-200 rounded-xl focus-visible:ring-indigo-500" />
-                    </div>
-                    <div>
-                      <Label className="text-slate-600 mb-2 block font-bold">Preferred Location</Label>
-                      <Input value={preferredLocation} onChange={e => setPreferredLocation(e.target.value)} placeholder="Remote / San Francisco" className="h-12 bg-slate-50 border-slate-200 rounded-xl focus-visible:ring-indigo-500" />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label className="text-slate-600 mb-2 block font-bold">Total Experience</Label>
-                      <select value={experience} onChange={e => setExperience(e.target.value)} className={`w-full h-12 rounded-xl px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 border ${hasSubmitted && !experience ? 'bg-red-50 border-red-400' : 'bg-slate-50 border-slate-200'}`}>
-                        <option value="">Select Experience</option>
-                        <option value="Fresher">Fresher</option>
-                        <option value="1-3 Years">1-3 Years</option>
-                        <option value="3-5 Years">3-5 Years</option>
-                        <option value="5-8 Years">5-8 Years</option>
-                        <option value="8+ Years">8+ Years</option>
-                      </select>
-                    </div>
-                    <div>
-                      <Label className="text-slate-600 mb-2 block font-bold">Relevant Experience</Label>
-                      <select value={relevantExperience} onChange={e => setRelevantExperience(e.target.value)} className={`w-full h-12 rounded-xl px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 border ${hasSubmitted && !relevantExperience ? 'bg-red-50 border-red-400' : 'bg-slate-50 border-slate-200'}`}>
-                        <option value="">Select Relevant Exp</option>
-                        <option value="Fresher">Fresher</option>
-                        <option value="1-3 Years">1-3 Years</option>
-                        <option value="3-5 Years">3-5 Years</option>
-                        <option value="5-8 Years">5-8 Years</option>
-                        <option value="8+ Years">8+ Years</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label className="text-slate-600 mb-2 block font-bold">Current Company</Label>
-                      <Input value={currentCompany} onChange={e => setCurrentCompany(e.target.value)} placeholder="Acme Corp" className="h-12 bg-slate-50 border-slate-200 rounded-xl focus-visible:ring-indigo-500" />
-                    </div>
-                    <div>
-                      <Label className="text-slate-600 mb-2 block font-bold">Current Designation</Label>
-                      <Input value={currentDesignation} onChange={e => setCurrentDesignation(e.target.value)} placeholder="Software Engineer" className="h-12 bg-slate-50 border-slate-200 rounded-xl focus-visible:ring-indigo-500" />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <Label className="text-slate-600 mb-2 block font-bold">Current CTC</Label>
-                      <Input value={currentCtc} onChange={e => setCurrentCtc(e.target.value)} placeholder="e.g. 10 LPA" className="h-12 bg-slate-50 border-slate-200 rounded-xl focus-visible:ring-indigo-500" />
-                    </div>
-                    <div>
-                      <Label className="text-slate-600 mb-2 block font-bold">Expected CTC</Label>
-                      <Input value={expectedCtc} onChange={e => setExpectedCtc(e.target.value)} placeholder="e.g. 15 LPA" className="h-12 bg-slate-50 border-slate-200 rounded-xl focus-visible:ring-indigo-500" />
-                    </div>
-                    <div>
-                      <Label className="text-slate-600 mb-2 block font-bold">Notice Period</Label>
-                      <select value={noticePeriod} onChange={e => setNoticePeriod(e.target.value)} className="w-full h-12 bg-slate-50 border border-slate-200 rounded-xl px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                        <option value="">Select Notice Period</option>
-                        <option value="Immediate">Immediate</option>
-                        <option value="15 Days">15 Days</option>
-                        <option value="30 Days">30 Days</option>
-                        <option value="60 Days">60 Days</option>
-                        <option value="90 Days">90 Days</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label className="text-slate-600 mb-2 block font-bold">Skills (comma separated)</Label>
-                    <Input value={skills} onChange={e => setSkills(e.target.value)} placeholder="React, Node.js, Typescript" className="h-12 bg-slate-50 border-slate-200 rounded-xl focus-visible:ring-indigo-500" />
-                  </div>
-
-
-                  <div>
-                    <Label className="text-slate-600 mb-2 block font-bold">Resume / CV *</Label>
-                    <div
-                      onClick={() => fileInputRef.current?.click()}
-                      className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all ${resume ? 'border-indigo-500 bg-indigo-50/50' : (hasSubmitted && !resume ? 'border-red-400 bg-red-50 hover:bg-red-100' : 'border-slate-200 bg-slate-50 hover:bg-slate-100 hover:border-slate-300')}`}
-                    >
-                      <input
-                        type="file"
-                        ref={fileInputRef}
-                        onChange={e => setResume(e.target.files?.[0] || null)}
-                        accept=".pdf,.doc,.docx"
-                        className="hidden"
-                      />
-                      <div className={`w-12 h-12 mx-auto rounded-full flex items-center justify-center mb-3 ${resume ? 'bg-indigo-100 text-indigo-600' : 'bg-white text-slate-400 shadow-sm'}`}>
-                        <Upload className="h-5 w-5" />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-slate-700 text-xs font-bold mb-1.5 block">Email Address <span className="text-rose-500">*</span></Label>
+                        <Input
+                          type="email"
+                          value={email}
+                          onChange={e => setEmail(e.target.value)}
+                          placeholder="john@example.com"
+                          className={`h-11 rounded-xl text-xs font-semibold focus-visible:ring-indigo-500 ${hasSubmitted && !email ? 'bg-red-50/50 border-red-400' : 'bg-slate-50/60 border-slate-200'}`}
+                        />
                       </div>
-                      {resume ? (
-                        <>
-                          <p className="text-[14px] font-bold text-slate-900">{resume.name}</p>
-                          <p className="text-[12px] text-slate-500 mt-1">{(resume.size / 1024 / 1024).toFixed(2)} MB</p>
-                        </>
-                      ) : (
-                        <>
-                          <p className="text-[14px] font-bold text-slate-700">Click to upload your resume</p>
-                          <p className="text-[12px] text-slate-500 mt-1">PDF, DOC, DOCX up to 10MB</p>
-                        </>
-                      )}
+                      <div>
+                        <Label className="text-slate-700 text-xs font-bold mb-1.5 block">Phone Number <span className="text-rose-500">*</span></Label>
+                        <Input
+                          value={phone}
+                          onChange={e => setPhone(e.target.value)}
+                          placeholder="+91 98765 43210"
+                          className={`h-11 rounded-xl text-xs font-semibold focus-visible:ring-indigo-500 ${hasSubmitted && !phone ? 'bg-red-50/50 border-red-400' : 'bg-slate-50/60 border-slate-200'}`}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-slate-700 text-xs font-bold mb-1.5 block">Alternate Mobile <span className="text-slate-400 font-normal">(Optional)</span></Label>
+                        <Input 
+                          value={alternateMobile} 
+                          onChange={e => setAlternateMobile(e.target.value)} 
+                          placeholder="+91 98765 43211" 
+                          className="h-11 bg-slate-50/60 border-slate-200 rounded-xl text-xs font-semibold focus-visible:ring-indigo-500" 
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-slate-700 text-xs font-bold mb-1.5 block">LinkedIn Profile <span className="text-slate-400 font-normal">(Optional)</span></Label>
+                        <Input 
+                          value={linkedInProfile} 
+                          onChange={e => setLinkedInProfile(e.target.value)} 
+                          placeholder="https://linkedin.com/in/username" 
+                          className="h-11 bg-slate-50/60 border-slate-200 rounded-xl text-xs font-semibold focus-visible:ring-indigo-500" 
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-slate-700 text-xs font-bold mb-1.5 block">Current Location <span className="text-rose-500">*</span></Label>
+                        <Input 
+                          value={location} 
+                          onChange={e => setLocation(e.target.value)} 
+                          placeholder="e.g. Bhubaneswar, India" 
+                          className={`h-11 rounded-xl text-xs font-semibold focus-visible:ring-indigo-500 ${hasSubmitted && !location ? 'bg-red-50/50 border-red-400' : 'bg-slate-50/60 border-slate-200'}`} 
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-slate-700 text-xs font-bold mb-1.5 block">Preferred Location <span className="text-rose-500">*</span></Label>
+                        <Input 
+                          value={preferredLocation} 
+                          onChange={e => setPreferredLocation(e.target.value)} 
+                          placeholder="e.g. Remote / Hybrid" 
+                          className={`h-11 rounded-xl text-xs font-semibold focus-visible:ring-indigo-500 ${hasSubmitted && !preferredLocation ? 'bg-red-50/50 border-red-400' : 'bg-slate-50/60 border-slate-200'}`} 
+                        />
+                      </div>
                     </div>
                   </div>
-                </div>
 
-
-                <div>
-                  <Label className="text-slate-600 mb-2 block font-bold">Profile Photo</Label>
-                  <div
-                    onClick={() => photoInputRef.current?.click()}
-                    className={`border-2 border-dashed rounded-2xl p-4 text-center cursor-pointer transition-all ${photo ? 'border-emerald-500 bg-emerald-50/50' : 'border-slate-200 bg-slate-50 hover:bg-slate-100 hover:border-slate-300'}`}
-                  >
-                    <input
-                      type="file"
-                      ref={photoInputRef}
-                      onChange={e => setPhoto(e.target.files?.[0] || null)}
-                      accept=".jpg,.jpeg,.png"
-                      className="hidden"
-                    />
-                    <div className={`w-10 h-10 mx-auto rounded-full flex items-center justify-center mb-2 ${photo ? 'bg-emerald-100 text-emerald-600' : 'bg-white text-slate-400 shadow-sm'}`}>
-                      <Upload className="h-4 w-4" />
+                  {/* Section 2: Professional & Experience Details */}
+                  <div className="space-y-4 pt-4 border-t border-slate-100">
+                    <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-slate-400">
+                      <Briefcase className="w-3.5 h-3.5 text-indigo-500" />
+                      Professional & Experience
                     </div>
-                    {photo ? (
-                      <p className="text-[13px] font-bold text-slate-900">{photo.name}</p>
-                    ) : (
-                      <p className="text-[13px] font-bold text-slate-700">Upload Photo (Optional)</p>
-                    )}
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-slate-700 text-xs font-bold mb-1.5 block">Total Experience <span className="text-rose-500">*</span></Label>
+                        <select 
+                          value={experience} 
+                          onChange={e => setExperience(e.target.value)} 
+                          className={`w-full h-11 rounded-xl px-3 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 border ${hasSubmitted && !experience ? 'bg-red-50/50 border-red-400' : 'bg-slate-50/60 border-slate-200 text-slate-700'}`}
+                        >
+                          <option value="">Select Experience</option>
+                          <option value="Fresher">Fresher (0 years)</option>
+                          <option value="1-3 Years">1-3 Years</option>
+                          <option value="3-5 Years">3-5 Years</option>
+                          <option value="5-8 Years">5-8 Years</option>
+                          <option value="8+ Years">8+ Years</option>
+                        </select>
+                      </div>
+                      <div>
+                        <Label className="text-slate-700 text-xs font-bold mb-1.5 block">Relevant Experience <span className="text-rose-500">*</span></Label>
+                        <select 
+                          value={relevantExperience} 
+                          onChange={e => setRelevantExperience(e.target.value)} 
+                          className={`w-full h-11 rounded-xl px-3 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 border ${hasSubmitted && !relevantExperience ? 'bg-red-50/50 border-red-400' : 'bg-slate-50/60 border-slate-200 text-slate-700'}`}
+                        >
+                          <option value="">Select Relevant Exp</option>
+                          <option value="Fresher">Fresher (0 years)</option>
+                          <option value="1-3 Years">1-3 Years</option>
+                          <option value="3-5 Years">3-5 Years</option>
+                          <option value="5-8 Years">5-8 Years</option>
+                          <option value="8+ Years">8+ Years</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-slate-700 text-xs font-bold mb-1.5 flex items-center justify-between">
+                          <span>Current Company {!isFresher && <span className="text-rose-500">*</span>}</span>
+                          {isFresher && <span className="text-[10px] text-slate-400 font-normal">Not required for Fresher</span>}
+                        </Label>
+                        <Input 
+                          value={currentCompany} 
+                          disabled={isFresher}
+                          onChange={e => setCurrentCompany(e.target.value)} 
+                          placeholder={isFresher ? "N/A (Fresher)" : "e.g. Acme Innovations"} 
+                          className={`h-11 rounded-xl text-xs font-semibold focus-visible:ring-indigo-500 ${isFresher ? 'bg-slate-100/60 text-slate-400 cursor-not-allowed border-slate-200' : hasSubmitted && !isFresher && !currentCompany ? 'bg-red-50/50 border-red-400' : 'bg-slate-50/60 border-slate-200'}`} 
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-slate-700 text-xs font-bold mb-1.5 flex items-center justify-between">
+                          <span>Current Designation {!isFresher && <span className="text-rose-500">*</span>}</span>
+                          {isFresher && <span className="text-[10px] text-slate-400 font-normal">Not required for Fresher</span>}
+                        </Label>
+                        <Input 
+                          value={currentDesignation} 
+                          disabled={isFresher}
+                          onChange={e => setCurrentDesignation(e.target.value)} 
+                          placeholder={isFresher ? "N/A (Fresher)" : "e.g. Software Engineer"} 
+                          className={`h-11 rounded-xl text-xs font-semibold focus-visible:ring-indigo-500 ${isFresher ? 'bg-slate-100/60 text-slate-400 cursor-not-allowed border-slate-200' : hasSubmitted && !isFresher && !currentDesignation ? 'bg-red-50/50 border-red-400' : 'bg-slate-50/60 border-slate-200'}`} 
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div>
+                        <Label className="text-slate-700 text-xs font-bold mb-1.5 flex items-center justify-between">
+                          <span>Current CTC {!isFresher && <span className="text-rose-500">*</span>}</span>
+                          {isFresher && <span className="text-[10px] text-slate-400 font-normal">Not req.</span>}
+                        </Label>
+                        <Input 
+                          value={currentCtc} 
+                          disabled={isFresher}
+                          onChange={e => setCurrentCtc(e.target.value)} 
+                          placeholder={isFresher ? "N/A" : "e.g. 6 LPA"} 
+                          className={`h-11 rounded-xl text-xs font-semibold focus-visible:ring-indigo-500 ${isFresher ? 'bg-slate-100/60 text-slate-400 cursor-not-allowed border-slate-200' : hasSubmitted && !isFresher && !currentCtc ? 'bg-red-50/50 border-red-400' : 'bg-slate-50/60 border-slate-200'}`} 
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-slate-700 text-xs font-bold mb-1.5 block">Expected CTC <span className="text-rose-500">*</span></Label>
+                        <Input 
+                          value={expectedCtc} 
+                          onChange={e => setExpectedCtc(e.target.value)} 
+                          placeholder="e.g. 9 LPA" 
+                          className={`h-11 rounded-xl text-xs font-semibold focus-visible:ring-indigo-500 ${hasSubmitted && !expectedCtc ? 'bg-red-50/50 border-red-400' : 'bg-slate-50/60 border-slate-200'}`} 
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-slate-700 text-xs font-bold mb-1.5 block">Notice Period <span className="text-rose-500">*</span></Label>
+                        <select 
+                          value={noticePeriod} 
+                          onChange={e => setNoticePeriod(e.target.value)} 
+                          className={`w-full h-11 rounded-xl px-3 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-700 border ${hasSubmitted && !noticePeriod ? 'bg-red-50/50 border-red-400' : 'bg-slate-50/60 border-slate-200'}`}
+                        >
+                          <option value="">Select Notice Period</option>
+                          <option value="Immediate">Immediate</option>
+                          <option value="15 Days">15 Days</option>
+                          <option value="30 Days">30 Days</option>
+                          <option value="60 Days">60 Days</option>
+                          <option value="90 Days">90 Days</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label className="text-slate-700 text-xs font-bold mb-1.5 block">Key Skills <span className="text-rose-500">*</span></Label>
+                      <Input 
+                        value={skills} 
+                        onChange={e => setSkills(e.target.value)} 
+                        placeholder="e.g. Instructional Design, Storyboarding, Technical Writing" 
+                        className={`h-11 rounded-xl text-xs font-semibold focus-visible:ring-indigo-500 ${hasSubmitted && !skills ? 'bg-red-50/50 border-red-400' : 'bg-slate-50/60 border-slate-200'}`} 
+                      />
+                    </div>
                   </div>
-                </div>
 
+                  {/* Section 3: Attachments */}
+                  <div className="space-y-4 pt-4 border-t border-slate-100">
+                    <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-slate-400">
+                      <Upload className="w-3.5 h-3.5 text-indigo-500" />
+                      Documents & Photo
+                    </div>
 
-                {formError && (
-                  <div className="bg-red-50 text-red-600 border border-red-200 p-3 rounded-xl text-[14px] font-bold flex items-center gap-2">
-                    <AlertCircle className="h-5 w-5" /> {formError}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* Resume Upload */}
+                      <div>
+                        <Label className="text-slate-700 text-xs font-bold mb-1.5 block">Resume / CV <span className="text-rose-500">*</span></Label>
+                        <div
+                          onClick={() => fileInputRef.current?.click()}
+                          className={`border-2 border-dashed rounded-2xl p-5 text-center cursor-pointer transition-all ${resume ? 'border-indigo-500 bg-indigo-50/40 ring-2 ring-indigo-500/10' : (hasSubmitted && !resume ? 'border-rose-400 bg-rose-50/50 hover:bg-rose-100/50' : 'border-slate-200 bg-slate-50/50 hover:bg-slate-100/70 hover:border-slate-300')}`}
+                        >
+                          <input
+                            type="file"
+                            ref={fileInputRef}
+                            onChange={e => setResume(e.target.files?.[0] || null)}
+                            accept=".pdf,.doc,.docx"
+                            className="hidden"
+                          />
+                          <div className={`w-10 h-10 mx-auto rounded-xl flex items-center justify-center mb-2.5 transition-colors ${resume ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'bg-white text-slate-400 shadow-xs border border-slate-100'}`}>
+                            <Upload className="h-4 w-4" />
+                          </div>
+                          {resume ? (
+                            <div>
+                              <p className="text-xs font-black text-slate-900 truncate max-w-[200px] mx-auto">{resume.name}</p>
+                              <p className="text-[11px] font-bold text-indigo-600 mt-0.5">{(resume.size / 1024 / 1024).toFixed(2)} MB • Ready</p>
+                            </div>
+                          ) : (
+                            <div>
+                              <p className="text-xs font-bold text-slate-800">Upload Resume</p>
+                              <p className="text-[10.5px] text-slate-400 font-semibold mt-0.5">PDF, DOC, DOCX up to 5MB</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Photo Upload */}
+                      <div>
+                        <Label className="text-slate-700 text-xs font-bold mb-1.5 block">Profile Photo <span className="text-slate-400 font-normal">(Optional)</span></Label>
+                        <div
+                          onClick={() => photoInputRef.current?.click()}
+                          className={`border-2 border-dashed rounded-2xl p-5 text-center cursor-pointer transition-all ${photo ? 'border-emerald-500 bg-emerald-50/40 ring-2 ring-emerald-500/10' : 'border-slate-200 bg-slate-50/50 hover:bg-slate-100/70 hover:border-slate-300'}`}
+                        >
+                          <input
+                            type="file"
+                            ref={photoInputRef}
+                            onChange={e => setPhoto(e.target.files?.[0] || null)}
+                            accept=".jpg,.jpeg,.png"
+                            className="hidden"
+                          />
+                          <div className={`w-10 h-10 mx-auto rounded-xl flex items-center justify-center mb-2.5 transition-colors ${photo ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20' : 'bg-white text-slate-400 shadow-xs border border-slate-100'}`}>
+                            <Upload className="h-4 w-4" />
+                          </div>
+                          {photo ? (
+                            <div>
+                              <p className="text-xs font-black text-slate-900 truncate max-w-[200px] mx-auto">{photo.name}</p>
+                              <p className="text-[11px] font-bold text-emerald-600 mt-0.5">Photo Attached</p>
+                            </div>
+                          ) : (
+                            <div>
+                              <p className="text-xs font-bold text-slate-800">Upload Photo</p>
+                              <p className="text-[10.5px] text-slate-400 font-semibold mt-0.5">JPG, PNG up to 1MB</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                )}
 
-                <Button
-                  type="submit"
-                  disabled={submitting}
-                  className="w-full h-14 rounded-xl text-[16px] font-bold bg-[#4F46E5] hover:bg-[#4338CA] text-white shadow-lg shadow-indigo-500/25"
-                >
-                  {submitting ? (
-                    <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Submitting Application...</>
-                  ) : (
-                    "Submit Application"
+                  {formError && (
+                    <div className="bg-rose-50 text-rose-700 border border-rose-200 p-3.5 rounded-xl text-xs font-bold flex items-center gap-2 shadow-xs">
+                      <AlertCircle className="h-4 w-4 shrink-0 text-rose-600" /> {formError}
+                    </div>
                   )}
-                </Button>
-                <p className="text-center text-[12px] text-slate-400 font-medium">
-                  By submitting, you agree to our Terms and Privacy Policy.
-                </p>
-              </form>
+
+                  <div className="pt-2">
+                    <Button
+                      type="submit"
+                      disabled={submitting}
+                      className="w-full h-12 rounded-xl text-sm font-black bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-600/20 active:scale-[0.99] transition-all"
+                    >
+                      {submitting ? (
+                        <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Submitting Application...</>
+                      ) : (
+                        "Submit Application"
+                      )}
+                    </Button>
+                    <p className="text-center text-[11px] text-slate-400 font-medium mt-3">
+                      By submitting, you agree to our Terms and Privacy Policy.
+                    </p>
+                  </div>
+                </form>
+              </div>
             </div>
           </div>
         )}

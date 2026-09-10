@@ -219,11 +219,11 @@ export default function InterviewsUpcoming() {
   }, []);
 
   const uniqueInterviewers = useMemo(() => {
-    return Array.from(new Set(interviewsList.map(i => i.interviewer).filter(Boolean)));
+    return Array.from(new Set(interviewsList.filter(i => i.status !== "Completed" && i.status !== "Cancelled").map(i => i.interviewer).filter(Boolean)));
   }, [interviewsList]);
 
   const uniqueTypes = useMemo(() => {
-    return Array.from(new Set(interviewsList.map(i => i.type).filter(Boolean)));
+    return Array.from(new Set(interviewsList.filter(i => i.status !== "Completed" && i.status !== "Cancelled").map(i => i.type).filter(Boolean)));
   }, [interviewsList]);
 
   const filteredInterviews = useMemo(() => {
@@ -232,6 +232,9 @@ export default function InterviewsUpcoming() {
 
     return interviewsList
       .filter(inv => {
+        // Exclude completed interviews from upcoming page
+        if (inv.status === "Completed") return false;
+
         const name = (inv.candidateName || "").toLowerCase();
         const pos = (inv.position || "").toLowerCase();
         const type = (inv.type || "").toLowerCase();
@@ -259,15 +262,16 @@ export default function InterviewsUpcoming() {
       });
   }, [interviewsList, searchTerm, typeFilter, interviewerFilter, statusFilter]);
 
-  // Derive Stats
-  const totalScheduled = interviewsList.filter(i => i.status !== "Cancelled").length;
-  const todaysInterviews = interviewsList.filter(i => i.date && new Date(i.date).toDateString() === new Date().toDateString()).length;
-  const thisWeek = interviewsList.filter(i => {
+  // Derive Stats for upcoming interviews
+  const upcomingList = useMemo(() => interviewsList.filter(i => i.status !== "Completed" && i.status !== "Cancelled"), [interviewsList]);
+  const totalScheduled = upcomingList.length;
+  const todaysInterviews = upcomingList.filter(i => i.date && new Date(i.date).toDateString() === new Date().toDateString()).length;
+  const thisWeek = upcomingList.filter(i => {
     if (!i.date) return false;
     const diffDays = (new Date(i.date).getTime() - new Date().getTime()) / (1000 * 3600 * 24);
     return diffDays >= -1 && diffDays <= 7;
   }).length;
-  const feedbackPending = interviewsList.filter(i => !i.feedback && i.status === "Completed").length;
+  const rescheduledCount = upcomingList.filter(i => i.status === "Rescheduled").length;
   const cancelled = interviewsList.filter(i => i.status === "Cancelled").length;
 
   return (
@@ -308,10 +312,10 @@ export default function InterviewsUpcoming() {
 
       {/* Top Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-        <TopStat title="Total Scheduled" value={totalScheduled} icon={Calendar} theme="blue" trendLabel="all rounds" />
+        <TopStat title="Total Scheduled" value={totalScheduled} icon={Calendar} theme="blue" trendLabel="upcoming" />
         <TopStat title="Today's Interviews" value={todaysInterviews} icon={Clock} theme="emerald" trendLabel="active today" />
         <TopStat title="This Week" value={thisWeek} icon={CalendarDays} theme="purple" trendLabel="scheduled" />
-        <TopStat title="Feedback Pending" value={feedbackPending} icon={MessageSquareWarning} theme="amber" trendLabel="needs action" />
+        <TopStat title="Rescheduled" value={rescheduledCount} icon={MessageSquareWarning} theme="amber" trendLabel="rescheduled" />
         <TopStat title="Cancelled" value={cancelled} icon={XCircle} theme="rose" trendLabel="total cancelled" />
       </div>
 
@@ -361,8 +365,6 @@ export default function InterviewsUpcoming() {
                 <option value="scheduled">Scheduled</option>
                 <option value="confirmed">Confirmed</option>
                 <option value="rescheduled">Rescheduled</option>
-                <option value="completed">Completed</option>
-                <option value="cancelled">Cancelled</option>
               </select>
             </div>
           </Card>
@@ -433,7 +435,13 @@ export default function InterviewsUpcoming() {
                             </span>
                           </div>
                           <div className="flex items-center gap-1 text-[9px] font-bold text-slate-500">
-                            {inv.mode === "Online" ? <Video className="w-3 h-3" /> : <MapPin className="w-3 h-3" />}
+                            {inv.mode === "Online" ? (
+                              <Video className="w-3 h-3 text-blue-500" />
+                            ) : inv.mode === "Phone" ? (
+                              <Phone className="w-3 h-3 text-emerald-500" />
+                            ) : (
+                              <MapPin className="w-3 h-3 text-amber-500" />
+                            )}
                             {inv.mode}
                           </div>
                         </td>
@@ -490,7 +498,7 @@ export default function InterviewsUpcoming() {
               Today's Schedule
             </h3>
             <div className="space-y-4 relative before:absolute before:inset-0 before:ml-2 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-slate-200 before:to-transparent">
-              {interviewsList.filter(i => i.date && new Date(i.date).toDateString() === new Date().toDateString()).map((inv, idx) => (
+              {interviewsList.filter(i => i.date && new Date(i.date).toDateString() === new Date().toDateString() && i.status !== "Completed" && i.status !== "Cancelled").map((inv, idx) => (
                 <div key={idx} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
                   <div className="flex items-center justify-center w-4 h-4 rounded-full border-2 border-white bg-indigo-500 shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2" />
                   <div className="w-[calc(100%-2rem)] md:w-[calc(50%-1.5rem)] p-3 rounded-xl bg-slate-50/80 border border-slate-100 shadow-sm">

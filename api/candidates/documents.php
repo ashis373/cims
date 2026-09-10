@@ -24,6 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         $fileTmpPath = $_FILES['file']['tmp_name'];
         $originalName = basename($_FILES['file']['name']);
+        $originalName = str_replace(chr(0), '', $originalName); // Strip null bytes
         
         $allowedMimeTypes = [
             'application/pdf', 
@@ -34,25 +35,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ];
         $allowedExtensions = ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'];
         
-        $fileMimeType = mime_content_type($fileTmpPath);
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $fileMimeType = finfo_file($finfo, $fileTmpPath);
+        finfo_close($finfo);
         $fileExtension = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
         
-        if ($_FILES['file']['size'] > 10 * 1024 * 1024) {
+        // Strict 5MB limit for candidate documents
+        if ($_FILES['file']['size'] > 5 * 1024 * 1024) {
             http_response_code(400);
-            echo json_encode(["error" => "Document exceeds maximum allowed size (10MB)."]);
+            echo json_encode(["error" => "Document exceeds maximum allowed size (5MB)."]);
             exit;
         }
         
         if (!in_array($fileMimeType, $allowedMimeTypes) || !in_array($fileExtension, $allowedExtensions)) {
             http_response_code(400);
-            echo json_encode(["error" => "Invalid file type. Only PDF, DOC, DOCX, JPG, and PNG are allowed."]);
+            echo json_encode(["error" => "Invalid file type. Only secure PDF, DOC, DOCX, JPG, and PNG are allowed."]);
             exit;
         }
         
-        $fileName = time() . '_' . preg_replace("/[^a-zA-Z0-9.-]/", "_", $originalName);
+        $safeBase = preg_replace("/[^a-zA-Z0-9_-]/", "_", pathinfo($originalName, PATHINFO_FILENAME));
+        $safeBase = substr($safeBase, 0, 35);
+        $randomSuffix = bin2hex(random_bytes(6));
+        $fileName = time() . '_' . $safeBase . '_' . $randomSuffix . '.' . $fileExtension;
         $destPath = $uploadDir . $fileName;
         
         if (move_uploaded_file($fileTmpPath, $destPath)) {
+            chmod($destPath, 0644);
             $stmt = $conn->prepare("INSERT INTO cims_candidate_documents (candidate_id, name, filePath, uploadedBy) VALUES (?, ?, ?, ?)");
             $stmt->execute([
                 $_POST['candidate_id'],

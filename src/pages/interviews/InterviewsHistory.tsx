@@ -183,6 +183,21 @@ const mockHistory = [
   { id: "HIS-006", candidateName: "Natalie Portman", candidateEmail: "natalie.p@example.com", position: "Frontend Dev", department: "Software Development", type: "Technical", date: "2026-06-01T10:00:00", interviewer: "John Doe", result: "Passed", score: 8.0, feedback: "Solid React knowledge, clean coding practices.", recommendation: "Hire" },
 ];
 
+const getStatusBadge = (status: string) => {
+  switch (status) {
+    case "Completed":
+      return "bg-purple-50 text-purple-600 border-purple-200 ring-purple-500/20";
+    case "Failed":
+      return "bg-red-50 text-red-600 border-red-200 ring-red-500/20";
+    case "No Show":
+      return "bg-amber-50 text-amber-600 border-amber-200 ring-amber-500/20";
+    case "Cancelled":
+      return "bg-slate-100 text-slate-600 border-slate-300 ring-slate-400/20";
+    default:
+      return "bg-blue-50 text-blue-600 border-blue-200 ring-blue-500/20";
+  }
+};
+
 const getResultBadge = (result: string) => {
   switch (result) {
     case "Passed":
@@ -191,6 +206,8 @@ const getResultBadge = (result: string) => {
       return "bg-red-50 text-red-600 border-red-200 ring-red-500/20";
     case "No Show":
       return "bg-amber-50 text-amber-600 border-amber-200 ring-amber-500/20";
+    case "Cancelled":
+      return "bg-slate-100 text-slate-600 border-slate-300 ring-slate-400/20";
     default:
       return "bg-slate-50 text-slate-600 border-slate-200 ring-slate-500/20";
   }
@@ -204,7 +221,7 @@ export default function InterviewsHistory() {
   const [dateFilter, setDateFilter] = useState("all");
   const [page, setPage] = useState(1);
   const perPage = 8;
-  const [historyList, setHistoryList] = useState<any[]>(mockHistory);
+  const [historyList, setHistoryList] = useState<any[]>([]);
   const [viewItem, setViewItem] = useState<any | null>(null);
 
   useEffect(() => {
@@ -214,16 +231,29 @@ export default function InterviewsHistory() {
     })
       .then(res => res.json())
       .then(data => {
-        if (Array.isArray(data) && data.length > 0) {
-          const formatted = data.map((i: any) => {
+        if (Array.isArray(data)) {
+          // Rule: History only includes Completed, Failed, No Show, Cancelled
+          // Exclude upcoming: Scheduled, Confirmed, Rescheduled
+          const historyOnly = data.filter((i: any) => {
+            const st = (i.status || "").toLowerCase().trim();
+            // Never include scheduled, confirmed, or rescheduled
+            if (st === "scheduled" || st === "confirmed" || st === "rescheduled") {
+              return false;
+            }
+            return st === "completed" || st === "failed" || st === "no show" || st === "cancelled";
+          });
+
+          const formatted = historyOnly.map((i: any) => {
             let result = i.result;
             if (!result) {
               if (i.status === "Cancelled" || i.status === "No Show") {
-                result = "No Show";
+                result = i.status === "Cancelled" ? "Cancelled" : "No Show";
               } else if (i.recommendation === "Do Not Hire" || (i.rating && Number(i.rating) < 3)) {
                 result = "Failed";
-              } else {
+              } else if (i.status === "Completed") {
                 result = "Passed";
+              } else {
+                result = "—";
               }
             }
 
@@ -436,6 +466,7 @@ export default function InterviewsHistory() {
                   <option value="passed">Passed</option>
                   <option value="failed">Failed</option>
                   <option value="no show">No Show</option>
+                  <option value="cancelled">Cancelled</option>
                 </select>
 
                 <select
@@ -503,8 +534,9 @@ export default function InterviewsHistory() {
                     <th className="px-4 py-3 font-bold">Candidate</th>
                     <th className="px-4 py-3 font-bold">Position</th>
                     <th className="px-4 py-3 font-bold">Interview Type</th>
-                    <th className="px-4 py-3 font-bold">Date</th>
+                    <th className="px-4 py-3 font-bold">Date & Time</th>
                     <th className="px-4 py-3 font-bold">Interviewer</th>
+                    <th className="px-4 py-3 font-bold">Status</th>
                     <th className="px-4 py-3 font-bold">Result</th>
                     <th className="px-4 py-3 font-bold text-center">Score</th>
                     <th className="px-4 py-3 font-bold text-right">Actions</th>
@@ -568,6 +600,11 @@ export default function InterviewsHistory() {
                           </div>
                           <span className="font-medium text-slate-700">{inv.interviewer}</span>
                         </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={cn("inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 font-bold border ring-1 ring-inset", getStatusBadge(inv.status || "Completed"))}>
+                          {inv.status || "Completed"}
+                        </span>
                       </td>
                       <td className="px-4 py-3">
                         <span className={cn("inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 font-bold border ring-1 ring-inset", getResultBadge(inv.result))}>

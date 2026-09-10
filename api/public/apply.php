@@ -40,17 +40,61 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    // Handle File Uploads
+    // Handle Secure File Uploads with Strict Whitelists and Size Limits
     function uploadFile($fileKey, $isImage) {
         if (isset($_FILES[$fileKey]) && $_FILES[$fileKey]['error'] === UPLOAD_ERR_OK) {
             $fileTmpPath = $_FILES[$fileKey]['tmp_name'];
+            $fileSize = $_FILES[$fileKey]['size'];
             $originalName = basename($_FILES[$fileKey]['name']);
+            $originalName = str_replace(chr(0), '', $originalName); // Null-byte strip
+
+            $fileExtension = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+
+            // Strict Size Limit: 1MB for photos, 5MB for resumes
+            $maxSize = $isImage ? (1 * 1024 * 1024) : (5 * 1024 * 1024);
+            if ($fileSize > $maxSize) {
+                http_response_code(400);
+                echo json_encode(["error" => ($isImage ? "Photo" : "Resume") . " exceeds maximum allowed size (" . ($isImage ? '1MB' : '5MB') . ")."]);
+                exit;
+            }
+
+            $allowedExtensions = $isImage ? ['jpg', 'jpeg', 'png'] : ['pdf', 'doc', 'docx'];
+            $allowedMimeTypes = $isImage 
+                ? ['image/jpeg', 'image/png'] 
+                : ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+
+            $finfo = finfo_open(FILEINFO_MIME_TYPE);
+            $fileMimeType = finfo_file($finfo, $fileTmpPath);
+            finfo_close($finfo);
+
+            if (!in_array($fileMimeType, $allowedMimeTypes) || !in_array($fileExtension, $allowedExtensions)) {
+                http_response_code(400);
+                echo json_encode(["error" => "Invalid file type for " . ($isImage ? "Photo" : "Resume") . ". Allowed: " . implode(', ', $allowedExtensions)]);
+                exit;
+            }
+
+            if ($isImage) {
+                $imgCheck = @getimagesize($fileTmpPath);
+                if ($imgCheck === false) {
+                    http_response_code(400);
+                    echo json_encode(["error" => "Uploaded image is invalid or corrupted."]);
+                    exit;
+                }
+            }
+
             $uploadDir = '../../uploads/candidates/' . ($isImage ? 'photos/' : 'resumes/');
             if (!is_dir($uploadDir)) {
                 mkdir($uploadDir, 0777, true);
             }
-            $fileName = time() . '_' . preg_replace("/[^a-zA-Z0-9.-]/", "_", $originalName);
-            if (move_uploaded_file($fileTmpPath, $uploadDir . $fileName)) {
+
+            $safeBase = preg_replace("/[^a-zA-Z0-9_-]/", "_", pathinfo($originalName, PATHINFO_FILENAME));
+            $safeBase = substr($safeBase, 0, 30);
+            $randomSuffix = bin2hex(random_bytes(6));
+            $fileName = time() . '_' . $safeBase . '_' . $randomSuffix . '.' . $fileExtension;
+            $destPath = $uploadDir . $fileName;
+
+            if (move_uploaded_file($fileTmpPath, $destPath)) {
+                chmod($destPath, 0644);
                 return $fileName;
             }
         }

@@ -31,6 +31,7 @@ if ($method === 'GET') {
                 i.meeting_link,
                 i.location,
                 i.notes,
+                i.cancellation_reason,
                 i.status,
                 i.feedback,
                 i.rating,
@@ -82,7 +83,7 @@ if ($method === 'POST') {
         $endTime = !empty($data['end_time']) ? date('Y-m-d H:i:s', strtotime($data['end_time'])) : null;
         $status = $data['status'] ?? 'Scheduled';
         $createdBy = $data['created_by'] ?? 'Admin';
-        $resultVal = $data['result'] ?? ($data['recommendation'] === 'Do Not Hire' ? 'Failed' : 'Passed');
+        $resultVal = !empty($data['result']) ? $data['result'] : (!empty($data['recommendation']) && $data['recommendation'] === 'Do Not Hire' ? 'Failed' : null);
 
         $stmt->execute([
             $data['application_id'],
@@ -138,7 +139,7 @@ if ($method === 'POST') {
     $id = $_GET['id'];
     try {
         $conn->beginTransaction();
-        $fields = ['type', 'interviewDate', 'end_time', 'mode', 'interviewers', 'meeting_link', 'location', 'notes', 'status', 'feedback', 'rating', 'recommendation', 'result', 'comments'];
+        $fields = ['type', 'interviewDate', 'end_time', 'mode', 'interviewers', 'meeting_link', 'location', 'notes', 'cancellation_reason', 'status', 'feedback', 'rating', 'recommendation', 'result', 'comments'];
         $updateStrs = [];
         $params = [];
         foreach ($fields as $f) {
@@ -189,7 +190,12 @@ if ($method === 'POST') {
         // Log History
         $statusStr = $data['status'] ?? 'Updated';
         $stmtHist = $conn->prepare("INSERT INTO cims_candidate_history (candidate_id, action, details, createdAt, userId) VALUES (?, ?, ?, ?, ?)");
-        $details = "Interview " . $statusStr . (isset($data['feedback']) ? " - Feedback: " . substr($data['feedback'], 0, 50) : "");
+        $details = "Interview " . $statusStr;
+        if ($statusStr === 'Cancelled' && !empty($data['notes'])) {
+            $details .= " (" . $data['notes'] . ")";
+        } elseif (isset($data['feedback'])) {
+            $details .= " - Feedback: " . substr($data['feedback'], 0, 50);
+        }
         $stmtHist->execute([$data['candidate_id'], 'Interview ' . $statusStr, $details, $now, isset($payload['user_id']) ? $payload['user_id'] : null]);
         $conn->commit();
         echo json_encode(["success" => true, "message" => "Interview updated successfully"]);

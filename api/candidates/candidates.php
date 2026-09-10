@@ -379,12 +379,45 @@ if ($method === 'GET') {
             exit;
         }
         // Fetch old application stage
-        $stmtAppOld = $conn->prepare("SELECT role_applied as role, stage FROM cims_applications WHERE candidate_id = ?");
+        $stmtAppOld = $conn->prepare("SELECT role_applied as role, stage FROM cims_applications WHERE candidate_id = ? ORDER BY appliedAt DESC LIMIT 1");
         $stmtAppOld->execute([$id]);
         $oldApp = $stmtAppOld->fetch(PDO::FETCH_ASSOC);
         $oldStage = $oldApp ? $oldApp['stage'] : null;
-        
-        // 1. Update cims_candidates table
+
+        // BACKEND PIPELINE TRANSITION ENFORCEMENT
+        if (isset($data['stage']) && $data['stage'] !== $oldStage && !empty($oldStage)) {
+            $newStage = $data['stage'];
+            $earlyStages = ['New Applicant', 'Shortlisted', 'HR Call Scheduled'];
+            $offerAndOutcomes = ['Offer Released', 'Offer Accepted', 'Offer Declined', 'Offer Expired', 'Joined'];
+
+            // 1. Joined candidate cannot be moved backward
+            if ($oldStage === 'Joined' && $newStage !== 'Joined') {
+                http_response_code(422);
+                echo json_encode(["error" => "Candidate is already Joined and cannot be moved backward."]);
+                exit;
+            }
+
+            // 2. Early stages (New Applicant, Shortlisted, HR Call Scheduled) cannot skip interview workflow to Offer/Joined
+            if (in_array($oldStage, $earlyStages) && in_array($newStage, $offerAndOutcomes)) {
+                http_response_code(422);
+                echo json_encode(["error" => "Candidates in $oldStage must complete interview rounds before an offer can be released."]);
+                exit;
+            }
+
+            // 3. Interview Scheduled cannot jump directly to Offer/Joined without interview completion
+            if ($oldStage === 'Interview Scheduled' && in_array($newStage, $offerAndOutcomes)) {
+                http_response_code(422);
+                echo json_encode(["error" => "Interview Scheduled is locked. The interview must be conducted and completed before releasing an offer."]);
+                exit;
+            }
+
+            // 4. Interview Completed cannot be dragged backward to screening stages
+            if ($oldStage === 'Interview Completed' && in_array($newStage, ['New Applicant', 'Shortlisted', 'HR Call Scheduled', 'Interview Scheduled'])) {
+                http_response_code(422);
+                echo json_encode(["error" => "Interview Completed is locked. Cannot move candidate back to prior screening stages."]);
+                exit;
+            }
+        }
         $candFields = [
             'name', 'email', 'phone', 'alternateMobile', 'location', 'preferredLocation', 
             'experience', 'relevantExperience', 'currentCompany', 'currentDesignation', 
@@ -563,7 +596,12 @@ if ($method === 'GET') {
         }
         if (isset($data['stage']) && $data['stage'] !== $oldStage) {
             $oldVal = $oldStage ?: 'New Applicant';
-            $changes[] = ['action' => 'Status Changed', 'details' => "$oldVal $arrow {$data['stage']}"];
+            $stageDetails = "$oldVal $arrow {$data['stage']}";
+            $reason = $data['rejectionReason'] ?? $data['stageReason'] ?? null;
+            if ($reason && trim($reason) !== '') {
+                $stageDetails .= " (Reason: " . trim($reason) . ")";
+            }
+            $changes[] = ['action' => 'Candidate Moved', 'details' => $stageDetails];
         }
 
         if (empty($changes) && isset($data['activity']) && is_array($data['activity'])) {

@@ -56,29 +56,66 @@ export function KanbanBoard({ candidates }: { candidates: Candidate[] }) {
 
     if (!c || c.stage === targetStage) return;
 
-    // RULE 1: Disallow moving terminal/decision stages backwards
-    if (c.stage === "Joined" || c.stage === "Offer Accepted") {
-      toast.error(`Cannot move candidate out of ${c.stage}`);
+    // RULE 1: Terminal / finalized stages (Joined) cannot be moved backward
+    if (c.stage === "Joined") {
+      toast.error(`Cannot move candidate out of Joined stage.`);
       return;
     }
 
     const currentRank = STAGE_ORDER[c.stage] ?? 0;
     const targetRank = STAGE_ORDER[targetStage] ?? 0;
 
-    // RULE 2: No drag backward to previous stages (Reject/No Show/On Hold are allowed exits)
+    // RULE 2: EARLY SCREENING STAGES (New Applicant, Shortlisted, HR Call Scheduled)
+    // Cannot skip interview rounds and jump directly to Offer or terminal outcomes (Offer Released, Offer Accepted, Offer Declined, Offer Expired, Joined).
+    // Every candidate must go through the interview process (Interview Scheduled -> Interview Completed).
+    const isEarlyStage = ["New Applicant", "Shortlisted", "HR Call Scheduled"].includes(c.stage);
+    const isOfferOrJoined = ["Offer Released", "Offer Accepted", "Offer Declined", "Offer Expired", "Joined"].includes(targetStage);
+    if (isEarlyStage && isOfferOrJoined) {
+      toast.error(`Candidates in ${c.stage} must go through interview rounds (Interview Scheduled & Completed) before an offer can be released.`);
+      return;
+    }
+
+    // RULE 3: "Interview Scheduled 🔒" is locked:
+    // Candidate cannot be dragged directly from Interview Scheduled to Offer Released or decision outcomes.
+    // They must first complete the interview workflow (Interview Completed with evaluation).
+    if (c.stage === "Interview Scheduled" && ["Offer Released", "Offer Accepted", "Offer Declined", "Offer Expired", "Joined"].includes(targetStage)) {
+      toast.error(`Interview Scheduled is locked. Interview must be conducted and completed before releasing an offer.`);
+      return;
+    }
+
+    // RULE 4: "Interview Completed 🔒" is locked:
+    // Cannot be arbitrarily moved backward to earlier interview/screening stages.
+    if (c.stage === "Interview Completed" && ["New Applicant", "Shortlisted", "HR Call Scheduled", "Interview Scheduled"].includes(targetStage)) {
+      toast.error(`Interview Completed is locked. Candidates cannot be moved back to previous stages.`);
+      return;
+    }
+
+    // RULE 5: Direct outcomes from Offer Released:
+    // Offer Released -> Offer Accepted, Offer Declined, Offer Expired, Joined, Rejected, No Show
+    if (c.stage === "Offer Released") {
+      const allowedFromOffer = [
+        "Offer Accepted",
+        "Offer Declined",
+        "Offer Expired",
+        "Joined",
+        "Rejected",
+        "No Show",
+        "On Hold"
+      ];
+      if (!allowedFromOffer.includes(targetStage)) {
+        toast.error(`Cannot move from Offer Released to ${targetStage}`);
+        return;
+      }
+    }
+
+    // Special exit outcomes (Rejected, No Show, On Hold) are universally allowed
     const isSpecialExit = ["Rejected", "No Show", "On Hold"].includes(targetStage);
-    if (!isSpecialExit && targetRank < currentRank) {
+    if (!isSpecialExit && targetRank < currentRank && c.stage !== "Offer Released") {
       toast.error(`Cannot move candidate backward from "${c.stage}" to "${targetStage}"`);
       return;
     }
 
-    // RULE 3: Interview Completed cannot be dragged back to Interview Scheduled or prior
-    if (c.stage === "Interview Completed" && targetRank <= STAGE_ORDER["Interview Completed"] && !isSpecialExit) {
-      toast.error(`Interview Completed candidates can only proceed forward to Offer Released or Rejected.`);
-      return;
-    }
-
-    // RULE 4: Dropping into "Interview Scheduled" -> Open Schedule Interview Modal Form
+    // RULE 5: Dropping into "Interview Scheduled" -> Open Schedule Interview Modal Form
     if (targetStage === "Interview Scheduled") {
       const latestInterview = c.interviewsList?.[0] || c.interviews?.[0] || null;
       setInterviewDialogCandidate(c);
@@ -88,7 +125,7 @@ export function KanbanBoard({ candidates }: { candidates: Candidate[] }) {
       return;
     }
 
-    // RULE 5: Dropping into "Interview Completed" -> Open Update Interview Modal (Completed)
+    // RULE 6: Dropping into "Interview Completed" -> Open Update / Complete Interview Modal
     if (targetStage === "Interview Completed") {
       const latestInterview = c.interviewsList?.[0] || c.interviews?.[0] || null;
       setInterviewDialogCandidate(c);

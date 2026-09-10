@@ -16,9 +16,9 @@ import {
   ChevronRight,
   LogOut,
   Plus,
-  UserCheck,
 } from "lucide-react";
 import { Toaster } from "@/components/ui/sonner";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { API_BASE_URL } from "@/config/api";
 
@@ -130,7 +130,6 @@ const nav = [
     module: "interviews",
     children: [
       { to: "/interviews/upcoming", label: "Upcoming Interviews", roles: ["Administrator", "HR Manager", "Recruiter", "Hiring Manager"], module: "interviews" },
-      { to: "/interviews/feedback-pending", label: "Feedback Pending", roles: ["Administrator", "HR Manager", "Recruiter", "Hiring Manager"], module: "interviews" },
       { to: "/interviews/history", label: "Interview History", roles: ["Administrator", "HR Manager", "Recruiter", "Hiring Manager"], module: "interviews" },
     ],
   },
