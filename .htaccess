@@ -1,8 +1,8 @@
 <IfModule mod_rewrite.c>
   RewriteEngine On
-  RewriteBase /CIMS/hire-flow-buddy-95-main/
+  RewriteBase /dev/cims/
   RewriteRule ^index\.html$ - [L]
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d
-  RewriteRule . /CIMS/hire-flow-buddy-95-main/index.html [L]
+  RewriteRule . /dev/cims/index.html [L]
 </IfModule>

@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { ShieldAlert, ArrowLeft, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+import { API_BASE_URL } from "@/config/api";
 
 interface PrivateRouteProps {
   children: React.ReactNode;

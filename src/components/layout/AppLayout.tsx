@@ -1,4 +1,4 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect, type ReactNode } from "react";
 import {
   LayoutDashboard,
@@ -323,6 +323,7 @@ const NavItem = ({
 
 export function AppLayout({ children }: { children: ReactNode }) {
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const [unreadCount, setUnreadCount] = useState(0);
   const [currentUser, setCurrentUser] = useState(() => {
     const userStr = localStorage.getItem("cims_user");
@@ -424,7 +425,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
     <div className="flex min-h-screen w-full bg-slate-50 text-slate-900 antialiased selection:bg-blue-500/10 selection:text-blue-700">
       <aside className="hidden md:flex w-[280px] shrink-0 flex-col bg-[#011627] border-r border-slate-800/50 shadow-[4px_0_24px_-10px_rgba(0,0,0,0.5)] relative z-30">
         <div className="flex items-center gap-4 px-6 py-8 w-full">
-          <img src="/logos.png" alt="Logo" className="h-14 w-auto object-contain shrink-0" />
+          <img src={`${import.meta.env.BASE_URL}logos.png`} alt="Logo" className="h-14 w-auto object-contain shrink-0" />
           <div className="text-left">
             <div className="text-[22px] font-black leading-none tracking-tight text-white">
               Hireflow
@@ -468,7 +469,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
       <div className="flex min-w-0 flex-1 flex-col bg-slate-50/50">
         <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-slate-200/60 bg-white/80 px-4 backdrop-blur-md md:px-8 shadow-[0_4px_24px_-10px_rgba(0,0,0,0.02)]">
           <div className="flex items-center gap-2 md:hidden">
-            <img src="/logos.png" alt="Logo" className="h-8 w-auto object-contain shrink-0" />
+            <img src={`${import.meta.env.BASE_URL}logos.png`} alt="Logo" className="h-8 w-auto object-contain shrink-0" />
             <span className="text-base font-black tracking-tight text-slate-900">Hireflow</span>
           </div>
 
@@ -524,8 +525,9 @@ export function AppLayout({ children }: { children: ReactNode }) {
                   console.error(e);
                 }
                 localStorage.removeItem('cims_user');
+                localStorage.removeItem('cims_token');
                 localStorage.removeItem('cims_login_time');
-                window.location.href = '/login';
+                navigate('/login');
               }}
               title="Log out"
               className="flex items-center justify-center h-10 w-10 rounded-full bg-slate-50 border border-slate-200 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition-colors shadow-sm text-slate-500"

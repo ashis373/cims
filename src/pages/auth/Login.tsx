@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
+import { API_BASE_URL } from "@/config/api";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -14,7 +15,8 @@ import {
   Users, 
   ArrowRight, 
   Zap,
-  CheckCircle2
+  CheckCircle2,
+  Briefcase
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -39,9 +41,7 @@ export default function Login() {
 
     setIsLoading(true);
     try {
-      const apiUrl = import.meta.env.VITE_API_BASE_URL;
-        
-      const res = await fetch(`${apiUrl}/auth/login.php`, { 
+      const res = await fetch(`${API_BASE_URL}/auth/login.php`, { 
         credentials: 'include', 
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -92,7 +92,7 @@ export default function Login() {
         <div className="hidden lg:flex lg:col-span-7 xl:col-span-7 flex-col justify-between p-12 xl:p-16 relative border-r border-slate-800/60 bg-gradient-to-br from-[#011627] via-[#011d33]/80 to-[#022b42]/40 backdrop-blur-2xl">
           {/* Top Logo */}
           <div className="flex items-center gap-4">
-            <img src="/logos.png" alt="Hireflow Logo" className="h-14 w-auto object-contain shrink-0" />
+            <img src={`${import.meta.env.BASE_URL}logos.png`} alt="Hireflow Logo" className="h-14 w-auto object-contain shrink-0" />
             <div className="text-left">
               <div className="text-[24px] font-black leading-none tracking-tight text-white">
                 Hireflow
@@ -162,7 +162,7 @@ export default function Login() {
             {/* Mobile Header */}
             <div className="lg:hidden text-center space-y-3 mb-4">
               <div className="inline-flex items-center justify-center h-16 w-auto p-2">
-                <img src="/logos.png" alt="Logo" className="h-12 w-auto object-contain" />
+                <img src={`${import.meta.env.BASE_URL}logos.png`} alt="Logo" className="h-12 w-auto object-contain" />
               </div>
               <div>
                 <h2 className="text-2xl font-black tracking-tight text-white">Hireflow</h2>
@@ -253,40 +253,60 @@ export default function Login() {
               </form>
             </Card>
 
-            {/* Quick Demo Credentials (Development Helper in Brand Colors) */}
-            {import.meta.env.DEV && (
-              <div className="p-5 bg-slate-900/50 backdrop-blur-sm border border-slate-800/80 rounded-3xl space-y-3">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-                    <Users className="w-3.5 h-3.5 text-[#60C042]" />
-                    Quick Fill Test Accounts
-                  </h3>
-                  <span className="text-[10px] text-slate-500 font-medium">Click to fill</span>
-                </div>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {testAccounts.map((acc, idx) => (
-                    <div 
-                      key={idx} 
-                      onClick={() => { setEmail(acc.email); setPassword(acc.pass); }}
-                      className="p-2.5 rounded-xl bg-[#011627]/90 border border-slate-800 hover:border-[#42bc24]/50 hover:bg-slate-900 transition-all cursor-pointer group flex flex-col justify-between gap-1"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-bold text-slate-200 group-hover:text-[#60C042] transition-colors">
-                          {acc.role}
-                        </span>
-                        <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">
-                          {acc.pass}
-                        </span>
-                      </div>
-                      <div className="text-[11px] font-medium text-slate-400 truncate">
-                        {acc.email}
-                      </div>
+            {/* Quick Demo Credentials (Helper in Brand Colors) */}
+            <div className="p-5 bg-slate-900/50 backdrop-blur-sm border border-slate-800/80 rounded-3xl space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                  <Users className="w-3.5 h-3.5 text-[#60C042]" />
+                  Quick Fill Test Accounts
+                </h3>
+                <span className="text-[10px] text-slate-500 font-medium">Click to fill</span>
+              </div>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {testAccounts.map((acc, idx) => (
+                  <div 
+                    key={idx} 
+                    onClick={() => { setEmail(acc.email); setPassword(acc.pass); }}
+                    className="p-2.5 rounded-xl bg-[#011627]/90 border border-slate-800 hover:border-[#42bc24]/50 hover:bg-slate-900 transition-all cursor-pointer group flex flex-col justify-between gap-1"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-bold text-slate-200 group-hover:text-[#60C042] transition-colors">
+                        {acc.role}
+                      </span>
+                      <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">
+                        {acc.pass}
+                      </span>
                     </div>
-                  ))}
+                    <div className="text-[11px] font-medium text-slate-400 truncate">
+                      {acc.email}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Careers Portal Link Button */}
+            <Link 
+              to="/careers"
+              className="flex items-center justify-between p-4 rounded-2xl bg-gradient-to-r from-emerald-950/40 via-slate-900/60 to-emerald-950/30 border border-[#42bc24]/30 hover:border-[#42bc24] text-slate-200 hover:text-white transition-all group shadow-md"
+            >
+              <div className="flex items-center gap-3">
+                <div className="h-9 w-9 rounded-xl bg-[#42bc24]/20 border border-[#42bc24]/40 flex items-center justify-center text-[#42bc24] group-hover:scale-110 transition-transform">
+                  <Briefcase className="h-4 w-4" />
+                </div>
+                <div>
+                  <div className="text-xs font-bold flex items-center gap-2">
+                    Looking for Open Positions?
+                    <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-[#42bc24]/20 text-[#60C042] border border-[#42bc24]/30">Public</span>
+                  </div>
+                  <div className="text-[11px] text-slate-400 font-medium">
+                    Explore active job openings on the Careers Page
+                  </div>
                 </div>
               </div>
-            )}
+              <ArrowRight className="h-4 w-4 text-[#42bc24] group-hover:translate-x-1.5 transition-transform" />
+            </Link>
 
           </div>
         </div>

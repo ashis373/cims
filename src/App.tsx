@@ -75,7 +75,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
-        <BrowserRouter basename={import.meta.env.MODE === 'production' ? '/cims' : '/'}>
+        <BrowserRouter basename={import.meta.env.BASE_URL}>
           <ScrollToTop />
           <Toaster position="bottom-right" richColors closeButton />
           <Suspense fallback={
