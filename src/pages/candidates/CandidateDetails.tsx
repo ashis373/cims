@@ -56,6 +56,7 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { API_BASE_URL } from "@/config/api";
+import { getAuthHeaders } from "@/services/candidate-api";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -154,6 +155,34 @@ export default function CandidateProfile() {
 
   const handleDeleteDocument = (id: number, name: string) => {
     setDeleteDoc({ id, name });
+  };
+
+  const handleDownloadDoc = async (url: string, filename: string, isInline: boolean = false) => {
+    try {
+      const res = await fetch(url, {
+        headers: getAuthHeaders(false),
+        credentials: 'include'
+      });
+      if (!res.ok) {
+        toast.error("Failed to access document.");
+        return;
+      }
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      if (isInline) {
+        window.open(blobUrl, '_blank');
+      } else {
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+    } catch (e) {
+      toast.error("Error accessing document.");
+    }
   };
 
   const [sendEmailOpen, setSendEmailOpen] = useState(false);
@@ -1112,36 +1141,32 @@ export default function CandidateProfile() {
                           <td className="py-3 px-4 text-right">
                             <div className="flex items-center justify-end gap-1">
                               {(() => {
-                                const token = localStorage.getItem('cims_token') || localStorage.getItem('token') || '';
-                                const tokenParam = token ? `&token=${encodeURIComponent(token)}` : '';
                                 const viewUrl = doc.id === 'resume'
-                                  ? `${API_BASE_URL}/candidates/download.php?file=${encodeURIComponent(doc.rawName)}&type=resumes&inline=1${tokenParam}`
-                                  : `${API_BASE_URL}/candidates/download.php?id=${doc.id}&type=documents&inline=1${tokenParam}`;
+                                  ? `${API_BASE_URL}/candidates/download.php?file=${encodeURIComponent(doc.rawName)}&type=resumes&inline=1`
+                                  : `${API_BASE_URL}/candidates/download.php?id=${doc.id}&type=documents&inline=1`;
                                 const dlUrl = doc.id === 'resume'
-                                  ? `${API_BASE_URL}/candidates/download.php?file=${encodeURIComponent(doc.rawName)}&type=resumes${tokenParam}`
-                                  : `${API_BASE_URL}/candidates/download.php?id=${doc.id}&type=documents${tokenParam}`;
+                                  ? `${API_BASE_URL}/candidates/download.php?file=${encodeURIComponent(doc.rawName)}&type=resumes`
+                                  : `${API_BASE_URL}/candidates/download.php?id=${doc.id}&type=documents`;
                                 return (
                                   <>
-                                    <a href={viewUrl} target="_blank" rel="noreferrer">
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-7 w-7 text-slate-400 hover:text-blue-600"
-                                        title="View Document"
-                                      >
-                                        <Eye className="h-4 w-4" />
-                                      </Button>
-                                    </a>
-                                    <a href={dlUrl} target="_blank" rel="noreferrer">
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-7 w-7 text-slate-400 hover:text-blue-600"
-                                        title="Download Document"
-                                      >
-                                        <Download className="h-4 w-4" />
-                                      </Button>
-                                    </a>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-7 w-7 text-slate-400 hover:text-blue-600"
+                                      title="View Document"
+                                      onClick={() => handleDownloadDoc(viewUrl, doc.name, true)}
+                                    >
+                                      <Eye className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-7 w-7 text-slate-400 hover:text-blue-600"
+                                      title="Download Document"
+                                      onClick={() => handleDownloadDoc(dlUrl, doc.name, false)}
+                                    >
+                                      <Download className="h-4 w-4" />
+                                    </Button>
                                   </>
                                 );
                               })()}

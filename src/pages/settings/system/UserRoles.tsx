@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -106,6 +106,15 @@ export default function UserRoles() {
     role_name: '',
     description: ''
   });
+
+  const currentUserData = useMemo(() => {
+    try {
+      const raw = localStorage.getItem('user');
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  }, []);
 
   type PermissionEntry = {
     view: boolean;
@@ -546,29 +555,34 @@ export default function UserRoles() {
                         >
                           <RefreshCw className="h-4 w-4" />
                         </Button>
-                        {(user.id != 1 && user.email !== 'ashiskrout1@gmail.com') && (
-                          <>
-                            <Button 
-                              onClick={() => toggleUserStatus(user)}
-                              variant="ghost" 
-                              size="icon" 
-                              className={cn(
-                                "h-8 w-8 rounded-lg",
-                                user.is_active ? "text-slate-400 hover:text-rose-600 hover:bg-rose-50" : "text-slate-400 hover:text-emerald-600 hover:bg-emerald-50"
-                              )}
-                            >
-                              <PowerOff className="h-4 w-4" />
-                            </Button>
-                            <Button 
-                              onClick={() => deleteUser(user)}
-                              variant="ghost" 
-                              size="icon" 
-                              className="h-8 w-8 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </>
-                        )}
+                        {(() => {
+                          const isLastActiveAdmin = user.role === 'Administrator' && activeUsers.filter(u => u.role === 'Administrator' && u.is_active).length <= 1;
+                          const isCurrentSelf = currentUserData?.id && Number(currentUserData.id) === Number(user.id);
+                          if (isLastActiveAdmin || isCurrentSelf) return null;
+                          return (
+                            <>
+                              <Button 
+                                onClick={() => toggleUserStatus(user)}
+                                variant="ghost" 
+                                size="icon" 
+                                className={cn(
+                                  "h-8 w-8 rounded-lg",
+                                  user.is_active ? "text-slate-400 hover:text-rose-600 hover:bg-rose-50" : "text-slate-400 hover:text-emerald-600 hover:bg-emerald-50"
+                                )}
+                              >
+                                <PowerOff className="h-4 w-4" />
+                              </Button>
+                              <Button 
+                                onClick={() => deleteUser(user)}
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-8 w-8 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </>
+                          );
+                        })()}
                       </div>
                     </td>
                   </tr>

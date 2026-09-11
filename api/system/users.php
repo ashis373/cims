@@ -143,25 +143,21 @@ try {
         }
         
         if ($action === 'toggle_status') {
-            if ($id == 1 || $id == '1' || $data['email'] === 'ashiskrout1@gmail.com') {
-                // We should check the email from DB just to be sure, but we can do a quick check:
-                $checkSuper = $conn->prepare("SELECT email FROM cims_users WHERE id = ?");
-                $checkSuper->execute([$id]);
-                if ($checkSuper->fetchColumn() === 'ashiskrout1@gmail.com' || $id == 1) {
-                    http_response_code(400);
-                    echo json_encode(["status" => "error", "message" => "The core Administrator account can never be deactivated."]);
-                    exit;
-                }
+            // Prevent user from deactivating their own account
+            if ((int)$id === (int)$currentUser && empty($data['is_active'])) {
+                http_response_code(400);
+                echo json_encode(["status" => "error", "message" => "You cannot deactivate your own account."]);
+                exit;
             }
-            
+
             // Prevent toggling last Administrator
-            $checkAdmin = $conn->prepare("SELECT r.role_name FROM cims_users u JOIN cims_roles r ON u.role_id = r.id WHERE u.id = ?");
+            $checkAdmin = $conn->prepare("SELECT r.role_name, r.is_system_admin FROM cims_users u JOIN cims_roles r ON u.role_id = r.id WHERE u.id = ?");
             $checkAdmin->execute([$id]);
-            $roleName = $checkAdmin->fetchColumn();
+            $targetRole = $checkAdmin->fetch(PDO::FETCH_ASSOC);
             
-            if ($roleName === 'Administrator' && $data['is_active'] == 0) {
+            if ($targetRole && ($targetRole['role_name'] === 'Administrator' || !empty($targetRole['is_system_admin'])) && empty($data['is_active'])) {
                 // Check if it's the last active admin
-                $countAdmins = $conn->query("SELECT COUNT(*) FROM cims_users u JOIN cims_roles r ON u.role_id = r.id WHERE r.role_name = 'Administrator' AND u.is_active = 1")->fetchColumn();
+                $countAdmins = $conn->query("SELECT COUNT(*) FROM cims_users u JOIN cims_roles r ON u.role_id = r.id WHERE (r.role_name = 'Administrator' OR r.is_system_admin = 1) AND u.is_active = 1")->fetchColumn();
                 if ($countAdmins <= 1) {
                     http_response_code(400);
                     echo json_encode(["status" => "error", "message" => "Cannot deactivate the last active Administrator account."]);
@@ -208,21 +204,20 @@ try {
             exit;
         }
 
-        $checkSuper = $conn->prepare("SELECT email FROM cims_users WHERE id = ?");
-        $checkSuper->execute([$id]);
-        if ($checkSuper->fetchColumn() === 'ashiskrout1@gmail.com' || $id == 1) {
+        // Prevent deleting own account
+        if ((int)$id === (int)$currentUser) {
             http_response_code(400);
-            echo json_encode(["status" => "error", "message" => "The core Administrator account can never be deleted."]);
+            echo json_encode(["status" => "error", "message" => "You cannot delete your own account."]);
             exit;
         }
 
         // Prevent deleting last Administrator
-        $checkAdmin = $conn->prepare("SELECT r.role_name FROM cims_users u JOIN cims_roles r ON u.role_id = r.id WHERE u.id = ?");
+        $checkAdmin = $conn->prepare("SELECT r.role_name, r.is_system_admin FROM cims_users u JOIN cims_roles r ON u.role_id = r.id WHERE u.id = ?");
         $checkAdmin->execute([$id]);
-        $roleName = $checkAdmin->fetchColumn();
+        $targetRole = $checkAdmin->fetch(PDO::FETCH_ASSOC);
         
-        if ($roleName === 'Administrator') {
-            $countAdmins = $conn->query("SELECT COUNT(*) FROM cims_users u JOIN cims_roles r ON u.role_id = r.id WHERE r.role_name = 'Administrator'")->fetchColumn();
+        if ($targetRole && ($targetRole['role_name'] === 'Administrator' || !empty($targetRole['is_system_admin']))) {
+            $countAdmins = $conn->query("SELECT COUNT(*) FROM cims_users u JOIN cims_roles r ON u.role_id = r.id WHERE (r.role_name = 'Administrator' OR r.is_system_admin = 1)")->fetchColumn();
             if ($countAdmins <= 1) {
                 http_response_code(400);
                 echo json_encode(["status" => "error", "message" => "Cannot delete the last Administrator account."]);

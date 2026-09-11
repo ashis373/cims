@@ -17,8 +17,6 @@ if (isset($headers['authorization']) && strpos($headers['authorization'], 'Beare
     $jwt = substr($headers['authorization'], 7);
 } elseif (isset($_COOKIE['auth_token'])) {
     $jwt = $_COOKIE['auth_token'];
-} elseif (isset($_GET['token']) && is_string($_GET['token'])) {
-    $jwt = $_GET['token'];
 }
 
 $payload = false;

@@ -24,7 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         $uploadDir = '../../uploads/candidates/' . ($isImage ? 'photos/' : 'resumes/');
         if (!is_dir($uploadDir)) {
-            mkdir($uploadDir, 0777, true);
+            mkdir($uploadDir, 0755, true);
         }
         
         $allowedMimeTypes = [
