@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { API_BASE_URL } from "@/config/api";
 import { Card } from "@/components/ui/card";
@@ -16,7 +16,9 @@ import {
   ArrowRight, 
   Zap,
   CheckCircle2,
-  Briefcase
+  Briefcase,
+  Clock,
+  ShieldAlert
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -26,7 +28,54 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  // Lockout state & timer
+  const [isLocked, setIsLocked] = useState(false);
+  const [lockSecondsRemaining, setLockSecondsRemaining] = useState(0);
+
   const navigate = useNavigate();
+
+  // Restore lockout state from localStorage on page load
+  useEffect(() => {
+    const lockoutUntilStr = localStorage.getItem("cims_login_lockout_until");
+    if (lockoutUntilStr) {
+      const lockoutUntil = parseInt(lockoutUntilStr, 10);
+      const remaining = Math.ceil((lockoutUntil - Date.now()) / 1000);
+      if (remaining > 0) {
+        setIsLocked(true);
+        setLockSecondsRemaining(remaining);
+      } else {
+        localStorage.removeItem("cims_login_lockout_until");
+      }
+    }
+  }, []);
+
+  // Countdown interval timer
+  useEffect(() => {
+    if (!isLocked || lockSecondsRemaining <= 0) return;
+
+    const timer = setInterval(() => {
+      setLockSecondsRemaining((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          setIsLocked(false);
+          localStorage.removeItem("cims_login_lockout_until");
+          setErrorMessage("");
+          toast.info("Account lockout period expired. You may now sign in.");
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [isLocked, lockSecondsRemaining]);
+
+  const formatTime = (totalSeconds: number) => {
+    const mins = Math.floor(totalSeconds / 60);
+    const secs = totalSeconds % 60;
+    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,6 +99,7 @@ export default function Login() {
       const data = await res.json();
 
       if (data.status === "success") {
+        localStorage.removeItem("cims_login_lockout_until");
         localStorage.setItem("cims_user", JSON.stringify(data.data));
         if (data.token) {
           localStorage.setItem("cims_token", data.token);
@@ -61,6 +111,17 @@ export default function Login() {
         const errorMsg = data.message || "Invalid email or password";
         setErrorMessage(errorMsg);
         toast.error(errorMsg);
+
+        // If rate limit threshold reached / account locked
+        if (data.locked || errorMsg.toLowerCase().includes("locked") || errorMsg.toLowerCase().includes("too many failed")) {
+          const duration = data.retry_after || 900; // 15 minutes in seconds
+          const lockoutUntil = Date.now() + (duration * 1000);
+          localStorage.setItem("cims_login_lockout_until", lockoutUntil.toString());
+          setIsLocked(true);
+          setLockSecondsRemaining(duration);
+          setEmail("");
+          setPassword("");
+        }
       }
     } catch (err) {
       const msg = "Network error. Please check your connection and try again.";
@@ -173,118 +234,153 @@ export default function Login() {
             <div className="space-y-1.5 text-center lg:text-left">
               <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">Welcome back</h2>
               <p className="text-sm text-slate-400">
-                Sign in with your organizational credentials to continue.
+                {isLocked ? "Account access is temporarily locked due to security limits." : "Sign in with your organizational credentials to continue."}
               </p>
             </div>
 
             {/* Login Card */}
             <Card className="p-7 sm:p-8 bg-[#011627]/95 backdrop-blur-2xl border-slate-800 shadow-[0_20px_50px_rgba(0,0,0,0.6)] rounded-3xl">
-              <form onSubmit={handleLogin} className="space-y-5">
-                
-                {/* Error Banner */}
-                {errorMessage && (
-                  <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs font-medium flex items-start gap-3 animate-in fade-in duration-200">
-                    <span className="text-rose-400 font-bold shrink-0 text-sm">⚠️</span>
-                    <span className="leading-relaxed">{errorMessage}</span>
+              
+              {/* WHEN LOCKED: Completely HIDE email and password input fields and the submit button */}
+              {isLocked ? (
+                <div className="space-y-6 py-2 text-center animate-in fade-in zoom-in-95 duration-300">
+                  <div className="mx-auto w-16 h-16 rounded-2xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center text-rose-400 shadow-inner">
+                    <ShieldAlert className="w-8 h-8 animate-pulse" />
                   </div>
-                )}
 
-                {/* Email Field */}
-                <div className="space-y-2">
-                  <label className="text-[13px] font-semibold text-slate-300">Email Address</label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                      <Mail className="h-4 w-4 text-slate-500" />
+                  <div className="space-y-2">
+                    <h3 className="text-lg font-bold text-white tracking-tight">Account Temporarily Locked</h3>
+                    <p className="text-xs text-slate-300 leading-relaxed max-w-sm mx-auto">
+                      Too many failed login attempts were detected. For your protection, login credentials input fields are hidden.
+                    </p>
+                  </div>
+
+                  {/* Live 15-Minute Countdown Display */}
+                  <div className="p-5 rounded-2xl bg-rose-950/40 border border-rose-500/30 shadow-md">
+                    <div className="text-[11px] uppercase tracking-widest font-black text-rose-400 mb-1 flex items-center justify-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5 animate-spin" /> Unlocks Automatically In
                     </div>
-                    <Input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="name@company.com"
-                      required
-                      className="pl-10 h-11 rounded-xl bg-slate-900/80 border-slate-800 text-white placeholder:text-slate-500 focus:border-[#42bc24] focus:ring-1 focus:ring-[#42bc24] transition-all text-sm"
-                    />
+                    <div className="text-4xl font-mono font-black text-white tracking-wider my-2">
+                      {formatTime(lockSecondsRemaining)}
+                    </div>
+                    <p className="text-[11px] text-slate-400 font-medium">
+                      Email and password input boxes will reappear as soon as the timer finishes.
+                    </p>
+                  </div>
+
+                  <div className="text-[11px] text-slate-500 font-medium">
+                    Need immediate access? Please reach out to your system administrator.
                   </div>
                 </div>
-                
-                {/* Password Field */}
-                <div className="space-y-2">
-                  <label className="text-[13px] font-semibold text-slate-300">Password</label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                      <Lock className="h-4 w-4 text-slate-500" />
+              ) : (
+                <form onSubmit={handleLogin} className="space-y-5">
+                  {/* Error Banner */}
+                  {errorMessage && (
+                    <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs font-medium flex items-start gap-3 animate-in fade-in duration-200">
+                      <span className="text-rose-400 font-bold shrink-0 text-sm">⚠️</span>
+                      <span className="leading-relaxed">{errorMessage}</span>
                     </div>
-                    <Input
-                      type={showPassword ? "text" : "password"}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••"
-                      required
-                      className="pl-10 pr-10 h-11 rounded-xl bg-slate-900/80 border-slate-800 text-white placeholder:text-slate-500 focus:border-[#42bc24] focus:ring-1 focus:ring-[#42bc24] transition-all text-sm"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-500 hover:text-slate-300 transition-colors focus:outline-none"
-                    >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Submit Button in Custom Brand Green Gradient */}
-                <Button 
-                  type="submit" 
-                  disabled={isLoading}
-                  className="w-full h-11 rounded-xl font-bold bg-gradient-to-r from-[#42bc24] to-[#36961c] hover:from-[#4ecf2e] hover:to-[#42bc24] text-white shadow-lg shadow-[#42bc24]/20 border border-white/20 transition-all transform active:scale-[0.99] mt-2 flex items-center justify-center gap-2 group cursor-pointer"
-                >
-                  {isLoading ? (
-                    <span className="flex items-center gap-2">
-                      <span className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      Authenticating...
-                    </span>
-                  ) : (
-                    <>
-                      <span>Sign in to Dashboard</span>
-                      <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-                    </>
                   )}
-                </Button>
-              </form>
+
+                  {/* Email Field */}
+                  <div className="space-y-2">
+                    <label className="text-[13px] font-semibold text-slate-300">Email Address</label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                        <Mail className="h-4 w-4 text-slate-500" />
+                      </div>
+                      <Input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="name@company.com"
+                        required
+                        className="pl-10 h-11 rounded-xl bg-slate-900/80 border-slate-800 text-white placeholder:text-slate-500 focus:border-[#42bc24] focus:ring-1 focus:ring-[#42bc24] transition-all text-sm"
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* Password Field */}
+                  <div className="space-y-2">
+                    <label className="text-[13px] font-semibold text-slate-300">Password</label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                        <Lock className="h-4 w-4 text-slate-500" />
+                      </div>
+                      <Input
+                        type={showPassword ? "text" : "password"}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="••••••••"
+                        required
+                        className="pl-10 pr-10 h-11 rounded-xl bg-slate-900/80 border-slate-800 text-white placeholder:text-slate-500 focus:border-[#42bc24] focus:ring-1 focus:ring-[#42bc24] transition-all text-sm"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-500 hover:text-slate-300 transition-colors focus:outline-none"
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Submit Button in Custom Brand Green Gradient */}
+                  <Button 
+                    type="submit" 
+                    disabled={isLoading}
+                    className="w-full h-11 rounded-xl font-bold bg-gradient-to-r from-[#42bc24] to-[#36961c] hover:from-[#4ecf2e] hover:to-[#42bc24] text-white shadow-lg shadow-[#42bc24]/20 border border-white/20 transition-all transform active:scale-[0.99] mt-2 flex items-center justify-center gap-2 group cursor-pointer"
+                  >
+                    {isLoading ? (
+                      <span className="flex items-center gap-2">
+                        <span className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        Authenticating...
+                      </span>
+                    ) : (
+                      <>
+                        <span>Sign in to Dashboard</span>
+                        <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                      </>
+                    )}
+                  </Button>
+                </form>
+              )}
             </Card>
 
-            {/* Quick Demo Credentials (Helper in Brand Colors) */}
-            <div className="p-5 bg-slate-900/50 backdrop-blur-sm border border-slate-800/80 rounded-3xl space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-                  <Users className="w-3.5 h-3.5 text-[#60C042]" />
-                  Quick Fill Test Accounts
-                </h3>
-                <span className="text-[10px] text-slate-500 font-medium">Click to fill</span>
-              </div>
-              
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {testAccounts.map((acc, idx) => (
-                  <div 
-                    key={idx} 
-                    onClick={() => { setEmail(acc.email); setPassword(acc.pass); }}
-                    className="p-2.5 rounded-xl bg-[#011627]/90 border border-slate-800 hover:border-[#42bc24]/50 hover:bg-slate-900 transition-all cursor-pointer group flex flex-col justify-between gap-1"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-bold text-slate-200 group-hover:text-[#60C042] transition-colors">
-                        {acc.role}
-                      </span>
-                      <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">
-                        {acc.pass}
-                      </span>
+            {/* Quick Demo Credentials (Hidden while locked) */}
+            {!isLocked && (
+              <div className="p-5 bg-slate-900/50 backdrop-blur-sm border border-slate-800/80 rounded-3xl space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                    <Users className="w-3.5 h-3.5 text-[#60C042]" />
+                    Quick Fill Test Accounts
+                  </h3>
+                  <span className="text-[10px] text-slate-500 font-medium">Click to fill</span>
+                </div>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {testAccounts.map((acc, idx) => (
+                    <div 
+                      key={idx} 
+                      onClick={() => { setEmail(acc.email); setPassword(acc.pass); }}
+                      className="p-2.5 rounded-xl bg-[#011627]/90 border border-slate-800 hover:border-[#42bc24]/50 hover:bg-slate-900 transition-all cursor-pointer group flex flex-col justify-between gap-1"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-bold text-slate-200 group-hover:text-[#60C042] transition-colors">
+                          {acc.role}
+                        </span>
+                        <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">
+                          {acc.pass}
+                        </span>
+                      </div>
+                      <div className="text-[11px] font-medium text-slate-400 truncate">
+                        {acc.email}
+                      </div>
                     </div>
-                    <div className="text-[11px] font-medium text-slate-400 truncate">
-                      {acc.email}
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Careers Portal Link Button */}
             <Link 

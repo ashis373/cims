@@ -1,9 +1,5 @@
 <?php
-if (isset($_SERVER['HTTP_ORIGIN'])) { header("Access-Control-Allow-Origin: {$_SERVER['HTTP_ORIGIN']}"); }
-header('Access-Control-Allow-Credentials: true');
-header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type, Authorization');
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { exit(0); }
+require_once __DIR__ . '/../cors.php';
 
 header('Content-Type: application/json');
 require '../db.php';
@@ -41,7 +37,8 @@ try {
     $rateStmt = $conn->prepare("
         SELECT 
             SUM(CASE WHEN ip_address = ? THEN 1 ELSE 0 END) as ip_attempts,
-            SUM(CASE WHEN email = ? THEN 1 ELSE 0 END) as email_attempts
+            SUM(CASE WHEN email = ? THEN 1 ELSE 0 END) as email_attempts,
+            TIMESTAMPDIFF(SECOND, NOW(), MIN(attempt_time) + INTERVAL 15 MINUTE) as remaining_seconds
         FROM cims_login_attempts 
         WHERE attempt_time > (NOW() - INTERVAL 15 MINUTE)
     ");
@@ -50,11 +47,14 @@ try {
 
     $currentEmailAttempts = (int)($attemptCounts['email_attempts'] ?? 0);
     $currentIpAttempts = (int)($attemptCounts['ip_attempts'] ?? 0);
+    $remainingSeconds = max(1, (int)($attemptCounts['remaining_seconds'] ?? 900));
 
     if ($currentEmailAttempts >= $maxAttemptsPerEmail || $currentIpAttempts >= $maxAttemptsPerIp) {
         http_response_code(429);
         echo json_encode([
             "status" => "error", 
+            "locked" => true,
+            "retry_after" => $remainingSeconds,
             "message" => "Too many failed login attempts. Account temporarily locked. Please try again after 15 minutes."
         ]);
         exit;
@@ -129,17 +129,25 @@ try {
         $newFailedCount = $currentEmailAttempts + 1;
         $remainingAttempts = max(0, $maxAttemptsPerEmail - $newFailedCount);
 
-        http_response_code(401);
         if ($remainingAttempts <= 0) {
+            http_response_code(429);
             $msg = "Too many failed login attempts. Account temporarily locked. Please try again after 15 minutes.";
+            echo json_encode([
+                "status" => "error", 
+                "locked" => true,
+                "retry_after" => 900,
+                "message" => $msg
+            ]);
         } else {
+            http_response_code(401);
             $msg = "Invalid email or password";
+            echo json_encode([
+                "status" => "error", 
+                "locked" => false,
+                "remaining_attempts" => $remainingAttempts,
+                "message" => $msg
+            ]);
         }
-
-        echo json_encode([
-            "status" => "error", 
-            "message" => $msg
-        ]);
     }
 } catch (PDOException $e) {
     error_log("Login Error: " . $e->getMessage());
