@@ -11,19 +11,144 @@ $action = $_GET['action'] ?? '';
 
 try {
     if ($method === 'GET') {
+        // Clean up attempts older than 15 minutes first
+        $conn->exec("DELETE FROM cims_login_attempts WHERE attempt_time < (NOW() - INTERVAL 15 MINUTE)");
+
+        // 1. Fetch registered users with failed attempts and lock status
         $stmt = $conn->query("
             SELECT u.id, u.full_name, u.email, u.mobile, u.profile_photo, u.designation, u.department, u.is_active, u.created_at, r.role_name as role, r.id as role_id,
-            (SELECT log_time FROM cims_audit_logs WHERE user_id = u.id AND action = 'Login' ORDER BY log_time DESC LIMIT 1) as last_login
+            (SELECT log_time FROM cims_audit_logs WHERE user_id = u.id AND action = 'Login' ORDER BY log_time DESC LIMIT 1) as last_login,
+            (SELECT COUNT(*) FROM cims_login_attempts WHERE LOWER(TRIM(email)) = LOWER(TRIM(u.email)) AND attempt_time > (NOW() - INTERVAL 15 MINUTE)) as failed_attempts,
+            (SELECT CASE WHEN COUNT(*) >= 5 THEN 1 ELSE 0 END FROM cims_login_attempts WHERE LOWER(TRIM(email)) = LOWER(TRIM(u.email)) AND attempt_time > (NOW() - INTERVAL 15 MINUTE)) as is_locked
             FROM cims_users u
             LEFT JOIN cims_roles r ON u.role_id = r.id
-            ORDER BY u.created_at DESC
+            ORDER BY is_locked DESC, failed_attempts DESC, u.created_at DESC
         ");
         $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        echo json_encode(["status" => "success", "data" => $users]);
+
+        // 2. Fetch all active lockouts & failed attempts (even for unregistered or mistyped emails)
+        $lockoutsStmt = $conn->query("
+            SELECT 
+                a.email, 
+                a.ip_address, 
+                COUNT(*) as attempts, 
+                MAX(a.attempt_time) as last_attempt,
+                CASE WHEN COUNT(*) >= 5 THEN 1 ELSE 0 END as is_locked,
+                u.id as user_id,
+                u.full_name
+            FROM cims_login_attempts a
+            LEFT JOIN cims_users u ON LOWER(TRIM(u.email)) = LOWER(TRIM(a.email))
+            WHERE a.attempt_time > (NOW() - INTERVAL 15 MINUTE)
+            GROUP BY a.email, a.ip_address
+            ORDER BY attempts DESC
+        ");
+        $lockouts = $lockoutsStmt->fetchAll(PDO::FETCH_ASSOC);
+
+        echo json_encode([
+            "status" => "success", 
+            "data" => $users,
+            "lockouts" => $lockouts
+        ]);
         exit;
     }
 
     if ($method === 'POST') {
+        if ($action === 'unlock') {
+            $data = json_decode(file_get_contents('php://input'), true);
+            $id = $data['id'] ?? ($_GET['id'] ?? null);
+            $email = trim($data['email'] ?? ($_GET['email'] ?? ''));
+
+            if ($id) {
+                $stmt = $conn->prepare("SELECT email, full_name FROM cims_users WHERE id = ?");
+                $stmt->execute([$id]);
+                $userToUnlock = $stmt->fetch(PDO::FETCH_ASSOC);
+                if ($userToUnlock) {
+                    $email = $userToUnlock['email'];
+                    $targetName = $userToUnlock['full_name'];
+                }
+            } else {
+                $targetName = $email;
+            }
+
+            if (!$email) {
+                http_response_code(400);
+                echo json_encode(["status" => "error", "message" => "User ID or Email is required."]);
+                exit;
+            }
+
+            // 1. Capture associated IPs before deleting so that IP rate limits can also be cleared
+            $ipStmt = $conn->prepare("SELECT DISTINCT ip_address FROM cims_login_attempts WHERE LOWER(TRIM(email)) = LOWER(TRIM(?))");
+            $ipStmt->execute([$email]);
+            $associatedIps = $ipStmt->fetchAll(PDO::FETCH_COLUMN);
+
+            // 2. Clear failed login attempts for this email
+            $del = $conn->prepare("DELETE FROM cims_login_attempts WHERE LOWER(TRIM(email)) = LOWER(TRIM(?))");
+            $del->execute([$email]);
+
+            // 3. Clear IP attempts linked to this email
+            if (!empty($associatedIps)) {
+                $placeholders = implode(',', array_fill(0, count($associatedIps), '?'));
+                $delIp = $conn->prepare("DELETE FROM cims_login_attempts WHERE ip_address IN ($placeholders)");
+                $delIp->execute($associatedIps);
+            }
+
+            $logStmt = $conn->prepare("INSERT INTO cims_audit_logs (user_id, action, module, details) VALUES (?, 'Unlock Account', 'Users', ?)");
+            $logStmt->execute([$currentUser, json_encode(['email' => $email, 'name' => $targetName ?? $email])]);
+
+            echo json_encode([
+                "status" => "success", 
+                "message" => "Account for {$email} has been unlocked in database successfully."
+            ]);
+            exit;
+        }
+
+        if ($action === 'lock') {
+            $data = json_decode(file_get_contents('php://input'), true);
+            $id = $data['id'] ?? ($_GET['id'] ?? null);
+            if (!$id) {
+                http_response_code(400);
+                echo json_encode(["status" => "error", "message" => "User ID is required."]);
+                exit;
+            }
+
+            $stmt = $conn->prepare("SELECT email, full_name FROM cims_users WHERE id = ?");
+            $stmt->execute([$id]);
+            $userToLock = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$userToLock) {
+                http_response_code(404);
+                echo json_encode(["status" => "error", "message" => "User not found."]);
+                exit;
+            }
+
+            // Insert 5 failed attempts in cims_login_attempts so the account is locked in database
+            for ($i = 0; $i < 5; $i++) {
+                $lockStmt = $conn->prepare("INSERT INTO cims_login_attempts (ip_address, email) VALUES ('127.0.0.1', ?)");
+                $lockStmt->execute([$userToLock['email']]);
+            }
+
+            $logStmt = $conn->prepare("INSERT INTO cims_audit_logs (user_id, action, module, details) VALUES (?, 'Manual Lockout', 'Users', ?)");
+            $logStmt->execute([$currentUser, json_encode(['target_user_id' => $id, 'email' => $userToLock['email'], 'name' => $userToLock['full_name']])]);
+
+            echo json_encode([
+                "status" => "success", 
+                "message" => "Account for {$userToLock['full_name']} has been locked in database."
+            ]);
+            exit;
+        }
+
+        if ($action === 'unlock_all') {
+            $conn->exec("TRUNCATE TABLE cims_login_attempts");
+            
+            $logStmt = $conn->prepare("INSERT INTO cims_audit_logs (user_id, action, module, details) VALUES (?, 'Unlock All Accounts', 'Users', ?)");
+            $logStmt->execute([$currentUser, json_encode(['action' => 'cleared_all_failed_logins'])]);
+
+            echo json_encode([
+                "status" => "success", 
+                "message" => "All locked accounts and failed login attempts have been cleared successfully."
+            ]);
+            exit;
+        }
         if ($action === 'upload_photo') {
             $id = isset($_POST['id']) ? (int)$_POST['id'] : null;
             if (!$id) { 

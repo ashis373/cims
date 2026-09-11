@@ -15,10 +15,9 @@ import {
   Users, 
   ArrowRight, 
   Zap,
-  CheckCircle2,
   Briefcase,
-  Clock,
-  ShieldAlert
+  ShieldAlert,
+  RefreshCw
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -28,53 +27,42 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-
-  // Lockout state & timer
   const [isLocked, setIsLocked] = useState(false);
-  const [lockSecondsRemaining, setLockSecondsRemaining] = useState(0);
+  const [isCheckingStatus, setIsCheckingStatus] = useState(false);
 
   const navigate = useNavigate();
 
-  // Restore lockout state from localStorage on page load
+  // Clean any legacy client-side lockout artifacts from localStorage
   useEffect(() => {
-    const lockoutUntilStr = localStorage.getItem("cims_login_lockout_until");
-    if (lockoutUntilStr) {
-      const lockoutUntil = parseInt(lockoutUntilStr, 10);
-      const remaining = Math.ceil((lockoutUntil - Date.now()) / 1000);
-      if (remaining > 0) {
-        setIsLocked(true);
-        setLockSecondsRemaining(remaining);
-      } else {
-        localStorage.removeItem("cims_login_lockout_until");
-      }
-    }
+    localStorage.removeItem("cims_login_lockout_until");
   }, []);
 
-  // Countdown interval timer
-  useEffect(() => {
-    if (!isLocked || lockSecondsRemaining <= 0) return;
+  const handleCheckUnlockStatus = async () => {
+    if (!email.trim()) {
+      toast.error("Please enter your email address to check status");
+      return;
+    }
 
-    const timer = setInterval(() => {
-      setLockSecondsRemaining((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
+    setIsCheckingStatus(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/check_lockout.php?email=${encodeURIComponent(email.trim())}`);
+      const data = await res.json();
+      if (data.status === "success") {
+        if (!data.is_locked) {
           setIsLocked(false);
-          localStorage.removeItem("cims_login_lockout_until");
           setErrorMessage("");
-          toast.info("Account lockout period expired. You may now sign in.");
-          return 0;
+          toast.success("Account is unlocked in database. You may now sign in.");
+        } else {
+          toast.error(`Account is currently locked in database (${data.failed_attempts}/5 attempts). Please contact your administrator.`);
         }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [isLocked, lockSecondsRemaining]);
-
-  const formatTime = (totalSeconds: number) => {
-    const mins = Math.floor(totalSeconds / 60);
-    const secs = totalSeconds % 60;
-    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+      } else {
+        toast.error(data.message || "Unable to verify lockout status");
+      }
+    } catch (err) {
+      toast.error("Unable to connect to server database");
+    } finally {
+      setIsCheckingStatus(false);
+    }
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -94,11 +82,13 @@ export default function Login() {
         credentials: 'include', 
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email: email.trim(), password }),
       });
       const data = await res.json();
 
       if (data.status === "success") {
+        setIsLocked(false);
+        setErrorMessage("");
         localStorage.removeItem("cims_login_lockout_until");
         localStorage.setItem("cims_user", JSON.stringify(data.data));
         if (data.token) {
@@ -112,15 +102,11 @@ export default function Login() {
         setErrorMessage(errorMsg);
         toast.error(errorMsg);
 
-        // If rate limit threshold reached / account locked
-        if (data.locked || errorMsg.toLowerCase().includes("locked") || errorMsg.toLowerCase().includes("too many failed")) {
-          const duration = data.retry_after || 900; // 15 minutes in seconds
-          const lockoutUntil = Date.now() + (duration * 1000);
-          localStorage.setItem("cims_login_lockout_until", lockoutUntil.toString());
+        // Database lockout state
+        if (data.locked || res.status === 429) {
           setIsLocked(true);
-          setLockSecondsRemaining(duration);
-          setEmail("");
-          setPassword("");
+        } else {
+          setIsLocked(false);
         }
       }
     } catch (err) {
@@ -234,153 +220,150 @@ export default function Login() {
             <div className="space-y-1.5 text-center lg:text-left">
               <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">Welcome back</h2>
               <p className="text-sm text-slate-400">
-                {isLocked ? "Account access is temporarily locked due to security limits." : "Sign in with your organizational credentials to continue."}
+                {isLocked ? "Account access is temporarily restricted in the database." : "Sign in with your organizational credentials to continue."}
               </p>
             </div>
 
             {/* Login Card */}
             <Card className="p-7 sm:p-8 bg-[#011627]/95 backdrop-blur-2xl border-slate-800 shadow-[0_20px_50px_rgba(0,0,0,0.6)] rounded-3xl">
-              
-              {/* WHEN LOCKED: Completely HIDE email and password input fields and the submit button */}
-              {isLocked ? (
-                <div className="space-y-6 py-2 text-center animate-in fade-in zoom-in-95 duration-300">
-                  <div className="mx-auto w-16 h-16 rounded-2xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center text-rose-400 shadow-inner">
-                    <ShieldAlert className="w-8 h-8 animate-pulse" />
-                  </div>
-
-                  <div className="space-y-2">
-                    <h3 className="text-lg font-bold text-white tracking-tight">Account Temporarily Locked</h3>
-                    <p className="text-xs text-slate-300 leading-relaxed max-w-sm mx-auto">
-                      Too many failed login attempts were detected. For your protection, login credentials input fields are hidden.
+              <form onSubmit={handleLogin} className="space-y-5">
+                {/* Database Lockout Banner */}
+                {isLocked ? (
+                  <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-200 text-xs space-y-3 animate-in fade-in duration-200">
+                    <div className="flex items-center gap-2 font-bold text-rose-400 text-sm">
+                      <ShieldAlert className="w-5 h-5 text-rose-400 shrink-0" />
+                      <span>Database Security Lockout</span>
+                    </div>
+                    <p className="text-slate-300 leading-relaxed text-xs">
+                      {errorMessage || "Too many failed login attempts were recorded in the database. Please reach out to your system administrator to unlock your account."}
                     </p>
-                  </div>
-
-                  {/* Live 15-Minute Countdown Display */}
-                  <div className="p-5 rounded-2xl bg-rose-950/40 border border-rose-500/30 shadow-md">
-                    <div className="text-[11px] uppercase tracking-widest font-black text-rose-400 mb-1 flex items-center justify-center gap-1.5">
-                      <Clock className="w-3.5 h-3.5 animate-spin" /> Unlocks Automatically In
-                    </div>
-                    <div className="text-4xl font-mono font-black text-white tracking-wider my-2">
-                      {formatTime(lockSecondsRemaining)}
-                    </div>
-                    <p className="text-[11px] text-slate-400 font-medium">
-                      Email and password input boxes will reappear as soon as the timer finishes.
-                    </p>
-                  </div>
-
-                  <div className="text-[11px] text-slate-500 font-medium">
-                    Need immediate access? Please reach out to your system administrator.
-                  </div>
-                </div>
-              ) : (
-                <form onSubmit={handleLogin} className="space-y-5">
-                  {/* Error Banner */}
-                  {errorMessage && (
-                    <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs font-medium flex items-start gap-3 animate-in fade-in duration-200">
-                      <span className="text-rose-400 font-bold shrink-0 text-sm">⚠️</span>
-                      <span className="leading-relaxed">{errorMessage}</span>
-                    </div>
-                  )}
-
-                  {/* Email Field */}
-                  <div className="space-y-2">
-                    <label className="text-[13px] font-semibold text-slate-300">Email Address</label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                        <Mail className="h-4 w-4 text-slate-500" />
-                      </div>
-                      <Input
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="name@company.com"
-                        required
-                        className="pl-10 h-11 rounded-xl bg-slate-900/80 border-slate-800 text-white placeholder:text-slate-500 focus:border-[#42bc24] focus:ring-1 focus:ring-[#42bc24] transition-all text-sm"
-                      />
-                    </div>
-                  </div>
-                  
-                  {/* Password Field */}
-                  <div className="space-y-2">
-                    <label className="text-[13px] font-semibold text-slate-300">Password</label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                        <Lock className="h-4 w-4 text-slate-500" />
-                      </div>
-                      <Input
-                        type={showPassword ? "text" : "password"}
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="••••••••"
-                        required
-                        className="pl-10 pr-10 h-11 rounded-xl bg-slate-900/80 border-slate-800 text-white placeholder:text-slate-500 focus:border-[#42bc24] focus:ring-1 focus:ring-[#42bc24] transition-all text-sm"
-                      />
-                      <button
+                    <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-rose-500/20">
+                      <span className="text-[11px] text-slate-400 font-medium">Admin unlocked your account?</span>
+                      <Button
                         type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-500 hover:text-slate-300 transition-colors focus:outline-none"
+                        variant="outline"
+                        size="sm"
+                        disabled={isCheckingStatus}
+                        onClick={handleCheckUnlockStatus}
+                        className="h-8 text-xs bg-slate-900/90 hover:bg-slate-800 text-emerald-400 border-emerald-500/30 hover:border-emerald-500/50 rounded-xl gap-1.5 font-semibold"
                       >
-                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </button>
+                        <RefreshCw className={cn("w-3.5 h-3.5", isCheckingStatus && "animate-spin")} />
+                        Check Database Status
+                      </Button>
                     </div>
                   </div>
+                ) : errorMessage ? (
+                  /* Standard Error Banner */
+                  <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs font-medium flex items-start gap-3 animate-in fade-in duration-200">
+                    <span className="text-rose-400 font-bold shrink-0 text-sm">⚠️</span>
+                    <span className="leading-relaxed">{errorMessage}</span>
+                  </div>
+                ) : null}
 
-                  {/* Submit Button in Custom Brand Green Gradient */}
-                  <Button 
-                    type="submit" 
-                    disabled={isLoading}
-                    className="w-full h-11 rounded-xl font-bold bg-gradient-to-r from-[#42bc24] to-[#36961c] hover:from-[#4ecf2e] hover:to-[#42bc24] text-white shadow-lg shadow-[#42bc24]/20 border border-white/20 transition-all transform active:scale-[0.99] mt-2 flex items-center justify-center gap-2 group cursor-pointer"
-                  >
-                    {isLoading ? (
-                      <span className="flex items-center gap-2">
-                        <span className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        Authenticating...
-                      </span>
-                    ) : (
-                      <>
-                        <span>Sign in to Dashboard</span>
-                        <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-                      </>
-                    )}
-                  </Button>
-                </form>
-              )}
-            </Card>
-
-            {/* Quick Demo Credentials (Hidden while locked) */}
-            {!isLocked && (
-              <div className="p-5 bg-slate-900/50 backdrop-blur-sm border border-slate-800/80 rounded-3xl space-y-3">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-                    <Users className="w-3.5 h-3.5 text-[#60C042]" />
-                    Quick Fill Test Accounts
-                  </h3>
-                  <span className="text-[10px] text-slate-500 font-medium">Click to fill</span>
+                {/* Email Field */}
+                <div className="space-y-2">
+                  <label className="text-[13px] font-semibold text-slate-300">Email Address</label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                      <Mail className="h-4 w-4 text-slate-500" />
+                    </div>
+                    <Input
+                      type="email"
+                      value={email}
+                      onChange={(e) => {
+                        setEmail(e.target.value);
+                        if (isLocked) setIsLocked(false);
+                      }}
+                      placeholder="name@company.com"
+                      required
+                      className="pl-10 h-11 rounded-xl bg-slate-900/80 border-slate-800 text-white placeholder:text-slate-500 focus:border-[#42bc24] focus:ring-1 focus:ring-[#42bc24] transition-all text-sm"
+                    />
+                  </div>
                 </div>
                 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {testAccounts.map((acc, idx) => (
-                    <div 
-                      key={idx} 
-                      onClick={() => { setEmail(acc.email); setPassword(acc.pass); }}
-                      className="p-2.5 rounded-xl bg-[#011627]/90 border border-slate-800 hover:border-[#42bc24]/50 hover:bg-slate-900 transition-all cursor-pointer group flex flex-col justify-between gap-1"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-bold text-slate-200 group-hover:text-[#60C042] transition-colors">
-                          {acc.role}
-                        </span>
-                        <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">
-                          {acc.pass}
-                        </span>
-                      </div>
-                      <div className="text-[11px] font-medium text-slate-400 truncate">
-                        {acc.email}
-                      </div>
+                {/* Password Field */}
+                <div className="space-y-2">
+                  <label className="text-[13px] font-semibold text-slate-300">Password</label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                      <Lock className="h-4 w-4 text-slate-500" />
                     </div>
-                  ))}
+                    <Input
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      required
+                      className="pl-10 pr-10 h-11 rounded-xl bg-slate-900/80 border-slate-800 text-white placeholder:text-slate-500 focus:border-[#42bc24] focus:ring-1 focus:ring-[#42bc24] transition-all text-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-500 hover:text-slate-300 transition-colors focus:outline-none"
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
                 </div>
+
+                {/* Submit Button in Custom Brand Green Gradient */}
+                <Button 
+                  type="submit" 
+                  disabled={isLoading}
+                  className="w-full h-11 rounded-xl font-bold bg-gradient-to-r from-[#42bc24] to-[#36961c] hover:from-[#4ecf2e] hover:to-[#42bc24] text-white shadow-lg shadow-[#42bc24]/20 border border-white/20 transition-all transform active:scale-[0.99] mt-2 flex items-center justify-center gap-2 group cursor-pointer"
+                >
+                  {isLoading ? (
+                    <span className="flex items-center gap-2">
+                      <span className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Authenticating...
+                    </span>
+                  ) : (
+                    <>
+                      <span>Sign in to Dashboard</span>
+                      <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                    </>
+                  )}
+                </Button>
+              </form>
+            </Card>
+
+            {/* Quick Demo Credentials */}
+            <div className="p-5 bg-slate-900/50 backdrop-blur-sm border border-slate-800/80 rounded-3xl space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                  <Users className="w-3.5 h-3.5 text-[#60C042]" />
+                  Quick Fill Test Accounts
+                </h3>
+                <span className="text-[10px] text-slate-500 font-medium">Click to fill</span>
               </div>
-            )}
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {testAccounts.map((acc, idx) => (
+                  <div 
+                    key={idx} 
+                    onClick={() => { 
+                      setEmail(acc.email); 
+                      setPassword(acc.pass);
+                      setIsLocked(false);
+                      setErrorMessage("");
+                    }}
+                    className="p-2.5 rounded-xl bg-[#011627]/90 border border-slate-800 hover:border-[#42bc24]/50 hover:bg-slate-900 transition-all cursor-pointer group flex flex-col justify-between gap-1"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-bold text-slate-200 group-hover:text-[#60C042] transition-colors">
+                        {acc.role}
+                      </span>
+                      <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">
+                        {acc.pass}
+                      </span>
+                    </div>
+                    <div className="text-[11px] font-medium text-slate-400 truncate">
+                      {acc.email}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
 
             {/* Careers Portal Link Button */}
             <Link 

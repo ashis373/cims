@@ -55,19 +55,28 @@ try {
             "status" => "error", 
             "locked" => true,
             "retry_after" => $remainingSeconds,
-            "message" => "Too many failed login attempts. Account temporarily locked. Please try again after 15 minutes."
+            "message" => "Too many failed login attempts. Account is temporarily locked. Please contact your system administrator to unlock it, or try again later."
         ]);
         exit;
     }
 
     $stmt = $conn->prepare("
-        SELECT u.id, u.full_name, u.email, u.password_hashed, u.designation, u.department, u.profile_photo, u.role_id, r.role_name 
+        SELECT u.id, u.full_name, u.email, u.password_hashed, u.designation, u.department, u.profile_photo, u.role_id, u.is_active, r.role_name 
         FROM cims_users u 
         LEFT JOIN cims_roles r ON u.role_id = r.id 
-        WHERE u.email = ? AND u.is_active = 1
+        WHERE u.email = ?
     ");
     $stmt->execute([$email]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($user && (int)$user['is_active'] === 0) {
+        http_response_code(403);
+        echo json_encode([
+            "status" => "error", 
+            "message" => "This user account is currently deactivated in the system. Please contact your system administrator."
+        ]);
+        exit;
+    }
 
     if ($user && password_verify($password, $user['password_hashed'])) {
         // Clear failed login attempts for this user and IP on successful login
@@ -131,16 +140,17 @@ try {
 
         if ($remainingAttempts <= 0) {
             http_response_code(429);
-            $msg = "Too many failed login attempts. Account temporarily locked. Please try again after 15 minutes.";
+            $msg = "Too many failed login attempts. Account is temporarily locked. Please contact your system administrator to unlock it immediately, or try again later.";
             echo json_encode([
                 "status" => "error", 
                 "locked" => true,
                 "retry_after" => 900,
+                "remaining_attempts" => 0,
                 "message" => $msg
             ]);
         } else {
             http_response_code(401);
-            $msg = "Invalid email or password";
+            $msg = "Invalid email or password. $remainingAttempts attempt(s) remaining before account lockout.";
             echo json_encode([
                 "status" => "error", 
                 "locked" => false,

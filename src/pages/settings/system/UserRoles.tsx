@@ -26,7 +26,9 @@ import {
   Settings,
   Info,
   Lock,
-  Check
+  Unlock,
+  Check,
+  X
 } from "lucide-react";
 
 type PermissionConfig = {
@@ -75,6 +77,8 @@ import { API_BASE_URL } from "@/config/api";
 export default function UserRoles() {
   const [roles, setRoles] = useState<any[]>([]);
   const [activeUsers, setActiveUsers] = useState<any[]>([]);
+  const [activeLockouts, setActiveLockouts] = useState<any[]>([]);
+  const [userFilter, setUserFilter] = useState<'all' | 'locked' | 'active'>('all');
   const [isSaving, setIsSaving] = useState(false);
   const [isAuthorized, setIsAuthorized] = useState(true);
 
@@ -82,6 +86,20 @@ export default function UserRoles() {
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    type: 'unlock_single' | 'unlock_all' | 'lock_single' | 'delete_user';
+    user?: any;
+    email?: string;
+    name?: string;
+    attempts?: number;
+    ip?: string;
+    isProcessing?: boolean;
+  }>({
+    isOpen: false,
+    type: 'unlock_single',
+    isProcessing: false
+  });
   const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
 
   const [editingUser, setEditingUser] = useState<any>(null);
@@ -130,10 +148,21 @@ export default function UserRoles() {
       .then(res => res.json())
       .then(res => {
         if (res.status === "success") {
-          setActiveUsers(res.data);
+          setActiveUsers(res.data || []);
+          setActiveLockouts(res.lockouts || []);
         }
       });
   };
+
+  const filteredUsers = useMemo(() => {
+    if (userFilter === 'locked') {
+      return activeUsers.filter(u => Number(u.is_locked) === 1 || Number(u.failed_attempts) >= 5);
+    }
+    if (userFilter === 'active') {
+      return activeUsers.filter(u => u.is_active && Number(u.is_locked) !== 1 && Number(u.failed_attempts) < 5);
+    }
+    return activeUsers;
+  }, [activeUsers, userFilter]);
 
   const fetchRoles = () => {
     fetch(`${API_BASE_URL}/system/roles.php`, { credentials: 'include' })
@@ -395,22 +424,133 @@ export default function UserRoles() {
     }
   };
 
-  const deleteUser = async (user: any) => {
-    if (!confirm(`Are you sure you want to delete ${user.full_name}?`)) return;
-    try {
-      const res = await fetch(`${API_BASE_URL}/system/users.php?id=${user.id}`, {
-        method: 'DELETE',
-        credentials: 'include'
-      }).then(r => r.json());
+  const promptUnlockUser = (userOrLockout: any) => {
+    const isEmail = typeof userOrLockout === 'string';
+    const email = isEmail ? userOrLockout : (userOrLockout?.email || '');
+    const user = !isEmail ? userOrLockout : activeUsers.find(u => u.email?.toLowerCase() === email.toLowerCase());
+    const name = user?.full_name || user?.name || userOrLockout?.full_name || email;
+    const attempts = userOrLockout?.attempts || user?.failed_attempts || 5;
+    const ip = userOrLockout?.ip_address;
 
-      if (res.status === "success") {
-        toast.success(res.message);
-        fetchUsers();
-      } else {
-        toast.error(res.message);
+    setConfirmModal({
+      isOpen: true,
+      type: 'unlock_single',
+      user,
+      email,
+      name,
+      attempts: Number(attempts) || 0,
+      ip,
+      isProcessing: false
+    });
+  };
+
+  const promptUnlockAll = () => {
+    setConfirmModal({
+      isOpen: true,
+      type: 'unlock_all',
+      isProcessing: false
+    });
+  };
+
+  const promptLockUser = (user: any) => {
+    setConfirmModal({
+      isOpen: true,
+      type: 'lock_single',
+      user,
+      name: user.full_name || user.name || user.email,
+      email: user.email,
+      isProcessing: false
+    });
+  };
+
+  const promptDeleteUser = (user: any) => {
+    setConfirmModal({
+      isOpen: true,
+      type: 'delete_user',
+      user,
+      name: user.full_name || user.name || user.email,
+      email: user.email,
+      isProcessing: false
+    });
+  };
+
+  // Safe fallback aliases to guarantee NO native browser alert/confirm is ever triggered
+  const unlockUser = (userOrEmail: any) => promptUnlockUser(userOrEmail);
+  const lockUser = (user: any) => promptLockUser(user);
+  const unlockAllUsers = () => promptUnlockAll();
+  const deleteUser = (user: any) => promptDeleteUser(user);
+
+  const handleConfirmAction = async () => {
+    if (!confirmModal.isOpen || confirmModal.isProcessing) return;
+    setConfirmModal(prev => ({ ...prev, isProcessing: true }));
+
+    try {
+      if (confirmModal.type === 'unlock_single') {
+        const email = confirmModal.email || confirmModal.user?.email || '';
+        const id = confirmModal.user?.id;
+        const res = await fetch(`${API_BASE_URL}/system/users.php?action=unlock`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id, email })
+        }).then(r => r.json());
+
+        if (res.status === "success") {
+          toast.success(res.message || `Account for ${confirmModal.name || email} has been unblocked successfully`);
+          fetchUsers();
+          setConfirmModal(prev => ({ ...prev, isOpen: false, isProcessing: false }));
+        } else {
+          toast.error(res.message || "Failed to unblock account");
+          setConfirmModal(prev => ({ ...prev, isProcessing: false }));
+        }
+      } else if (confirmModal.type === 'unlock_all') {
+        const res = await fetch(`${API_BASE_URL}/system/users.php?action=unlock_all`, {
+          method: 'POST',
+          credentials: 'include'
+        }).then(r => r.json());
+
+        if (res.status === "success") {
+          toast.success(res.message || "All accounts have been unblocked & unlocked in database");
+          fetchUsers();
+          setConfirmModal(prev => ({ ...prev, isOpen: false, isProcessing: false }));
+        } else {
+          toast.error(res.message || "Failed to clear lockouts");
+          setConfirmModal(prev => ({ ...prev, isProcessing: false }));
+        }
+      } else if (confirmModal.type === 'lock_single') {
+        const res = await fetch(`${API_BASE_URL}/system/users.php?action=lock`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: confirmModal.user?.id })
+        }).then(r => r.json());
+
+        if (res.status === "success") {
+          toast.success(res.message || `Account for ${confirmModal.name} is now locked in database`);
+          fetchUsers();
+          setConfirmModal(prev => ({ ...prev, isOpen: false, isProcessing: false }));
+        } else {
+          toast.error(res.message || "Failed to lock account");
+          setConfirmModal(prev => ({ ...prev, isProcessing: false }));
+        }
+      } else if (confirmModal.type === 'delete_user') {
+        const res = await fetch(`${API_BASE_URL}/system/users.php?id=${confirmModal.user?.id}`, {
+          method: 'DELETE',
+          credentials: 'include'
+        }).then(r => r.json());
+
+        if (res.status === "success") {
+          toast.success(res.message || "User deleted successfully");
+          fetchUsers();
+          setConfirmModal(prev => ({ ...prev, isOpen: false, isProcessing: false }));
+        } else {
+          toast.error(res.message || "Failed to delete user");
+          setConfirmModal(prev => ({ ...prev, isProcessing: false }));
+        }
       }
     } catch (err) {
-      toast.error("An error occurred while deleting user");
+      toast.error("An error occurred while executing request");
+      setConfirmModal(prev => ({ ...prev, isProcessing: false }));
     }
   };
 
@@ -455,6 +595,15 @@ export default function UserRoles() {
             <Plus className="w-4 h-4 mr-2" /> Add User
           </Button>
 
+          <Button
+            onClick={promptUnlockAll}
+            variant="outline"
+            className="h-11 px-5 rounded-xl font-bold text-slate-800 bg-white/95 hover:bg-white border-white/40 shadow-lg flex items-center gap-2 transition-transform active:scale-95 cursor-pointer"
+            title="Clear all failed attempts and unblock all accounts in database"
+          >
+            <Unlock className="w-4 h-4 text-emerald-600" /> Unblock Accounts
+          </Button>
+
           <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 shadow-inner flex-shrink-0 cursor-pointer hover:scale-105 transition-transform duration-300">
             <span className="text-3xl select-none filter drop-shadow-md hover:animate-bounce">🛡️</span>
           </div>
@@ -467,7 +616,119 @@ export default function UserRoles() {
 
       {/* Users Table */}
       <div className="space-y-4">
-        <h2 className="text-lg font-bold text-slate-900">Users</h2>
+        {/* Dedicated Active Database Lockouts & Security Alerts Panel */}
+        {activeLockouts.length > 0 && (
+          <div className="p-5 rounded-3xl bg-rose-500/10 border-2 border-rose-500/30 text-slate-900 shadow-sm space-y-3.5 animate-in fade-in">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <ShieldAlert className="w-5 h-5 text-rose-600 animate-pulse shrink-0" />
+                <div>
+                  <h3 className="text-sm font-black text-rose-900 uppercase tracking-wider">
+                    {activeLockouts.filter(l => Number(l.is_locked) === 1 || Number(l.attempts) >= 5).length > 0
+                      ? `Locked Accounts Detected in Database (${activeLockouts.filter(l => Number(l.is_locked) === 1 || Number(l.attempts) >= 5).length})`
+                      : `Failed Login Attempts Recorded in Database (${activeLockouts.length})`}
+                  </h3>
+                  <p className="text-xs text-rose-700">
+                    The following account(s) have failed login attempts recorded in MySQL. Click <strong>Unblock</strong> on any account to immediately restore access.
+                  </p>
+                </div>
+              </div>
+              <Button
+                onClick={promptUnlockAll}
+                size="sm"
+                className="h-8 px-4 text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white rounded-xl shadow-xs cursor-pointer"
+              >
+                <Unlock className="w-3.5 h-3.5 mr-1" /> Unblock All Accounts
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 pt-1">
+              {activeLockouts.map((lockout, idx) => (
+                <div key={idx} className="p-4 rounded-2xl bg-white border border-rose-200 shadow-xs flex items-center justify-between gap-3">
+                  <div className="space-y-1 min-w-0">
+                    <div className="flex items-center gap-1.5 font-bold text-sm text-slate-900 truncate">
+                      <Lock className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                      <span className="truncate">{lockout.full_name || lockout.email}</span>
+                    </div>
+                    <div className="text-xs text-slate-500 truncate">{lockout.email}</div>
+                    <div className="flex items-center gap-2 pt-0.5">
+                      <span className={cn(
+                        "text-[10px] font-black uppercase px-2 py-0.5 rounded-md",
+                        Number(lockout.is_locked) === 1 || Number(lockout.attempts) >= 5 
+                          ? "bg-rose-100 text-rose-700 border border-rose-200" 
+                          : "bg-amber-100 text-amber-700 border border-amber-200"
+                      )}>
+                        {Number(lockout.is_locked) === 1 || Number(lockout.attempts) >= 5 ? "Locked (5/5)" : `${lockout.attempts} Failed`}
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-mono">IP: {lockout.ip_address}</span>
+                    </div>
+                  </div>
+                  <Button
+                    onClick={() => promptUnlockUser(lockout)}
+                    size="sm"
+                    className="h-8 px-3 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-xs shrink-0 cursor-pointer"
+                    title="Unblock this account in database"
+                  >
+                    <Unlock className="w-3.5 h-3.5 mr-1" /> Unblock
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <h2 className="text-lg font-bold text-slate-900">Users</h2>
+            
+            {/* Filter Tabs to easily see which accounts are locked */}
+            <div className="inline-flex p-1 bg-slate-100 rounded-xl gap-1">
+              <button
+                type="button"
+                onClick={() => setUserFilter('all')}
+                className={cn(
+                  "px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer",
+                  userFilter === 'all' ? "bg-white text-slate-900 shadow-xs" : "text-slate-500 hover:text-slate-900"
+                )}
+              >
+                All Users ({activeUsers.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setUserFilter('locked')}
+                className={cn(
+                  "px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center gap-1",
+                  userFilter === 'locked' ? "bg-white text-rose-700 shadow-xs" : "text-slate-500 hover:text-rose-600",
+                  activeUsers.some(u => Number(u.is_locked) === 1 || Number(u.failed_attempts) >= 5) && "text-rose-600 font-black"
+                )}
+              >
+                <Lock className="w-3 h-3 text-rose-600" />
+                Locked ({activeUsers.filter(u => Number(u.is_locked) === 1 || Number(u.failed_attempts) >= 5).length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setUserFilter('active')}
+                className={cn(
+                  "px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer",
+                  userFilter === 'active' ? "bg-white text-emerald-700 shadow-xs" : "text-slate-500 hover:text-emerald-600"
+                )}
+              >
+                Active ({activeUsers.filter(u => u.is_active && Number(u.is_locked) !== 1 && Number(u.failed_attempts) < 5).length})
+              </button>
+            </div>
+          </div>
+          
+          {/* Always-visible Unlock All Accounts button above the table */}
+          <Button
+            onClick={promptUnlockAll}
+            size="sm"
+            variant="outline"
+            className="h-9 px-3.5 text-xs font-bold text-emerald-700 border-emerald-300 bg-emerald-50/60 hover:bg-emerald-100 rounded-xl flex items-center gap-1.5 shadow-xs cursor-pointer"
+            title="Clear all failed attempts and unblock all users in MySQL database"
+          >
+            <Unlock className="w-3.5 h-3.5 text-emerald-600" /> Unblock All Accounts
+          </Button>
+        </div>
         <Card className="rounded-3xl border-slate-200/60 shadow-sm overflow-hidden bg-white">
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left">
@@ -483,8 +744,16 @@ export default function UserRoles() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {activeUsers.map((user, idx) => (
-                  <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
+                {filteredUsers.map((user, idx) => (
+                  <tr 
+                    key={idx} 
+                    className={cn(
+                      "transition-colors",
+                      Number(user.is_locked) === 1 || Number(user.failed_attempts) >= 5 
+                        ? "bg-rose-50/50 hover:bg-rose-50/70 border-l-4 border-l-rose-500" 
+                        : "hover:bg-slate-50/50"
+                    )}
+                  >
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         {user.profile_photo ? (
@@ -508,12 +777,41 @@ export default function UserRoles() {
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      {user.is_active ? (
-                        <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-emerald-50 text-emerald-700 text-xs font-bold">
+                      {Number(user.is_locked) === 1 || Number(user.failed_attempts) >= 5 ? (
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-rose-50 text-rose-700 text-xs font-bold border border-rose-200 shadow-xs animate-pulse" title="Account locked due to 5+ failed login attempts">
+                            <Lock className="w-3.5 h-3.5 text-rose-600" /> Locked ({user.failed_attempts}/5)
+                          </span>
+                          <Button
+                            onClick={() => promptUnlockUser(user)}
+                            size="sm"
+                            className="h-7 px-2.5 text-[11px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-xs flex items-center gap-1 cursor-pointer"
+                            title="Click to unblock this account in the database"
+                          >
+                            <Unlock className="w-3 h-3" /> Unblock
+                          </Button>
+                        </div>
+                      ) : Number(user.failed_attempts) > 0 ? (
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-50 text-amber-700 text-xs font-bold border border-amber-200" title="Recent failed login attempts detected">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span> {user.failed_attempts} Failed
+                          </span>
+                          <Button
+                            onClick={() => promptUnlockUser(user)}
+                            size="sm"
+                            variant="outline"
+                            className="h-7 px-2 text-[11px] font-semibold text-amber-700 border-amber-300 hover:bg-amber-50 rounded-lg flex items-center gap-1 cursor-pointer"
+                            title="Reset failed login attempts in database"
+                          >
+                            <Unlock className="w-3 h-3" /> Reset / Unblock
+                          </Button>
+                        </div>
+                      ) : user.is_active ? (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-700 text-xs font-bold">
                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Active
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-slate-100 text-slate-600 text-xs font-bold">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-600 text-xs font-bold">
                           <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span> Inactive
                         </span>
                       )}
@@ -522,7 +820,27 @@ export default function UserRoles() {
                       {user.created_at ? new Date(user.created_at).toLocaleDateString() : "-"}
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-1">
+                      <div className="flex items-center justify-end gap-1.5">
+                        {Number(user.is_locked) === 1 || Number(user.failed_attempts) > 0 ? (
+                          <Button 
+                            onClick={() => promptUnlockUser(user)}
+                            size="sm"
+                            className="h-8 px-2.5 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-xs flex items-center gap-1 cursor-pointer"
+                            title="Unblock account & clear failed login attempts in database"
+                          >
+                            <Unlock className="w-3.5 h-3.5" /> Unblock
+                          </Button>
+                        ) : (
+                          <Button 
+                            onClick={() => promptLockUser(user)}
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg cursor-pointer"
+                            title="Lock account in database (prevents user from logging in)"
+                          >
+                            <Lock className="w-4 h-4" />
+                          </Button>
+                        )}
                         <Button 
                           onClick={() => {
                             setEditingUser(user);
@@ -587,9 +905,11 @@ export default function UserRoles() {
                     </td>
                   </tr>
                 ))}
-                {activeUsers.length === 0 && (
+                {filteredUsers.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="px-6 py-8 text-center text-slate-500 font-medium">No users found.</td>
+                    <td colSpan={7} className="px-6 py-8 text-center text-slate-500 font-medium">
+                      {userFilter === 'locked' ? "No locked accounts found. All users are currently unlocked." : "No users found."}
+                    </td>
                   </tr>
                 )}
               </tbody>
@@ -1007,6 +1327,223 @@ export default function UserRoles() {
                 <Button type="submit" className="btn-primary h-11 px-6 rounded-xl font-bold shadow-lg transition-transform active:scale-95">Reset Password</Button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Good Pop-up Confirmation Modal (No native alerts) */}
+      {confirmModal.isOpen && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={() => !confirmModal.isProcessing && setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+        >
+          <div 
+            className="bg-white rounded-3xl shadow-2xl border border-slate-100 w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200 relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Top Accent Bar */}
+            <div className={cn(
+              "h-2 w-full",
+              confirmModal.type === 'unlock_single' || confirmModal.type === 'unlock_all'
+                ? "bg-gradient-to-r from-emerald-400 via-teal-500 to-[#42bc24]"
+                : confirmModal.type === 'lock_single'
+                ? "bg-gradient-to-r from-amber-400 to-rose-500"
+                : "bg-gradient-to-r from-rose-500 to-red-600"
+            )} />
+
+            {/* Close Button */}
+            <button 
+              type="button"
+              disabled={confirmModal.isProcessing}
+              onClick={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))} 
+              className="absolute right-4 top-5 p-1.5 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="p-6 sm:p-7 space-y-5">
+              {/* Header with glowing icon badge */}
+              <div className="flex items-center gap-4">
+                <div className={cn(
+                  "w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 shadow-inner",
+                  confirmModal.type === 'unlock_single' || confirmModal.type === 'unlock_all'
+                    ? "bg-emerald-50 text-emerald-600 border border-emerald-200/80"
+                    : confirmModal.type === 'lock_single'
+                    ? "bg-amber-50 text-amber-600 border border-amber-200/80"
+                    : "bg-rose-50 text-rose-600 border border-rose-200/80"
+                )}>
+                  {confirmModal.type === 'unlock_single' && <Unlock className="w-7 h-7" />}
+                  {confirmModal.type === 'unlock_all' && <ShieldAlert className="w-7 h-7" />}
+                  {confirmModal.type === 'lock_single' && <Lock className="w-7 h-7" />}
+                  {confirmModal.type === 'delete_user' && <Trash2 className="w-7 h-7" />}
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-black text-slate-900 leading-snug">
+                    {confirmModal.type === 'unlock_single' && "Unblock User Account"}
+                    {confirmModal.type === 'unlock_all' && "Unblock All Accounts"}
+                    {confirmModal.type === 'lock_single' && "Lock User Account"}
+                    {confirmModal.type === 'delete_user' && "Delete User Account"}
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    {confirmModal.type === 'unlock_single' && "Confirm database account unblocking"}
+                    {confirmModal.type === 'unlock_all' && "Clear all lockout records in MySQL"}
+                    {confirmModal.type === 'lock_single' && "Restrict dashboard sign-in access"}
+                    {confirmModal.type === 'delete_user' && "Permanently remove user credentials"}
+                  </p>
+                </div>
+              </div>
+
+              {/* Target User Info or Summary Box */}
+              {(confirmModal.type === 'unlock_single' || confirmModal.type === 'lock_single' || confirmModal.type === 'delete_user') && (
+                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center gap-3.5 shadow-xs">
+                  {confirmModal.user?.profile_photo ? (
+                    <img 
+                      src={confirmModal.user.profile_photo.startsWith('http') ? confirmModal.user.profile_photo : `${API_BASE_URL.replace('/api', '')}/${confirmModal.user.profile_photo.replace(/^(?:\.\.\/)+|^(?:\.\/)+/, '')}`} 
+                      alt={confirmModal.name} 
+                      className="w-12 h-12 rounded-full object-cover border border-slate-200 shadow-sm shrink-0" 
+                    />
+                  ) : (
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center font-black text-base shrink-0 shadow-sm">
+                      {(confirmModal.name || confirmModal.email || 'U').charAt(0).toUpperCase()}
+                    </div>
+                  )}
+
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <div className="font-bold text-sm text-slate-900 truncate">
+                      {confirmModal.name || confirmModal.email}
+                    </div>
+                    <div className="text-xs text-slate-500 truncate font-mono">
+                      {confirmModal.email || confirmModal.user?.email}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2 pt-0.5">
+                      {confirmModal.attempts !== undefined && confirmModal.attempts > 0 && (
+                        <span className={cn(
+                          "text-[10px] font-black uppercase px-2 py-0.5 rounded-md",
+                          confirmModal.attempts >= 5 ? "bg-rose-100 text-rose-700" : "bg-amber-100 text-amber-700"
+                        )}>
+                          {confirmModal.attempts >= 5 ? "Locked (5/5 Failed)" : `${confirmModal.attempts} Failed Attempts`}
+                        </span>
+                      )}
+                      {confirmModal.ip && (
+                        <span className="text-[10px] text-slate-500 font-mono">
+                          IP: {confirmModal.ip}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {confirmModal.type === 'unlock_all' && (
+                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center justify-between shadow-xs">
+                  <div className="space-y-0.5">
+                    <span className="text-xs text-slate-500 font-medium">Registered Accounts</span>
+                    <div className="text-xl font-black text-slate-900">{activeUsers.length} Users</div>
+                  </div>
+                  <div className="h-9 w-px bg-slate-200" />
+                  <div className="space-y-0.5 text-right">
+                    <span className="text-xs text-rose-600 font-bold">Active Lockouts</span>
+                    <div className="text-xl font-black text-rose-600">{activeLockouts.length} in DB</div>
+                  </div>
+                </div>
+              )}
+
+              {/* Informative Explanation Notice */}
+              <div className={cn(
+                "p-3.5 rounded-2xl text-xs leading-relaxed flex items-start gap-2.5",
+                confirmModal.type === 'unlock_single' || confirmModal.type === 'unlock_all'
+                  ? "bg-emerald-50 text-emerald-900 border border-emerald-200/80"
+                  : confirmModal.type === 'lock_single'
+                  ? "bg-amber-50 text-amber-900 border border-amber-200/80"
+                  : "bg-rose-50 text-rose-900 border border-rose-200/80"
+              )}>
+                <Info className="w-4 h-4 shrink-0 mt-0.5" />
+                <div>
+                  {confirmModal.type === 'unlock_single' && (
+                    <span>
+                      Unblocking this account will reset failed attempts to 0 and clear temporary IP blocks in MySQL. The user will be able to sign in immediately.
+                    </span>
+                  )}
+                  {confirmModal.type === 'unlock_all' && (
+                    <span>
+                      This will truncate all failed login attempts across the MySQL database. All accounts currently locked out will regain instant login access.
+                    </span>
+                  )}
+                  {confirmModal.type === 'lock_single' && (
+                    <span>
+                      This will insert 5 failed attempts in the database for this user. They will be prevented from logging in until an admin unblocks them.
+                    </span>
+                  )}
+                  {confirmModal.type === 'delete_user' && (
+                    <span>
+                      Are you sure you want to delete this user? Their account details and role associations will be permanently removed.
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="pt-2 flex items-center justify-end gap-3">
+                <Button 
+                  type="button" 
+                  variant="ghost" 
+                  disabled={confirmModal.isProcessing}
+                  onClick={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))} 
+                  className="h-11 px-5 rounded-xl font-bold text-slate-600 hover:bg-slate-100 hover:text-slate-900 cursor-pointer"
+                >
+                  Cancel
+                </Button>
+
+                <Button 
+                  type="button"
+                  disabled={confirmModal.isProcessing}
+                  onClick={handleConfirmAction}
+                  className={cn(
+                    "h-11 px-6 rounded-xl font-bold text-white shadow-md flex items-center gap-2 cursor-pointer transition-all active:scale-95",
+                    confirmModal.type === 'unlock_single' || confirmModal.type === 'unlock_all'
+                      ? "bg-emerald-600 hover:bg-emerald-700"
+                      : confirmModal.type === 'lock_single'
+                      ? "bg-amber-600 hover:bg-amber-700"
+                      : "bg-rose-600 hover:bg-rose-700"
+                  )}
+                >
+                  {confirmModal.isProcessing ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin mr-1" />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      {confirmModal.type === 'unlock_single' && (
+                        <>
+                          <Unlock className="w-4 h-4" />
+                          Confirm & Unblock
+                        </>
+                      )}
+                      {confirmModal.type === 'unlock_all' && (
+                        <>
+                          <Unlock className="w-4 h-4" />
+                          Unblock All Accounts
+                        </>
+                      )}
+                      {confirmModal.type === 'lock_single' && (
+                        <>
+                          <Lock className="w-4 h-4" />
+                          Lock Account
+                        </>
+                      )}
+                      {confirmModal.type === 'delete_user' && (
+                        <>
+                          <Trash2 className="w-4 h-4" />
+                          Delete User
+                        </>
+                      )}
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
       )}
