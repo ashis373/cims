@@ -1,0 +1,2 @@
+# Deny direct HTTP access to candidate documents
+Require all denied

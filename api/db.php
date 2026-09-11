@@ -1,6 +1,7 @@
 <?php
 // Autoload Composer dependencies (vlucas/phpdotenv, phpmailer, etc.)
 require_once __DIR__ . '/vendor/autoload.php';
+require_once __DIR__ . '/cors.php';
 
 // Initialize and load environment variables safely using phpdotenv
 $possibleEnvPaths = [

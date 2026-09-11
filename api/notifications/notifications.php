@@ -2,8 +2,8 @@
 $origin = isset($_SERVER['HTTP_ORIGIN']) ? $_SERVER['HTTP_ORIGIN'] : '*';
 header("Access-Control-Allow-Origin: $origin");
 header("Access-Control-Allow-Credentials: true");
-header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type, Authorization");
+header("Access-Control-Allow-Methods: GET, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
 header("Content-Type: application/json");
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -23,6 +23,7 @@ else $required_permission = 'can_view';
 require_permission('alerts');
 
 try {
+    $scopeWhere = get_candidate_scope_where('c');
     $alerts = [];
     $idCounter = 1;
     
@@ -43,10 +44,10 @@ try {
     // --- CRITICAL ---
     // 1. Duplicate Candidate
     $stmt = $conn->query("
-        SELECT name, email, COUNT(*) as cnt, MAX(updatedAt) as last_updated
-        FROM cims_candidates 
-        WHERE email != '' AND email IS NOT NULL AND isBlacklisted = 0 AND isActive = 1
-        GROUP BY email 
+        SELECT c.name, c.email, COUNT(*) as cnt, MAX(c.updatedAt) as last_updated
+        FROM cims_candidates c
+        WHERE c.email != '' AND c.email IS NOT NULL AND c.isBlacklisted = 0 AND c.isActive = 1 AND $scopeWhere
+        GROUP BY c.email 
         HAVING cnt > 1 
         ORDER BY last_updated DESC LIMIT 5
     ");
@@ -54,18 +55,17 @@ try {
         $addAlert("duplicate", "Critical", "Duplicate candidate detected", $row['name'], $row['last_updated'], "Critical");
     }
 
-    // 2. Email failure
+    // 2. Email failure (eliminated N+1 query with JOIN)
     try {
         $stmt = $conn->query("
-            SELECT candidate_id, subject, sent_at, error_message
-            FROM cims_email_logs
-            WHERE status = 'Failed'
-            ORDER BY sent_at DESC LIMIT 5
+            SELECT l.candidate_id, l.subject, l.sent_at, l.error_message, c.name as candidate_name
+            FROM cims_email_logs l
+            JOIN cims_candidates c ON l.candidate_id = c.id
+            WHERE l.status = 'Failed' AND $scopeWhere
+            ORDER BY l.sent_at DESC LIMIT 5
         ");
         while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-            $c_stmt = $conn->prepare("SELECT name FROM cims_candidates WHERE id = ?");
-            $c_stmt->execute([$row['candidate_id']]);
-            $candidateName = $c_stmt->fetchColumn() ?: 'Unknown';
+            $candidateName = $row['candidate_name'] ?: 'Unknown';
             $addAlert("email_failed", "Critical", "Email delivery failed", $candidateName, $row['sent_at'], "Critical");
         }
     } catch (Exception $e) {}
@@ -77,7 +77,7 @@ try {
         FROM cims_candidates c 
         JOIN cims_applications a ON c.id = a.candidate_id 
         WHERE a.stage LIKE '%Interview%' AND c.isBlacklisted = 0 AND c.isActive = 1 
-        AND c.updatedAt < DATE_SUB(NOW(), INTERVAL 1 DAY)
+        AND c.updatedAt < DATE_SUB(NOW(), INTERVAL 1 DAY) AND $scopeWhere
         ORDER BY c.updatedAt DESC LIMIT 5
     ");
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
@@ -90,7 +90,7 @@ try {
         FROM cims_candidates c 
         JOIN cims_applications a ON c.id = a.candidate_id 
         WHERE a.stage = 'Offer Released' AND c.isBlacklisted = 0 AND c.isActive = 1 
-        AND c.updatedAt < DATE_SUB(NOW(), INTERVAL 2 DAY)
+        AND c.updatedAt < DATE_SUB(NOW(), INTERVAL 2 DAY) AND $scopeWhere
         ORDER BY c.updatedAt ASC LIMIT 5
     ");
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
@@ -99,16 +99,15 @@ try {
 
     // 3. Missing candidate info (No email or no phone)
     $stmt = $conn->query("
-        SELECT name, createdAt 
-        FROM cims_candidates 
-        WHERE (email = '' OR email IS NULL OR phone = '' OR phone IS NULL)
-        AND isBlacklisted = 0 AND isActive = 1 
-        ORDER BY createdAt DESC LIMIT 5
+        SELECT c.name, c.createdAt 
+        FROM cims_candidates c
+        WHERE (c.email = '' OR c.email IS NULL OR c.phone = '' OR c.phone IS NULL)
+        AND c.isBlacklisted = 0 AND c.isActive = 1 AND $scopeWhere
+        ORDER BY c.createdAt DESC LIMIT 5
     ");
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $addAlert("missing_info", "Action Required", "Missing candidate information", $row['name'], $row['createdAt'], "Medium");
     }
-
 
     // --- ATTENTION ---
     // 1. Candidate stuck in stage (same stage for > 14 days)
@@ -118,7 +117,7 @@ try {
         JOIN cims_applications a ON c.id = a.candidate_id 
         WHERE c.updatedAt < DATE_SUB(NOW(), INTERVAL 14 DAY) 
         AND a.stage NOT IN ('Rejected', 'Hired', 'Joined', 'Offer Accepted', 'New Applicant')
-        AND c.isBlacklisted = 0 AND c.isActive = 1 
+        AND c.isBlacklisted = 0 AND c.isActive = 1 AND $scopeWhere
         ORDER BY c.updatedAt ASC LIMIT 5
     ");
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
@@ -130,8 +129,8 @@ try {
         SELECT c.name, c.updatedAt 
         FROM cims_candidates c 
         JOIN cims_applications a ON c.id = a.candidate_id 
-        WHERE a.stage = 'Offer Accepted' OR a.stage = 'Joined'
-        AND c.isBlacklisted = 0 AND c.isActive = 1 
+        WHERE (a.stage = 'Offer Accepted' OR a.stage = 'Joined')
+        AND c.isBlacklisted = 0 AND c.isActive = 1 AND $scopeWhere
         ORDER BY c.updatedAt DESC LIMIT 5
     ");
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
@@ -141,11 +140,11 @@ try {
     // --- INFORMATION ---
     // 1. New candidate
     $stmt = $conn->query("
-        SELECT name, createdAt 
-        FROM cims_candidates 
-        WHERE createdAt > DATE_SUB(NOW(), INTERVAL 2 DAY)
-        AND isBlacklisted = 0 AND isActive = 1 
-        ORDER BY createdAt DESC LIMIT 5
+        SELECT c.name, c.createdAt 
+        FROM cims_candidates c
+        WHERE c.createdAt > DATE_SUB(NOW(), INTERVAL 2 DAY)
+        AND c.isBlacklisted = 0 AND c.isActive = 1 AND $scopeWhere
+        ORDER BY c.createdAt DESC LIMIT 5
     ");
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $addAlert("new_candidate", "Information", "New candidate added", $row['name'], $row['createdAt'], "Low");
@@ -153,10 +152,10 @@ try {
 
     // 2. Blacklisted
     $stmt = $conn->query("
-        SELECT name, updatedAt 
-        FROM cims_candidates 
-        WHERE isBlacklisted = 1
-        ORDER BY updatedAt DESC LIMIT 3
+        SELECT c.name, c.updatedAt 
+        FROM cims_candidates c
+        WHERE c.isBlacklisted = 1 AND $scopeWhere
+        ORDER BY c.updatedAt DESC LIMIT 3
     ");
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $addAlert("blacklisted", "Information", "Candidate blacklisted", $row['name'], $row['updatedAt'], "High");
@@ -169,7 +168,7 @@ try {
         FROM cims_candidates c 
         JOIN cims_applications a ON c.id = a.candidate_id 
         WHERE a.stage = 'Offer Accepted' 
-        AND c.updatedAt > DATE_SUB(NOW(), INTERVAL 7 DAY)
+        AND c.updatedAt > DATE_SUB(NOW(), INTERVAL 7 DAY) AND $scopeWhere
         ORDER BY c.updatedAt DESC LIMIT 5
     ");
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
@@ -182,13 +181,12 @@ try {
         FROM cims_candidates c 
         JOIN cims_applications a ON c.id = a.candidate_id 
         WHERE a.stage = 'Joined' 
-        AND c.updatedAt > DATE_SUB(NOW(), INTERVAL 7 DAY)
+        AND c.updatedAt > DATE_SUB(NOW(), INTERVAL 7 DAY) AND $scopeWhere
         ORDER BY c.updatedAt DESC LIMIT 5
     ");
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $addAlert("joined", "Success", "Candidate joined successfully", $row['name'], $row['updatedAt'], "Low");
     }
-
 
     // ---------------------------------------------------------
     // Format Time and Sort
@@ -218,12 +216,10 @@ try {
         } else {
             $alert['time'] = "$days days ago";
         }
-        // unset($alert['timeRaw']);
     }
 
     echo json_encode($alerts);
 } catch (PDOException $e) {
     http_response_code(500);
-    echo json_encode(["error" => $e->getMessage()]);
+    echo json_encode(["error" => "An error occurred while fetching alerts."]);
 }
-?>

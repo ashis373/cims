@@ -1,0 +1,2 @@
+# Deny direct HTTP access to candidate resumes
+Require all denied

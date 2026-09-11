@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 if (isset($_SERVER['HTTP_ORIGIN'])) { header("Access-Control-Allow-Origin: {$_SERVER['HTTP_ORIGIN']}"); }
 header('Access-Control-Allow-Credentials: true');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
@@ -33,10 +33,11 @@ try {
         $conn->beginTransaction();
         
         $stmt = $conn->prepare("
-            INSERT INTO cims_permissions (role_id, module_name, can_view, can_add, can_edit, can_delete, scope) 
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO cims_permissions (role_id, module_name, can_view, can_add, can_edit, can_delete, can_approve, can_export, scope) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON DUPLICATE KEY UPDATE 
             can_view=VALUES(can_view), can_add=VALUES(can_add), can_edit=VALUES(can_edit), can_delete=VALUES(can_delete),
+            can_approve=VALUES(can_approve), can_export=VALUES(can_export),
             scope=VALUES(scope)
         ");
 
@@ -44,10 +45,12 @@ try {
             $stmt->execute([
                 $role_id, 
                 $p['module_name'], 
-                $p['can_view'] ? 1 : 0,
-                $p['can_add'] ? 1 : 0,
-                $p['can_edit'] ? 1 : 0,
-                $p['can_delete'] ? 1 : 0,
+                !empty($p['can_view']) ? 1 : 0,
+                !empty($p['can_add']) ? 1 : 0,
+                !empty($p['can_edit']) ? 1 : 0,
+                !empty($p['can_delete']) ? 1 : 0,
+                !empty($p['can_approve']) ? 1 : 0,
+                !empty($p['can_export']) ? 1 : 0,
                 $p['scope'] ?? 'Assigned'
             ]);
         }

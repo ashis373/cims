@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 if (isset($_SERVER['HTTP_ORIGIN'])) { header("Access-Control-Allow-Origin: {$_SERVER['HTTP_ORIGIN']}"); }
 header('Access-Control-Allow-Credentials: true');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
@@ -29,22 +29,57 @@ try {
 
     if ($method === 'POST') {
         if ($action === 'upload_photo') {
-            $id = $_POST['id'] ?? null;
-            if (!$id) { http_response_code(400); echo json_encode(['status' => 'error', 'message' => 'User ID is required']); exit; }
+            $id = isset($_POST['id']) ? (int)$_POST['id'] : null;
+            if (!$id) { 
+                http_response_code(400); 
+                echo json_encode(['status' => 'error', 'message' => 'User ID is required']); 
+                exit; 
+            }
             $file = $_FILES['photo'] ?? null;
-            if ($file) {
+            if ($file && $file['error'] === UPLOAD_ERR_OK) {
+                if ($file['size'] > 2 * 1024 * 1024) {
+                    http_response_code(400);
+                    echo json_encode(['status' => 'error', 'message' => 'Profile photo must be less than 2MB.']);
+                    exit;
+                }
+
+                $allowedExtensions = ['jpg', 'jpeg', 'png', 'webp'];
+                $allowedMimes = ['image/jpeg', 'image/png', 'image/webp'];
+
                 $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+                if (!in_array($ext, $allowedExtensions, true)) {
+                    http_response_code(400);
+                    echo json_encode(['status' => 'error', 'message' => 'Invalid file extension. Only JPG, PNG, and WebP are permitted.']);
+                    exit;
+                }
+
+                $finfo = finfo_open(FILEINFO_MIME_TYPE);
+                $mime = finfo_file($finfo, $file['tmp_name']);
+                finfo_close($finfo);
+
+                if (!in_array($mime, $allowedMimes, true) || @getimagesize($file['tmp_name']) === false) {
+                    http_response_code(400);
+                    echo json_encode(['status' => 'error', 'message' => 'Invalid or corrupted image file.']);
+                    exit;
+                }
+
                 $uploadDir = '../../uploads/profiles/';
                 if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
-                $fileName = 'user_' . $id . '_' . time() . '.' . $ext;
+                $randomSuffix = bin2hex(random_bytes(6));
+                $fileName = 'user_' . $id . '_' . time() . '_' . $randomSuffix . '.' . $ext;
                 $destPath = $uploadDir . $fileName;
+
                 if (move_uploaded_file($file['tmp_name'], $destPath)) {
+                    chmod($destPath, 0644);
                     $photoUrl = '../../uploads/profiles/' . $fileName;
                     $conn->prepare('UPDATE cims_users SET profile_photo=? WHERE id=?')->execute([$photoUrl, $id]);
-                    echo json_encode(['status' => 'success', 'photo_url' => $photoUrl]); exit;
+                    echo json_encode(['status' => 'success', 'photo_url' => $photoUrl]); 
+                    exit;
                 }
             }
-            http_response_code(400); echo json_encode(['status' => 'error', 'message' => 'Upload failed']); exit;
+            http_response_code(400); 
+            echo json_encode(['status' => 'error', 'message' => 'Upload failed or no valid image received.']); 
+            exit;
         }
 
 

@@ -19,6 +19,7 @@ require_permission('interviews');
 
 if ($method === 'GET') {
     try {
+        $scopeWhere = get_candidate_scope_where('c');
         $stmt = $conn->prepare("
             SELECT 
                 i.id,
@@ -50,6 +51,7 @@ if ($method === 'GET') {
             FROM cims_candidate_interviews i
             JOIN cims_applications a ON i.application_id = a.id
             JOIN cims_candidates c ON a.candidate_id = c.id
+            WHERE $scopeWhere
             ORDER BY i.interviewDate DESC
         ");
         $stmt->execute();
@@ -70,7 +72,11 @@ if ($method === 'POST') {
         echo json_encode(["error" => "Missing required fields (application_id, candidate_id)"]);
         exit;
     }
-    file_put_contents('error_log.txt', date('Y-m-d H:i:s') . ' PAYLOAD: ' . json_encode($data) . "\n", FILE_APPEND);
+    if (!check_candidate_access($data['candidate_id'])) {
+        http_response_code(403);
+        echo json_encode(["error" => "Forbidden: You are not authorized to schedule interviews for this candidate."]);
+        exit;
+    }
     try {
         $conn->beginTransaction();
         $stmt = $conn->prepare("INSERT INTO cims_candidate_interviews (
@@ -82,7 +88,7 @@ if ($method === 'POST') {
         $date = !empty($data['date']) ? date('Y-m-d H:i:s', strtotime($data['date'])) : $now;
         $endTime = !empty($data['end_time']) ? date('Y-m-d H:i:s', strtotime($data['end_time'])) : null;
         $status = $data['status'] ?? 'Scheduled';
-        $createdBy = $data['created_by'] ?? 'Admin';
+        $createdBy = (string)$payload['user_id'];
         $resultVal = !empty($data['result']) ? $data['result'] : (!empty($data['recommendation']) && $data['recommendation'] === 'Do Not Hire' ? 'Failed' : null);
 
         $stmt->execute([
@@ -125,9 +131,8 @@ if ($method === 'POST') {
     } catch (Throwable $e) {
         if ($conn->inTransaction()) $conn->rollBack();
         http_response_code(500);
-        $errorMsg = $e->getMessage() . ' in ' . $e->getFile() . ' on line ' . $e->getLine();
-        file_put_contents('error_log.txt', date('Y-m-d H:i:s') . ' POST Error: ' . $errorMsg . "\n", FILE_APPEND);
-        echo json_encode(["error" => $errorMsg]);
+        error_log("Interview schedule error: " . $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine());
+        echo json_encode(["error" => "An error occurred while scheduling the interview. Please try again."]);
     }
 } elseif ($method === 'PUT') {
     $data = json_decode(file_get_contents("php://input"), true);
@@ -137,6 +142,11 @@ if ($method === 'POST') {
         exit;
     }
     $id = $_GET['id'];
+    if (!check_candidate_access($data['candidate_id'])) {
+        http_response_code(403);
+        echo json_encode(["error" => "Forbidden: You are not authorized to update this interview."]);
+        exit;
+    }
     try {
         $conn->beginTransaction();
         $fields = ['type', 'interviewDate', 'end_time', 'mode', 'interviewers', 'meeting_link', 'location', 'notes', 'cancellation_reason', 'status', 'feedback', 'rating', 'recommendation', 'result', 'comments'];
@@ -202,9 +212,31 @@ if ($method === 'POST') {
     } catch (Throwable $e) {
         if ($conn->inTransaction()) $conn->rollBack();
         http_response_code(500);
-        $errorMsg = $e->getMessage() . ' in ' . $e->getFile() . ' on line ' . $e->getLine();
-        file_put_contents('error_log.txt', date('Y-m-d H:i:s') . ' PUT Error: ' . $errorMsg . "\n", FILE_APPEND);
-        echo json_encode(["error" => $errorMsg]);
+        error_log("Interview update error: " . $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine());
+        echo json_encode(["error" => "An error occurred while updating the interview."]);
+    }
+} elseif ($method === 'DELETE') {
+    $id = $_GET['id'] ?? null;
+    if (!$id) {
+        http_response_code(400);
+        echo json_encode(["error" => "Missing interview ID"]);
+        exit;
+    }
+    $stmtCand = $conn->prepare("SELECT a.candidate_id FROM cims_candidate_interviews i JOIN cims_applications a ON i.application_id = a.id WHERE i.id = ?");
+    $stmtCand->execute([$id]);
+    $candId = $stmtCand->fetchColumn();
+    if (!$candId || !check_candidate_access($candId)) {
+        http_response_code(403);
+        echo json_encode(["error" => "Forbidden: You are not authorized to delete this interview."]);
+        exit;
+    }
+    try {
+        $del = $conn->prepare("DELETE FROM cims_candidate_interviews WHERE id = ?");
+        $del->execute([$id]);
+        echo json_encode(["success" => true, "message" => "Interview deleted successfully"]);
+    } catch (Throwable $e) {
+        http_response_code(500);
+        echo json_encode(["error" => "Failed to delete interview."]);
     }
 }
 ?>

@@ -3,25 +3,34 @@ $origin = isset($_SERVER['HTTP_ORIGIN']) ? $_SERVER['HTTP_ORIGIN'] : '*';
 header("Access-Control-Allow-Origin: $origin");
 header("Access-Control-Allow-Credentials: true");
 header("Access-Control-Allow-Methods: GET, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type, Authorization");
+header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
+
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
     exit(0);
 }
+
 include '../db.php';
 $method = $_SERVER['REQUEST_METHOD'];
+
 if ($method === 'POST') $required_permission = 'can_add';
 else if ($method === 'PUT') $required_permission = 'can_edit';
 else if ($method === 'DELETE') $required_permission = 'can_delete';
 else $required_permission = 'can_view';
+
 require_once '../auth_middleware.php';
 require_permission('reports');
+
 try {
     $startDate = $_GET['startDate'] ?? null;
     $endDate = $_GET['endDate'] ?? null;
     $recruiterFilter = $_GET['recruiter'] ?? null;
     $positionFilter = $_GET['position'] ?? null;
-    $whereClauses = ["1=1"];
+
+    $scopeWhere = get_candidate_scope_where('c');
+    $whereClauses = [$scopeWhere];
     $params = [];
+
     if ($startDate) {
         $whereClauses[] = "a.appliedAt >= ?";
         $params[] = $startDate . " 00:00:00";
@@ -38,8 +47,10 @@ try {
         $whereClauses[] = "a.role_applied = ?";
         $params[] = $positionFilter;
     }
+
     $whereSql = implode(" AND ", $whereClauses);
     $reports = [];
+
     // Recruiter Performance (Total Applications, Offers, Joined, Rejected by Recruiter)
     $stmt = $conn->prepare("
         SELECT 
@@ -49,20 +60,25 @@ try {
             SUM(CASE WHEN a.stage = 'Joined' THEN 1 ELSE 0 END) as joined,
             SUM(CASE WHEN a.stage = 'Rejected' THEN 1 ELSE 0 END) as rejected
         FROM cims_applications a
+        JOIN cims_candidates c ON a.candidate_id = c.id
         WHERE $whereSql
         GROUP BY a.recruiter
         HAVING a.recruiter IS NOT NULL AND a.recruiter != ''
     ");
     $stmt->execute($params);
     $reports['recruiter_performance'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
     // Funnel / Conversion Rates
     $stages = ['New Applicant', 'Shortlisted', 'Interview Scheduled', 'Offer Released', 'Joined'];
     $funnel = [];
     foreach ($stages as $s) {
-        $stmtF = $conn->prepare("SELECT COUNT(a.id) FROM cims_applications a WHERE a.stage = ? AND $whereSql");
-        // We have to merge the single param with the base params
+        $stmtF = $conn->prepare("
+            SELECT COUNT(a.id) 
+            FROM cims_applications a 
+            JOIN cims_candidates c ON a.candidate_id = c.id 
+            WHERE a.stage = ? AND $whereSql
+        ");
         $fParams = array_merge([$s], $params);
-        // But the WHERE clause uses a.appliedAt which is valid.
         $stmtF->execute($fParams);
         $funnel[] = [
             "name" => $s,
@@ -70,33 +86,46 @@ try {
         ];
     }
     $reports['funnel'] = $funnel;
+
     // Rejection Reasons
     $stmtRej = $conn->prepare("
         SELECT cr.reason as name, COUNT(cr.id) as value
         FROM cims_candidate_rejections cr
         JOIN cims_applications a ON cr.candidate_id = a.candidate_id
+        JOIN cims_candidates c ON a.candidate_id = c.id
         WHERE cr.type = 'Rejected' AND $whereSql
         GROUP BY cr.reason
     ");
     $stmtRej->execute($params);
     $reports['rejection_reasons'] = $stmtRej->fetchAll(PDO::FETCH_ASSOC);
+
     // No Join Stats
     $stmtNoJoin = $conn->prepare("
         SELECT a.stageReason as name, COUNT(a.id) as value
         FROM cims_applications a
+        JOIN cims_candidates c ON a.candidate_id = c.id
         WHERE a.stage = 'No Show' AND a.stageReason IS NOT NULL AND a.stageReason != '' AND $whereSql
         GROUP BY a.stageReason
     ");
     $stmtNoJoin->execute($params);
     $reports['no_join_stats'] = $stmtNoJoin->fetchAll(PDO::FETCH_ASSOC);
-    // List of Recruiters & Positions for filter dropdowns
+
+    // List of Recruiters & Positions for filter dropdowns scoped to accessible candidates
+    $stmtRec = $conn->prepare("SELECT DISTINCT a.recruiter FROM cims_applications a JOIN cims_candidates c ON a.candidate_id = c.id WHERE a.recruiter IS NOT NULL AND a.recruiter != '' AND $scopeWhere");
+    $stmtRec->execute();
+    $recruitersList = $stmtRec->fetchAll(PDO::FETCH_COLUMN);
+
+    $stmtPos = $conn->prepare("SELECT DISTINCT a.role_applied FROM cims_applications a JOIN cims_candidates c ON a.candidate_id = c.id WHERE a.role_applied IS NOT NULL AND a.role_applied != '' AND $scopeWhere");
+    $stmtPos->execute();
+    $positionsList = $stmtPos->fetchAll(PDO::FETCH_COLUMN);
+
     $reports['filters'] = [
-        'recruiters' => $conn->query("SELECT DISTINCT recruiter FROM cims_applications WHERE recruiter IS NOT NULL AND recruiter != ''")->fetchAll(PDO::FETCH_COLUMN),
-        'positions' => $conn->query("SELECT DISTINCT role_applied FROM cims_applications WHERE role_applied IS NOT NULL AND role_applied != ''")->fetchAll(PDO::FETCH_COLUMN)
+        'recruiters' => $recruitersList,
+        'positions' => $positionsList
     ];
+
     echo json_encode($reports);
 } catch (PDOException $e) {
     http_response_code(500);
-    echo json_encode(["error" => $e->getMessage()]);
+    echo json_encode(["error" => "A database error occurred while generating reports."]);
 }
-?>

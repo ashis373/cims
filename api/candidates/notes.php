@@ -25,28 +25,45 @@ if ($method === 'POST') {
         echo json_encode(["error" => "Invalid input"]);
         exit;
     }
+    if (!check_candidate_access($data['candidate_id'])) {
+        http_response_code(403);
+        echo json_encode(["error" => "Forbidden: You are not authorized to add notes for this candidate."]);
+        exit;
+    }
     try {
+        $userStmt = $conn->prepare("SELECT full_name FROM cims_users WHERE id = ?");
+        $userStmt->execute([$currentUser]);
+        $authorName = $userStmt->fetchColumn() ?: 'Recruiter';
+
         $stmt = $conn->prepare("INSERT INTO cims_candidate_notes (candidate_id, text, createdBy) VALUES (?, ?, ?)");
         $stmt->execute([
             $data['candidate_id'],
             $data['text'],
-            $data['createdBy'] ?? 'System'
+            $authorName
         ]);
         
-        $userId = isset($payload['user_id']) ? $payload['user_id'] : null;
         $stmtHist = $conn->prepare("INSERT INTO cims_candidate_history (candidate_id, action, details, userId) VALUES (?, 'Note Added', ?, ?)");
-        $stmtHist->execute([$data['candidate_id'], $data['text'], $userId]);
+        $stmtHist->execute([$data['candidate_id'], $data['text'], $currentUser]);
         
         echo json_encode(["success" => true, "id" => $conn->lastInsertId()]);
     } catch (PDOException $e) {
         http_response_code(500);
-        echo json_encode(["error" => $e->getMessage()]);
+        error_log("Note create error: " . $e->getMessage());
+        echo json_encode(["error" => "Failed to add note."]);
     }
 } elseif ($method === 'PUT') {
     $data = json_decode(file_get_contents("php://input"), true);
     if (!$data || !isset($data['id']) || !isset($data['text'])) {
         http_response_code(400);
         echo json_encode(["error" => "Invalid input"]);
+        exit;
+    }
+    $stmtNote = $conn->prepare("SELECT candidate_id FROM cims_candidate_notes WHERE id = ?");
+    $stmtNote->execute([$data['id']]);
+    $candId = $stmtNote->fetchColumn();
+    if (!$candId || !check_candidate_access($candId)) {
+        http_response_code(403);
+        echo json_encode(["error" => "Forbidden: You are not authorized to edit this note."]);
         exit;
     }
     try {
@@ -58,7 +75,8 @@ if ($method === 'POST') {
         echo json_encode(["success" => true]);
     } catch (PDOException $e) {
         http_response_code(500);
-        echo json_encode(["error" => $e->getMessage()]);
+        error_log("Note update error: " . $e->getMessage());
+        echo json_encode(["error" => "Failed to update note."]);
     }
 } elseif ($method === 'DELETE') {
     $data = json_decode(file_get_contents("php://input"), true);
@@ -67,14 +85,22 @@ if ($method === 'POST') {
         echo json_encode(["error" => "Invalid input"]);
         exit;
     }
+    $stmtNote = $conn->prepare("SELECT candidate_id FROM cims_candidate_notes WHERE id = ?");
+    $stmtNote->execute([$data['id']]);
+    $candId = $stmtNote->fetchColumn();
+    if (!$candId || !check_candidate_access($candId)) {
+        http_response_code(403);
+        echo json_encode(["error" => "Forbidden: You are not authorized to delete this note."]);
+        exit;
+    }
     try {
         $stmt = $conn->prepare("DELETE FROM cims_candidate_notes WHERE id = ?");
         $stmt->execute([$data['id']]);
         echo json_encode(["success" => true]);
     } catch (PDOException $e) {
         http_response_code(500);
-        echo json_encode(["error" => $e->getMessage()]);
+        error_log("Note delete error: " . $e->getMessage());
+        echo json_encode(["error" => "Failed to delete note."]);
     }
 }
 ?>
-

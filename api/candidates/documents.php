@@ -17,6 +17,12 @@ require_once '../auth_middleware.php';
 require_permission('candidates');
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_FILES['file']) && $_FILES['file']['error'] === UPLOAD_ERR_OK && isset($_POST['candidate_id'])) {
+        $candidateId = (int)$_POST['candidate_id'];
+        if (!check_candidate_access($candidateId)) {
+            http_response_code(403);
+            echo json_encode(["error" => "Forbidden: You are not authorized to upload documents for this candidate."]);
+            exit;
+        }
         $uploadDir = '../../uploads/candidates/documents/';
         if (!is_dir($uploadDir)) {
             mkdir($uploadDir, 0777, true);
@@ -89,6 +95,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->execute([$data['id']]);
         $doc = $stmt->fetch(PDO::FETCH_ASSOC);
         if ($doc) {
+            if (!check_candidate_access((int)$doc['candidate_id'])) {
+                http_response_code(403);
+                echo json_encode(["error" => "Forbidden: You are not authorized to delete documents for this candidate."]);
+                exit;
+            }
             $filePath = '../../uploads/candidates/documents/' . $doc['filePath'];
             if (file_exists($filePath)) {
                 unlink($filePath);

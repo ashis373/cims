@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import DOMPurify from "dompurify";
 
 export default function CareersPage() {
   const [jobs, setJobs] = useState<any[]>([]);
@@ -1013,7 +1014,7 @@ export default function CareersPage() {
 
                 <div className="prose prose-invert prose-sm max-w-none text-slate-300">
                   <h3 className="text-white text-[15px] font-bold mb-2">Role Overview</h3>
-                  <div dangerouslySetInnerHTML={{ __html: selectedJob.description || '<p>We are looking for a talented individual to join our team.</p>' }} />
+                  <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(selectedJob.description || '<p>We are looking for a talented individual to join our team.</p>') }} />
                 </div>
               </div>
             </div>

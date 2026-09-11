@@ -35,8 +35,23 @@ dist-ssr
 # PHP / Composer
 api/vendor/
 .env
+api/.env
+*.env
 api/error.log
+api/candidates/error_log.txt
+*.sql
+*.dump
 
 # Candidate uploads
 uploads/candidates/photos/*
+!uploads/candidates/photos/.gitkeep
 uploads/candidates/resumes/*
+!uploads/candidates/resumes/.htaccess
+uploads/candidates/documents/*
+!uploads/candidates/documents/.htaccess
+uploads/profiles/*
+!uploads/profiles/.gitkeep
+!uploads/profiles/.htaccess
+api/settings/email/worker.lock
+backups/*
+!backups/.htaccess

@@ -2,17 +2,22 @@
 $origin = isset($_SERVER['HTTP_ORIGIN']) ? $_SERVER['HTTP_ORIGIN'] : '*';
 header("Access-Control-Allow-Origin: $origin");
 header("Access-Control-Allow-Credentials: true");
-header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type, Authorization");
+header("Access-Control-Allow-Methods: GET, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
+
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
     exit(0);
 }
+
 include '../db.php';
 $method = $_SERVER['REQUEST_METHOD'];
+
 if ($method === 'POST') $required_permission = 'can_add';
 else if ($method === 'PUT') $required_permission = 'can_edit';
 else if ($method === 'DELETE') $required_permission = 'can_delete';
 else $required_permission = 'can_view';
+
 require_once '../auth_middleware.php';
 require_permission('dashboard');
 
@@ -20,40 +25,100 @@ require_permission('dashboard');
 $period = $_GET['period'] ?? 'this_year';
 
 try {
+    $scopeWhere = get_candidate_scope_where('c');
     $stats = [];
+
     // Total
-    $stats['total'] = (int)$conn->query("SELECT COUNT(*) FROM cims_candidates")->fetchColumn();
+    $stats['total'] = (int)$conn->query("SELECT COUNT(*) FROM cims_candidates c WHERE $scopeWhere")->fetchColumn();
+
     // Active (Not inactive stages, not blacklisted)
     $stats['active'] = (int)$conn->query("
         SELECT COUNT(*) FROM cims_applications a 
         JOIN cims_candidates c ON a.candidate_id = c.id 
         WHERE a.stage NOT IN ('Rejected', 'Offer Declined', 'No Show', 'Offer Expired') 
         AND c.isBlacklisted = 0
+        AND $scopeWhere
     ")->fetchColumn();
-    // New Applicants
-    $stats['newApplicants'] = (int)$conn->query("SELECT COUNT(*) FROM cims_applications WHERE stage = 'New Applicant'")->fetchColumn();
-    // Scheduled
-    $stats['scheduled'] = (int)$conn->query("SELECT COUNT(*) FROM cims_applications WHERE stage = 'Interview Scheduled'")->fetchColumn();
-    // Selected
-    $stats['selected'] = (int)$conn->query("SELECT COUNT(*) FROM cims_applications WHERE stage IN ('Shortlisted', 'Interview Completed')")->fetchColumn();
-    // Offers Released
-    $stats['offersReleased'] = (int)$conn->query("SELECT COUNT(*) FROM cims_applications WHERE stage = 'Offer Released'")->fetchColumn();
-    // Offers Accepted
-    $stats['offersAccepted'] = (int)$conn->query("SELECT COUNT(*) FROM cims_applications WHERE stage = 'Offer Accepted'")->fetchColumn();
-    // Offers Declined
-    $stats['offersDeclined'] = (int)$conn->query("SELECT COUNT(*) FROM cims_applications WHERE stage = 'Offer Declined'")->fetchColumn();
-    // Offers Pending
-    $stats['offersPending'] = (int)$conn->query("SELECT COUNT(*) FROM cims_candidate_offers WHERE offerStatus = 'Pending'")->fetchColumn();
-    // Joined
-    $stats['joined'] = (int)$conn->query("SELECT COUNT(*) FROM cims_applications WHERE stage = 'Joined'")->fetchColumn();
-    // Rejected
-    $stats['rejected'] = (int)$conn->query("SELECT COUNT(*) FROM cims_candidate_rejections WHERE type = 'Rejected'")->fetchColumn();
-    // Blacklisted
-    $stats['blacklisted'] = (int)$conn->query("SELECT COUNT(*) FROM cims_candidate_rejections WHERE type = 'Blacklisted'")->fetchColumn();
-    // No Show
-    $stats['noShow'] = (int)$conn->query("SELECT COUNT(*) FROM cims_applications WHERE stage = 'No Show'")->fetchColumn();
 
-    // Dedicated Quick Stats (comes directly from database)
+    // New Applicants
+    $stats['newApplicants'] = (int)$conn->query("
+        SELECT COUNT(*) FROM cims_applications a 
+        JOIN cims_candidates c ON a.candidate_id = c.id 
+        WHERE a.stage = 'New Applicant' AND $scopeWhere
+    ")->fetchColumn();
+
+    // Scheduled
+    $stats['scheduled'] = (int)$conn->query("
+        SELECT COUNT(*) FROM cims_applications a 
+        JOIN cims_candidates c ON a.candidate_id = c.id 
+        WHERE a.stage = 'Interview Scheduled' AND $scopeWhere
+    ")->fetchColumn();
+
+    // Selected
+    $stats['selected'] = (int)$conn->query("
+        SELECT COUNT(*) FROM cims_applications a 
+        JOIN cims_candidates c ON a.candidate_id = c.id 
+        WHERE a.stage IN ('Shortlisted', 'Interview Completed') AND $scopeWhere
+    ")->fetchColumn();
+
+    // Offers Released
+    $stats['offersReleased'] = (int)$conn->query("
+        SELECT COUNT(*) FROM cims_applications a 
+        JOIN cims_candidates c ON a.candidate_id = c.id 
+        WHERE a.stage = 'Offer Released' AND $scopeWhere
+    ")->fetchColumn();
+
+    // Offers Accepted
+    $stats['offersAccepted'] = (int)$conn->query("
+        SELECT COUNT(*) FROM cims_applications a 
+        JOIN cims_candidates c ON a.candidate_id = c.id 
+        WHERE a.stage = 'Offer Accepted' AND $scopeWhere
+    ")->fetchColumn();
+
+    // Offers Declined
+    $stats['offersDeclined'] = (int)$conn->query("
+        SELECT COUNT(*) FROM cims_applications a 
+        JOIN cims_candidates c ON a.candidate_id = c.id 
+        WHERE a.stage = 'Offer Declined' AND $scopeWhere
+    ")->fetchColumn();
+
+    // Offers Pending
+    $stats['offersPending'] = (int)$conn->query("
+        SELECT COUNT(*) FROM cims_candidate_offers o 
+        JOIN cims_applications a ON o.application_id = a.id 
+        JOIN cims_candidates c ON a.candidate_id = c.id 
+        WHERE o.offerStatus = 'Pending' AND $scopeWhere
+    ")->fetchColumn();
+
+    // Joined
+    $stats['joined'] = (int)$conn->query("
+        SELECT COUNT(*) FROM cims_applications a 
+        JOIN cims_candidates c ON a.candidate_id = c.id 
+        WHERE a.stage = 'Joined' AND $scopeWhere
+    ")->fetchColumn();
+
+    // Rejected
+    $stats['rejected'] = (int)$conn->query("
+        SELECT COUNT(*) FROM cims_candidate_rejections r 
+        JOIN cims_candidates c ON r.candidate_id = c.id 
+        WHERE r.type = 'Rejected' AND $scopeWhere
+    ")->fetchColumn();
+
+    // Blacklisted
+    $stats['blacklisted'] = (int)$conn->query("
+        SELECT COUNT(*) FROM cims_candidate_rejections r 
+        JOIN cims_candidates c ON r.candidate_id = c.id 
+        WHERE r.type = 'Blacklisted' AND $scopeWhere
+    ")->fetchColumn();
+
+    // No Show
+    $stats['noShow'] = (int)$conn->query("
+        SELECT COUNT(*) FROM cims_applications a 
+        JOIN cims_candidates c ON a.candidate_id = c.id 
+        WHERE a.stage = 'No Show' AND $scopeWhere
+    ")->fetchColumn();
+
+    // Dedicated Quick Stats
     $stats['quickStats'] = [
         'newCandidates' => (int)$stats['newApplicants'],
         'interviewsScheduled' => (int)$stats['scheduled'],
@@ -67,9 +132,13 @@ try {
     $stages = ['New Applicant', 'Shortlisted', 'HR Call Scheduled', 'Interview Scheduled', 'Offer Released', 'Joined', 'Rejected', 'No Show', 'On Hold'];
     $funnel = [];
     foreach ($stages as $stage) {
-        $stmt = $conn->prepare("SELECT COUNT(*) FROM cims_applications WHERE stage = ?");
+        $stmt = $conn->prepare("
+            SELECT COUNT(*) FROM cims_applications a 
+            JOIN cims_candidates c ON a.candidate_id = c.id 
+            WHERE a.stage = ? AND $scopeWhere
+        ");
         $stmt->execute([$stage]);
-        $funnel[$stage] = $stmt->fetchColumn();
+        $funnel[$stage] = (int)$stmt->fetchColumn();
     }
     $stats['funnel'] = $funnel;
 
@@ -88,7 +157,6 @@ try {
             $intervals[] = ['label' => $monthLabel, 'start' => $monthStart, 'end' => $monthEnd];
         }
     } elseif ($period === 'yearly') {
-        // Last 5 years comparison
         for ($y = $currentYear - 4; $y <= $currentYear; $y++) {
             $yearStart = "$y-01-01 00:00:00";
             $yearEnd = "$y-12-31 23:59:59";
@@ -121,26 +189,31 @@ try {
 
         // 1. Applied
         $appliedStmt = $conn->prepare("
-            SELECT COUNT(*) FROM cims_applications 
-            WHERE appliedAt >= ? AND appliedAt <= ?
+            SELECT COUNT(*) FROM cims_applications a 
+            JOIN cims_candidates c ON a.candidate_id = c.id 
+            WHERE a.appliedAt >= ? AND a.appliedAt <= ? AND $scopeWhere
         ");
         $appliedStmt->execute([$start, $end]);
         $appliedCount = (int)$appliedStmt->fetchColumn();
 
         // 2. Interviews
         $interviewsStmt = $conn->prepare("
-            SELECT COUNT(*) FROM cims_candidate_interviews 
-            WHERE (interviewDate >= ? AND interviewDate <= ?) 
-               OR (created_at >= ? AND created_at <= ?)
+            SELECT COUNT(*) FROM cims_candidate_interviews i 
+            JOIN cims_applications a ON i.application_id = a.id 
+            JOIN cims_candidates c ON a.candidate_id = c.id 
+            WHERE ((i.interviewDate >= ? AND i.interviewDate <= ?) 
+               OR (i.created_at >= ? AND i.created_at <= ?)) 
+              AND $scopeWhere
         ");
         $interviewsStmt->execute([$start, $end, $start, $end]);
         $interviewsCount = (int)$interviewsStmt->fetchColumn();
 
         if ($interviewsCount === 0) {
             $interviewsStmt2 = $conn->prepare("
-                SELECT COUNT(*) FROM cims_applications 
-                WHERE stage IN ('HR Call Scheduled', 'Interview Scheduled', 'Interview Completed') 
-                  AND appliedAt >= ? AND appliedAt <= ?
+                SELECT COUNT(*) FROM cims_applications a 
+                JOIN cims_candidates c ON a.candidate_id = c.id 
+                WHERE a.stage IN ('HR Call Scheduled', 'Interview Scheduled', 'Interview Completed') 
+                  AND a.appliedAt >= ? AND a.appliedAt <= ? AND $scopeWhere
             ");
             $interviewsStmt2->execute([$start, $end]);
             $interviewsCount = (int)$interviewsStmt2->fetchColumn();
@@ -148,26 +221,31 @@ try {
 
         // 3. Selected
         $selectedStmt = $conn->prepare("
-            SELECT COUNT(*) FROM cims_applications 
-            WHERE stage IN ('Shortlisted', 'Interview Completed', 'Offer Released', 'Offer Accepted', 'Joined') 
-              AND appliedAt >= ? AND appliedAt <= ?
+            SELECT COUNT(*) FROM cims_applications a 
+            JOIN cims_candidates c ON a.candidate_id = c.id 
+            WHERE a.stage IN ('Shortlisted', 'Interview Completed', 'Offer Released', 'Offer Accepted', 'Joined') 
+              AND a.appliedAt >= ? AND a.appliedAt <= ? AND $scopeWhere
         ");
         $selectedStmt->execute([$start, $end]);
         $selectedCount = (int)$selectedStmt->fetchColumn();
 
         // 4. Joined
         $joinedStmt = $conn->prepare("
-            SELECT COUNT(*) FROM cims_candidate_offers 
-            WHERE (joiningDate >= ? AND joiningDate <= ?) 
-               OR (acceptedDate >= ? AND acceptedDate <= ? AND offerStatus = 'Joined')
+            SELECT COUNT(*) FROM cims_candidate_offers o 
+            JOIN cims_applications a ON o.application_id = a.id 
+            JOIN cims_candidates c ON a.candidate_id = c.id 
+            WHERE ((o.joiningDate >= ? AND o.joiningDate <= ?) 
+               OR (o.acceptedDate >= ? AND o.acceptedDate <= ? AND o.offerStatus = 'Joined'))
+              AND $scopeWhere
         ");
         $joinedStmt->execute([$start, $end, $start, $end]);
         $joinedCount = (int)$joinedStmt->fetchColumn();
 
         if ($joinedCount === 0) {
             $joinedStmt2 = $conn->prepare("
-                SELECT COUNT(*) FROM cims_applications 
-                WHERE stage = 'Joined' AND appliedAt >= ? AND appliedAt <= ?
+                SELECT COUNT(*) FROM cims_applications a 
+                JOIN cims_candidates c ON a.candidate_id = c.id 
+                WHERE a.stage = 'Joined' AND a.appliedAt >= ? AND a.appliedAt <= ? AND $scopeWhere
             ");
             $joinedStmt2->execute([$start, $end]);
             $joinedCount = (int)$joinedStmt2->fetchColumn();
@@ -184,7 +262,7 @@ try {
     $stats['trend'] = $trend;
     $stats['period'] = $period;
 
-    // Today's Schedule (fetched from cims_candidate_interviews, cims_applications, cims_candidates)
+    // Today's Schedule
     $scheduleStmt = $conn->prepare("
         SELECT 
             i.id,
@@ -207,7 +285,7 @@ try {
         FROM cims_candidate_interviews i
         JOIN cims_applications a ON i.application_id = a.id
         JOIN cims_candidates c ON a.candidate_id = c.id
-        WHERE DATE(i.interviewDate) = CURDATE()
+        WHERE DATE(i.interviewDate) = CURDATE() AND $scopeWhere
         ORDER BY i.interviewDate ASC
     ");
     $scheduleStmt->execute();
@@ -238,7 +316,7 @@ try {
             FROM cims_candidate_interviews i
             JOIN cims_applications a ON i.application_id = a.id
             JOIN cims_candidates c ON a.candidate_id = c.id
-            WHERE i.interviewDate >= CURDATE()
+            WHERE i.interviewDate >= CURDATE() AND $scopeWhere
             ORDER BY i.interviewDate ASC
             LIMIT 5
         ");
@@ -295,6 +373,5 @@ try {
     echo json_encode($stats);
 } catch (PDOException $e) {
     http_response_code(500);
-    echo json_encode(["error" => $e->getMessage()]);
+    echo json_encode(["error" => "An error occurred while fetching dashboard statistics."]);
 }
-?>

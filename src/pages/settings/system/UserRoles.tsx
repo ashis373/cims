@@ -434,7 +434,7 @@ export default function UserRoles() {
           </p>
         </div>
 
-        <div className="relative z-10 flex items-center gap-4 self-stretch xl:self-auto justify-end">
+        <div className="relative z-10 flex items-center gap-3 self-stretch xl:self-auto justify-end">
           <Button 
             onClick={() => {
               setEditingUser(null);

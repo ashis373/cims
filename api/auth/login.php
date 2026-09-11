@@ -24,10 +24,8 @@ $isProduction = (defined('ENVIRONMENT') && ENVIRONMENT === 'production') ||
                 (isset($_ENV['APP_ENV']) && $_ENV['APP_ENV'] === 'production') || 
                 (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on');
 
-$clientIp = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
-if (strpos($clientIp, ',') !== false) {
-    $clientIp = trim(explode(',', $clientIp)[0]);
-}
+// Use reliable TCP connection IP to prevent X-Forwarded-For header spoofing
+$clientIp = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
 
 try {
     // ----------------------------------------------------

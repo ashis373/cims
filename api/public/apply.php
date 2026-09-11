@@ -3,33 +3,56 @@ $origin = isset($_SERVER['HTTP_ORIGIN']) ? $_SERVER['HTTP_ORIGIN'] : '*';
 header("Access-Control-Allow-Origin: $origin");
 header("Access-Control-Allow-Credentials: true");
 header("Access-Control-Allow-Methods: POST, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type, Authorization");
+header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
     exit(0);
 }
 
 include '../db.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $clientIp = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+
+    // Rate Limiting: Max 10 applications per IP per hour
+    try {
+        $conn->exec("DELETE FROM cims_rate_limits WHERE created_at < (NOW() - INTERVAL 1 HOUR)");
+        $rateStmt = $conn->prepare("SELECT COUNT(*) FROM cims_rate_limits WHERE ip_address = ? AND action = 'apply' AND created_at > (NOW() - INTERVAL 1 HOUR)");
+        $rateStmt->execute([$clientIp]);
+        $applyAttempts = (int)$rateStmt->fetchColumn();
+
+        if ($applyAttempts >= 10) {
+            http_response_code(429);
+            echo json_encode(["error" => "Too many application submissions from your IP. Please try again after an hour."]);
+            exit;
+        }
+
+        // Record submission attempt
+        $insRate = $conn->prepare("INSERT INTO cims_rate_limits (ip_address, action, created_at) VALUES (?, 'apply', NOW())");
+        $insRate->execute([$clientIp]);
+    } catch (\Throwable $rateErr) {
+        error_log("Rate limiting error in apply.php: " . $rateErr->getMessage());
+    }
+
     // We are expecting multipart/form-data
-    $name = $_POST['name'] ?? '';
-    $email = $_POST['email'] ?? '';
-    $phone = $_POST['phone'] ?? '';
-    $alternateMobile = $_POST['alternateMobile'] ?? '';
-    $location = $_POST['location'] ?? '';
-    $preferredLocation = $_POST['preferredLocation'] ?? '';
-    $experience = $_POST['experience'] ?? '';
-    $relevantExperience = $_POST['relevantExperience'] ?? '';
-    $currentCompany = $_POST['currentCompany'] ?? '';
-    $currentDesignation = $_POST['currentDesignation'] ?? '';
-    $currentCtc = $_POST['currentCtc'] ?? '';
-    $expectedCtc = $_POST['expectedCtc'] ?? '';
-    $noticePeriod = $_POST['noticePeriod'] ?? '';
+    $name = trim($_POST['name'] ?? '');
+    $email = trim($_POST['email'] ?? '');
+    $phone = trim($_POST['phone'] ?? '');
+    $alternateMobile = trim($_POST['alternateMobile'] ?? '');
+    $location = trim($_POST['location'] ?? '');
+    $preferredLocation = trim($_POST['preferredLocation'] ?? '');
+    $experience = trim($_POST['experience'] ?? '');
+    $relevantExperience = trim($_POST['relevantExperience'] ?? '');
+    $currentCompany = trim($_POST['currentCompany'] ?? '');
+    $currentDesignation = trim($_POST['currentDesignation'] ?? '');
+    $currentCtc = trim($_POST['currentCtc'] ?? '');
+    $expectedCtc = trim($_POST['expectedCtc'] ?? '');
+    $noticePeriod = trim($_POST['noticePeriod'] ?? '');
     $skills = $_POST['skills'] ?? '[]';
-    $linkedInProfile = $_POST['linkedInProfile'] ?? '';
-    $role = $_POST['role'] ?? '';
-    $department = $_POST['department'] ?? '';
+    $linkedInProfile = trim($_POST['linkedInProfile'] ?? '');
+    $role = trim($_POST['role'] ?? '');
+    $department = trim($_POST['department'] ?? '');
     $photo = '';
     $resume = '';
     
@@ -37,6 +60,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!$name || !$email || !$role) {
         http_response_code(400);
         echo json_encode(["error" => "Name, Email, and Position are required."]);
+        exit;
+    }
+
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        http_response_code(400);
+        echo json_encode(["error" => "Please enter a valid email address."]);
         exit;
     }
 
@@ -136,8 +165,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         echo json_encode(["success" => true, "message" => "Application submitted successfully"]);
     } catch (PDOException $e) {
+        error_log("Apply database error: " . $e->getMessage());
         http_response_code(500);
-        echo json_encode(["error" => "Database error: " . $e->getMessage()]);
+        echo json_encode(["error" => "An error occurred while submitting your application. Please try again later."]);
     }
+} else {
+    http_response_code(405);
+    echo json_encode(["error" => "Method not allowed"]);
 }
-?>

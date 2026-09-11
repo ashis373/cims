@@ -56,8 +56,7 @@ foreach ($possibleEnvPaths as $path) {
 // ============================================================
 $secret = $_ENV['JWT_SECRET'] ?? $_SERVER['JWT_SECRET'] ?? getenv('JWT_SECRET');
 if (!$secret) {
-    // Fallback default secret if env variable not specified
-    $secret = 'a2e8c9b3d1f4a6e7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1';
+    throw new RuntimeException("CRITICAL CONFIGURATION ERROR: JWT_SECRET environment variable is missing or empty.");
 }
 if (!defined('JWT_SECRET')) {
     define('JWT_SECRET', $secret);
@@ -175,7 +174,7 @@ function encrypt_data($data) {
     $method = 'AES-256-CBC';
     $key = hash('sha256', JWT_SECRET, true); // derive a 256-bit key
     $ivLength = openssl_cipher_iv_length($method);
-    $iv = openssl_random_pseudo_bytes($ivLength);
+    $iv = random_bytes($ivLength);
     $encrypted = openssl_encrypt($data, $method, $key, OPENSSL_RAW_DATA, $iv);
     return base64_encode($iv . $encrypted);
 }

@@ -1111,26 +1111,40 @@ export default function CandidateProfile() {
                           </td>
                           <td className="py-3 px-4 text-right">
                             <div className="flex items-center justify-end gap-1">
-                              <a href={`${API_BASE_URL}/../uploads/candidates/documents/${doc.rawName}`} target="_blank" rel="noreferrer">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-7 w-7 text-slate-400 hover:text-blue-600"
-                                  title="View Document"
-                                >
-                                  <Eye className="h-4 w-4" />
-                                </Button>
-                              </a>
-                              <a href={`${API_BASE_URL}/../uploads/candidates/documents/${doc.rawName}`} download target="_blank" rel="noreferrer">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-7 w-7 text-slate-400 hover:text-blue-600"
-                                  title="Download Document"
-                                >
-                                  <Download className="h-4 w-4" />
-                                </Button>
-                              </a>
+                              {(() => {
+                                const token = localStorage.getItem('cims_token') || localStorage.getItem('token') || '';
+                                const tokenParam = token ? `&token=${encodeURIComponent(token)}` : '';
+                                const viewUrl = doc.id === 'resume'
+                                  ? `${API_BASE_URL}/candidates/download.php?file=${encodeURIComponent(doc.rawName)}&type=resumes&inline=1${tokenParam}`
+                                  : `${API_BASE_URL}/candidates/download.php?id=${doc.id}&type=documents&inline=1${tokenParam}`;
+                                const dlUrl = doc.id === 'resume'
+                                  ? `${API_BASE_URL}/candidates/download.php?file=${encodeURIComponent(doc.rawName)}&type=resumes${tokenParam}`
+                                  : `${API_BASE_URL}/candidates/download.php?id=${doc.id}&type=documents${tokenParam}`;
+                                return (
+                                  <>
+                                    <a href={viewUrl} target="_blank" rel="noreferrer">
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-7 w-7 text-slate-400 hover:text-blue-600"
+                                        title="View Document"
+                                      >
+                                        <Eye className="h-4 w-4" />
+                                      </Button>
+                                    </a>
+                                    <a href={dlUrl} target="_blank" rel="noreferrer">
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-7 w-7 text-slate-400 hover:text-blue-600"
+                                        title="Download Document"
+                                      >
+                                        <Download className="h-4 w-4" />
+                                      </Button>
+                                    </a>
+                                  </>
+                                );
+                              })()}
                               {doc.id !== 'resume' && (
                                 <Button
                                   variant="ghost"

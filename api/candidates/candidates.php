@@ -25,10 +25,12 @@ function parseDate($dateStr) {
 }
 if ($method === 'GET') {
     try {
-        // Fetch candidates with primary application details
+        // Fetch candidates with scope filter
+        $scopeWhere = get_candidate_scope_where('c');
         $stmt = $conn->query("
             SELECT c.* 
             FROM cims_candidates c 
+            WHERE $scopeWhere
             ORDER BY c.updatedAt DESC
         ");
         $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -261,24 +263,41 @@ if ($method === 'GET') {
             }
         }
         
-        // Duplicate Check
+        // Duplicate Check (normalized email and phone)
         if (!isset($data['forceCreate']) || $data['forceCreate'] !== true) {
-            $stmtCheck = $conn->prepare("SELECT id FROM cims_candidates WHERE email = ?");
-            $stmtCheck->execute([$c['email']]);
-            if ($stmtCheck->fetchColumn()) {
-                http_response_code(409);
-                echo json_encode(["error" => "A candidate with this email already exists."]);
-                exit;
+            $candEmail = trim($c['email'] ?? '');
+            $candPhone = preg_replace('/[^0-9]/', '', $c['phone'] ?? '');
+            $dupConds = [];
+            $dupParams = [];
+            if (!empty($candEmail)) {
+                $dupConds[] = "LOWER(TRIM(email)) = ?";
+                $dupParams[] = strtolower($candEmail);
+            }
+            if (!empty($candPhone) && strlen($candPhone) >= 7) {
+                $dupConds[] = "REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(phone, ' ', ''), '-', ''), '(', ''), ')', ''), '+', '') LIKE ?";
+                $dupParams[] = "%" . substr($candPhone, -10);
+            }
+            if (!empty($dupConds)) {
+                $stmtCheck = $conn->prepare("SELECT id, name FROM cims_candidates WHERE (" . implode(" OR ", $dupConds) . ") LIMIT 1");
+                $stmtCheck->execute($dupParams);
+                $dupRow = $stmtCheck->fetch(PDO::FETCH_ASSOC);
+                if ($dupRow) {
+                    http_response_code(409);
+                    echo json_encode(["error" => "A candidate with matching email or phone already exists: " . $dupRow['name']]);
+                    exit;
+                }
             }
         }
-        // 1. Insert into cims_candidates table
+        // 1. Insert into cims_candidates table with assigned recruiter
+        $assignedRecruiter = $c['assigned_recruiter_id'] ?? $userId;
+        $assignedHM = $c['assigned_hiring_manager_id'] ?? null;
         $stmtCand = $conn->prepare("INSERT INTO cims_candidates (
             id, name, email, phone, alternateMobile, location, preferredLocation, 
             experience, relevantExperience, currentCompany, currentDesignation, 
             currentCtc, expectedCtc, noticePeriod, skills, resume, linkedInProfile, 
-            isBlacklisted, isActive, createdAt, updatedAt, photo
+            isBlacklisted, isActive, createdAt, updatedAt, photo, assigned_recruiter_id, assigned_hiring_manager_id
         ) VALUES (
-            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
         )");
         
         $skills = json_encode($c['skills'] ?? []);
@@ -307,13 +326,15 @@ if ($method === 'GET') {
             isset($c['isActive']) ? (int)$c['isActive'] : 1,
             $now,
             $now,
-            $c['photo'] ?? ''
+            $c['photo'] ?? '',
+            $assignedRecruiter,
+            $assignedHM
         ]);
         
-        // 2. Insert into cims_applications table
+        // 2. Insert into cims_applications table with recruiter_id
         $stmtApp = $conn->prepare("INSERT INTO cims_applications (
-            candidate_id, role_applied, department, source, stage, recruiter, appliedAt
-        ) VALUES (?, ?, ?, ?, ?, ?, ?)");
+            candidate_id, role_applied, department, source, stage, recruiter, recruiter_id, appliedAt
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
         
         $stmtApp->execute([
             $id,
@@ -322,6 +343,7 @@ if ($method === 'GET') {
             $c['source'] ?? 'Website',
             $c['stage'] ?? 'New Applicant',
             $c['recruiter'] ?? '',
+            $assignedRecruiter,
             $appliedAt
         ]);
         
@@ -376,6 +398,13 @@ if ($method === 'GET') {
         if (!$existing) {
             http_response_code(404);
             echo json_encode(["error" => "Candidate not found"]);
+            exit;
+        }
+
+        // Scope / Assignment Authorization Check
+        if (!check_candidate_access($id)) {
+            http_response_code(403);
+            echo json_encode(["error" => "Forbidden: You are not authorized to edit this candidate."]);
             exit;
         }
         // Fetch old application stage
@@ -644,6 +673,15 @@ if ($method === 'GET') {
         http_response_code(400);
         echo json_encode(["error" => "Missing or invalid IDs"]);
         exit;
+    }
+    
+    // Scope / Assignment Authorization Check on all candidate IDs
+    foreach ($ids as $candId) {
+        if (!check_candidate_access($candId)) {
+            http_response_code(403);
+            echo json_encode(["error" => "Forbidden: You are not authorized to delete candidate $candId."]);
+            exit;
+        }
     }
     
     try {

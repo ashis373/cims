@@ -6,3 +6,16 @@
   RewriteCond %{REQUEST_FILENAME} !-d
   RewriteRule . /dev/cims/index.html [L]
 </IfModule>
+
+<FilesMatch "(\.env|\.sql|\.log|\.txt|\.lock|\.json|\.md|\.git)">
+  Require all denied
+</FilesMatch>
+
+Options -Indexes
+
+<IfModule mod_headers.c>
+  Header set X-Content-Type-Options "nosniff"
+  Header set X-Frame-Options "SAMEORIGIN"
+  Header set Referrer-Policy "strict-origin-when-cross-origin"
+  Header set Permissions-Policy "geolocation=(), microphone=(), camera=()"
+</IfModule>

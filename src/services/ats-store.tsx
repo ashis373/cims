@@ -219,7 +219,7 @@ export function AtsProvider({ children }: { children: ReactNode }) {
           try {
             const triggerRes = await fetch(`${API_BASE_URL}/settings/email/trigger.php`, {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('token') },
+              headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (localStorage.getItem('cims_token') || localStorage.getItem('token') || '') },
               body: JSON.stringify({ candidate_id: id, stage })
             }).then(r => r.json());
             
