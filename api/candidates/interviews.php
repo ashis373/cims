@@ -21,7 +21,7 @@ if ($method === 'GET') {
                 i.interviewDate as date,
                 i.end_time,
                 i.mode,
-                i.interviewers as interviewer,
+                COALESCE(NULLIF(TRIM(i.interviewers), ''), NULLIF(TRIM(i.created_by), ''), 'Unassigned') as interviewer,
                 i.meeting_link,
                 i.location,
                 i.notes,
@@ -81,7 +81,13 @@ if ($method === 'POST') {
         $date = !empty($data['date']) ? date('Y-m-d H:i:s', strtotime($data['date'])) : $now;
         $endTime = !empty($data['end_time']) ? date('Y-m-d H:i:s', strtotime($data['end_time'])) : null;
         $status = $data['status'] ?? 'Scheduled';
-        $createdBy = (string)$payload['user_id'];
+        $userId = $payload['user_id'] ?? null;
+        $createdBy = 'HR Manager';
+        if ($userId) {
+            $stmtU = $conn->prepare("SELECT full_name FROM cims_users WHERE id = ?");
+            $stmtU->execute([$userId]);
+            $createdBy = $stmtU->fetchColumn() ?: 'HR Manager';
+        }
         $resultVal = !empty($data['result']) ? $data['result'] : (!empty($data['recommendation']) && $data['recommendation'] === 'Do Not Hire' ? 'Failed' : null);
 
         $stmt->execute([

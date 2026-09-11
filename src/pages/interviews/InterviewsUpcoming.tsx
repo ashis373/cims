@@ -423,9 +423,9 @@ export default function InterviewsUpcoming() {
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-1.5">
                             <div className="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-[8px] font-bold text-slate-600">
-                              {inv.interviewer.charAt(0)}
+                              {(inv.interviewer || "U").charAt(0).toUpperCase()}
                             </div>
-                            <span className="font-medium text-slate-700">{inv.interviewer}</span>
+                            <span className="font-medium text-slate-700">{inv.interviewer || "Unassigned"}</span>
                           </div>
                         </td>
                         <td className="px-4 py-3">
@@ -511,9 +511,9 @@ export default function InterviewsUpcoming() {
                     <div className="text-[9px] text-slate-500 mb-2">{inv.type} Interview</div>
                     <div className="flex items-center gap-1.5">
                       <div className="w-4 h-4 rounded-full bg-slate-200 flex items-center justify-center text-[7px] font-bold text-slate-600">
-                        {inv.interviewer.charAt(0)}
+                        {(inv.interviewer || "U").charAt(0).toUpperCase()}
                       </div>
-                      <span className="text-[9px] font-medium text-slate-600">{inv.interviewer}</span>
+                      <span className="text-[9px] font-medium text-slate-600">{inv.interviewer || "Unassigned"}</span>
                     </div>
                   </div>
                 </div>

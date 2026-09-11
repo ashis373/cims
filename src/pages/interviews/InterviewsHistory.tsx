@@ -598,7 +598,7 @@ export default function InterviewsHistory() {
                           <div className="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-[8px] font-bold text-slate-600">
                             {(inv.interviewer || "U").charAt(0)}
                           </div>
-                          <span className="font-medium text-slate-700">{inv.interviewer}</span>
+                          <span className="font-medium text-slate-700">{inv.interviewer || "Unassigned"}</span>
                         </div>
                       </td>
                       <td className="px-4 py-3">

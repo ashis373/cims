@@ -51,7 +51,7 @@ export default function SourceReport({ candidates }: Props) {
                 <tr key={d.name} className="hover:bg-slate-50/50 transition-colors">
                   <td className="py-3 flex items-center gap-2">
                      <div className={`h-5 w-5 rounded-full flex items-center justify-center text-[8px] font-black ${iconColors[i % iconColors.length]}`}>
-                        {d.name.charAt(0)}
+                        {(d.name || "S").charAt(0)}
                      </div>
                      {d.name}
                   </td>

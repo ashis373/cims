@@ -553,8 +553,8 @@ if ($method === 'GET') {
         // Handle Rejections / Alerts logging
         if (isset($data['stage']) && in_array($data['stage'], ['Rejected', 'No Show', 'Offer Declined', 'Offer Expired'])) {
             $reason = $data['rejectionReason'] ?? $data['stageReason'] ?? 'Status updated to ' . $data['stage'];
-            $stmtRej = $conn->prepare("INSERT INTO cims_candidate_rejections (candidate_id, type, reason) VALUES (?, ?, ?)");
-            $stmtRej->execute([$id, $data['stage'], $reason]);
+            $stmtRej = $conn->prepare("INSERT INTO cims_candidate_rejections (candidate_id, type, reason, recordedBy) VALUES (?, ?, ?, ?)");
+            $stmtRej->execute([$id, $data['stage'], $reason, $userName]);
         }
         if (isset($data['isBlacklisted']) && $data['isBlacklisted']) {
             $reason = $data['blacklistReason'] ?? 'Blacklisted';
@@ -562,8 +562,8 @@ if ($method === 'GET') {
             $stmtCheck = $conn->prepare("SELECT COUNT(*) FROM cims_candidate_rejections WHERE candidate_id = ? AND type = 'Blacklisted'");
             $stmtCheck->execute([$id]);
             if ($stmtCheck->fetchColumn() == 0) {
-                $stmtRej = $conn->prepare("INSERT INTO cims_candidate_rejections (candidate_id, type, reason) VALUES (?, ?, ?)");
-                $stmtRej->execute([$id, 'Blacklisted', $reason]);
+                $stmtRej = $conn->prepare("INSERT INTO cims_candidate_rejections (candidate_id, type, reason, recordedBy) VALUES (?, ?, ?, ?)");
+                $stmtRej->execute([$id, 'Blacklisted', $reason, $userName]);
             }
         }
         

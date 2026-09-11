@@ -9,18 +9,16 @@ $params = [];
 $whereHist = "";
 $whereNotes = "";
 $whereInt = "";
-$whereRej = "";
 $whereApp = "";
 $whereEmail = "";
 if ($id) {
     $whereHist = "WHERE h.candidate_id = ?";
     $whereNotes = "WHERE n.candidate_id = ?";
     $whereInt = "WHERE a.candidate_id = ?";
-    $whereRej = "WHERE r.candidate_id = ?";
     $whereApp = "WHERE a.candidate_id = ?";
     $whereEmail = "WHERE e.candidate_id = ?";
-    // Since there are 6 union queries, we need the ID 6 times
-    $params = [$id, $id, $id, $id, $id, $id];
+    // Since there are 5 union queries, we need the ID 5 times
+    $params = [$id, $id, $id, $id, $id];
 }
 try {
     // We use UNION ALL to combine the results directly in MySQL
@@ -49,13 +47,21 @@ try {
                 'Note Added' as action, 
                 n.text as description, 
                 n.createdAt as timestamp, 
-                COALESCE(u.full_name, n.createdBy, 'System') as user, 
+                COALESCE(u.full_name, IF(n.createdBy REGEXP '^[0-9]+$', rl.role_name, n.createdBy), 'System') as user, 
                 COALESCE(rl.role_name, 'HR Manager') as userRole,
                 c.name as candidateName,
                 c.photo as image 
             FROM cims_candidate_notes n 
             JOIN cims_candidates c ON n.candidate_id = c.id 
-            LEFT JOIN cims_users u ON n.createdBy = u.full_name
+            LEFT JOIN cims_users u ON (
+                (n.createdBy REGEXP '^[0-9]+$' AND u.id = n.createdBy)
+                OR
+                (NOT (n.createdBy REGEXP '^[0-9]+$') AND u.id = (
+                    SELECT MIN(u2.id) FROM cims_users u2 
+                    LEFT JOIN cims_roles r2 ON u2.role_id = r2.id
+                    WHERE u2.full_name = n.createdBy OR r2.role_name = n.createdBy
+                ))
+            )
             LEFT JOIN cims_roles rl ON u.role_id = rl.id
             $whereNotes
         )
@@ -64,35 +70,31 @@ try {
             SELECT 
                 'Interview' as type, 
                 CONCAT(i.type, ' Interview ', i.status) as action, 
-                COALESCE(i.feedback, CONCAT('Scheduled on ', i.interviewDate)) as description, 
+                CASE 
+                    WHEN NULLIF(TRIM(i.feedback), '') IS NOT NULL THEN TRIM(i.feedback)
+                    WHEN i.status = 'Completed' THEN CONCAT(i.type, ' Interview Completed')
+                    WHEN i.status = 'Scheduled' THEN CONCAT('Scheduled on ', DATE_FORMAT(i.interviewDate, '%d %b, %h:%i %p'))
+                    ELSE CONCAT(i.type, ' Interview ', i.status)
+                END as description, 
                 i.created_at as timestamp, 
-                COALESCE(u.full_name, i.created_by, 'System') as user, 
+                COALESCE(u.full_name, IF(i.created_by REGEXP '^[0-9]+$', rl.role_name, i.created_by), 'System') as user, 
                 COALESCE(rl.role_name, 'HR Manager') as userRole,
                 c.name as candidateName,
                 c.photo as image 
             FROM cims_candidate_interviews i 
             JOIN cims_applications a ON i.application_id = a.id 
             JOIN cims_candidates c ON a.candidate_id = c.id 
-            LEFT JOIN cims_users u ON i.created_by = u.full_name
+            LEFT JOIN cims_users u ON (
+                (i.created_by REGEXP '^[0-9]+$' AND u.id = i.created_by)
+                OR
+                (NOT (i.created_by REGEXP '^[0-9]+$') AND u.id = (
+                    SELECT MIN(u2.id) FROM cims_users u2 
+                    LEFT JOIN cims_roles r2 ON u2.role_id = r2.id
+                    WHERE u2.full_name = i.created_by OR r2.role_name = i.created_by
+                ))
+            )
             LEFT JOIN cims_roles rl ON u.role_id = rl.id
             $whereInt
-        )
-        UNION ALL
-        (
-            SELECT 
-                'Alert' as type, 
-                CONCAT('Candidate ', r.type) as action, 
-                r.reason as description, 
-                r.recordedAt as timestamp, 
-                COALESCE(u.full_name, r.recordedBy, 'System') as user, 
-                COALESCE(rl.role_name, 'System') as userRole,
-                c.name as candidateName,
-                c.photo as image 
-            FROM cims_candidate_rejections r 
-            JOIN cims_candidates c ON r.candidate_id = c.id 
-            LEFT JOIN cims_users u ON r.recordedBy = u.full_name
-            LEFT JOIN cims_roles rl ON u.role_id = rl.id
-            $whereRej
         )
         UNION ALL
         (

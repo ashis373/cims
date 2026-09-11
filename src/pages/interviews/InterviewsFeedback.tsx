@@ -280,7 +280,7 @@ export default function InterviewsFeedback() {
       .map(([name, count]) => ({
         name,
         count,
-        avatar: name.charAt(0).toUpperCase()
+        avatar: (name || "U").charAt(0).toUpperCase()
       }));
   }, [pendingList]);
 
